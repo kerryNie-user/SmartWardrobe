@@ -1,3 +1,28 @@
 # MacOS Ignore File
 **/.DS_Store
 
+# Android Studio / IntelliJ IDEA
+.idea/
+.gradle/
+*.iml
+*.iws
+*.ipr
+local.properties
+
+# Gradle
+.gradle/
+build/
+app/build/
+!gradle-wrapper.jar
+
+# Android
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Log Files
+*.log
+*.tmp
+*.bak
+
+
