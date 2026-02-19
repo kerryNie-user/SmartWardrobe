@@ -1,6 +1,6 @@
 # ClosetTwin (SmartWardrobe)
 
-ClosetTwin 是一款智能衣橱管理 Web 应用，旨在帮助用户数字化管理个人衣物，提供每日穿搭建议，并根据天气和场合推荐最佳搭配。
+ClosetTwin 是一款智能衣橱管理应用，旨在帮助用户数字化管理个人衣物。
 
 ## 目录 (Table of Contents)
 
@@ -16,7 +16,7 @@ ClosetTwin 是一款智能衣橱管理 Web 应用，旨在帮助用户数字化�
     *   [6. Running the Application](#6-running-the-application)
     *   [7. Database & Services](#7-database--services)
     *   [8. Verification & Troubleshooting](#8-verification--troubleshooting)
-*   [🚀 快速预览 (Web Only)](#-快速预览-web-only)
+*   [🚀 快速预览](#-快速预览)
 *   [📖 文档资源](#-文档资源)
 *   [🤝 贡献](#-贡献)
 *   [📝 作者](#-作者)
@@ -28,35 +28,21 @@ ClosetTwin 是一款智能衣橱管理 Web 应用，旨在帮助用户数字化�
 *   **📍 自动定位与天气**: 集成地理位置服务，自动获取当地天气信息，为穿搭建议提供依据。
 *   **👤 个性化资料**: 设置职业、地区偏好，定制专属的时尚建议。
 *   **🌍 多语言支持**: 支持简体中文 (zh-CN) 和 英语 (en-US) 切换。
-*   **📱 移动端优先设计**: 响应式布局，提供类似原生 App 的流畅体验（支持触摸反馈、滑动手势）。
 *   **🌓 深色模式**: 支持系统自动切换或手动设置深色/浅色主题。
 
 ## 🛠️ 技术栈
 
-*   **前端**: 原生 HTML5, CSS3, JavaScript (ES6+)
-*   **UI 设计**: 极简主义黑白风格 (Minimalist Black & White)，Glassmorphism (毛玻璃效果)
-*   **图标**: SVG 图标
-*   **字体**: Inter (Google Fonts)
-*   **数据存储**: LocalStorage (目前为纯前端演示版，数据存储在本地浏览器)
+*   **Android**: Kotlin, Android SDK (Native)
+*   **架构**: MVVM (Recommended)
+*   **UI 设计**: Material Design 3
 
 ## 📂 项目结构
 
 ```
 SmartWardrobe/
 ├── App/
-│   ├── AndroidApp/        # Android 客户端项目
-│   └── WebApp/
-│       └── wardrobe/
-│           ├── css/               # 样式文件 (style.css, auto-location.css 等)
-│           ├── js/                # 逻辑脚本 (app.js, i18n.js, theme.js 等)
-│           ├── images/            # 资源图片
-│           ├── index.html         # 首页
-│           ├── wardrobe.html      # 衣橱页
-│           ├── profile.html       # 个人中心页
-│           ├── login.html         # 登录页
-│           ├── register.html      # 注册页
-│           └── *.json             # 国际化语言包
-└── README.md                      # 项目说明文档
+│   ├── AndroidApp/        # Android 客户端项目 (Native)
+└── README.md              # 项目说明文档
 ```
 
 ## 🏗️ Development Environment Setup Guide
