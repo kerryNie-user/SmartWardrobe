@@ -67,6 +67,7 @@
     "location_unknown_city": "未知城市",
     "menu_settings": "设置",
     "auto_detect_location": "自动选择",
+    "auto_select_unavailable": "自动选择不可用",
     "detecting_location": "定位中...",
     "location_failed": "定位失败，请手动选择",
     "located_prefix": "已定位：",

@@ -10,6 +10,8 @@
     font-size: 14px;
     color: var(--text-main);
     transition: background 0.2s;
+    flex-wrap: wrap; /* Allow wrapping for long text */
+    row-gap: 8px; /* Space between rows when wrapped */
 }
 
 .auto-location-item:active {
@@ -40,13 +42,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     /* white-space: nowrap; - Removed for wrapping */
-    justify-content: flex-end;
+    justify-content: flex-start; /* Changed to start for left alignment on wrap */
     /* Added for wrapping requirements */
     white-space: normal;
     word-break: break-word;
     line-height: 1.5;
-    text-align: right;
-    max-width: 60%; /* Ensure it doesn't take full width and force wrap */
+    text-align: left; /* Changed to left for wrap alignment */
+    /* margin-left: auto; - Removed to allow left alignment on wrap */
+    max-width: 100%; /* Allow full width */
 }
 
 .location-hint {

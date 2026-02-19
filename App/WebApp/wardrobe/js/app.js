@@ -767,7 +767,7 @@ function initSwipeBehavior() {
 
 
 function restoreBodyScroll() {
-    // Only restore scroll if no other overlays are active
+    // Check if any modal is still active
     const activeModals = document.querySelectorAll('.modal-overlay.active, .detail-view.active, .image-modal-overlay.active');
     if (activeModals.length === 0) {
         unlockParentScroll();

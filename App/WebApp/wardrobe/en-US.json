@@ -65,6 +65,7 @@
     
     "menu_settings": "Settings",
     "auto_detect_location": "Auto Detect Location",
+    "auto_select_unavailable": "Auto Detect Location Disabled",
     "detecting_location": "Detecting Location...",
     "location_failed": "Location failed, please select manually",
     "located_prefix": "Located: ",

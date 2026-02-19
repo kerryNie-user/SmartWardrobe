@@ -1165,6 +1165,7 @@ h1, h2, h3, h4, p {
     text-align: center;
     border-bottom: 1px solid var(--border-color);
     position: relative;
+    z-index: 5; /* Ensure above background elements */
     transition: background 0.3s, border-color 0.3s;
 }
 
@@ -1214,6 +1215,8 @@ h1, h2, h3, h4, p {
     margin-top: 20px;
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
+    position: relative;
+    z-index: 5; /* Ensure above background elements */
     transition: background 0.3s, border-color 0.3s;
 }
 

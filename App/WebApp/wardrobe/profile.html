@@ -11,9 +11,41 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/auto-location.css">
-</head>    
+    
     <style>
         /* Styles moved to css/style.css */
+        
+        /* 
+           CRITICAL FIX: Ensure overlays are hidden and don't block clicks 
+           when not active. This prevents "ghost" overlays from disabling the UI.
+        */
+        .modal-overlay:not(.active),
+        .detail-view:not(.active),
+        .image-modal-overlay:not(.active) {
+            display: none !important;
+            pointer-events: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            z-index: -1 !important; /* Send to back just in case */
+        }
+        
+        /* Ensure body is interactive */
+        html, body {
+            pointer-events: auto !important;
+            height: 100%; /* Ensure full height */
+            overflow-y: auto; /* Allow scrolling by default */
+        }
+
+        /* Fix for specific auto-location button context */
+        #auto-location-btn {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative; /* Ensure z-index works */
+            z-index: 10;
+        }
+        
+        /* Debug helper to visualize click zones if needed (commented out) */
+        /* * { outline: 1px solid rgba(255,0,0,0.1); } */
     </style>
 </head>
 <body>
@@ -86,7 +118,7 @@
                 <input type="text" class="form-input" id="region-search" data-i18n-placeholder="placeholder_search_region" placeholder="Search region..." oninput="filterRegions(this.value)">
             </div>
             
-            <div style="margin-bottom: 16px;">
+            <div class="isolated-scroll" id="region-list-scroll-container" style="flex: 1; padding-right: 12px;">
                 <div id="auto-location-btn" class="menu-item auto-location-item" onclick="handleAutoLocation()">
                     <div class="auto-location-left">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="auto-location-icon">
@@ -98,10 +130,9 @@
                         <!-- Status injected via JS -->
                     </div>
                 </div>
-            </div>
-
-            <div class="isolated-scroll" id="region-list" style="flex: 1;">
-                <!-- Regions will be populated here -->
+                <div id="region-list">
+                    <!-- Regions will be populated here -->
+                </div>
             </div>
         </div>
     </div>
@@ -195,9 +226,70 @@
     <script src="js/autoLocation.js"></script>
     <script src="js/app.js"></script>
     <script>
+        // --- Fallback & Safety Logic ---
+        // Ensure activateOverlay/deactivateOverlay exist even if app.js fails
+        if (typeof activateOverlay === 'undefined') {
+            console.warn('[Profile] activateOverlay missing, using fallback');
+            window.activateOverlay = function(modal) {
+                if (modal) {
+                    modal.classList.add('active');
+                    modal.style.display = 'flex';
+                    modal.style.opacity = '1';
+                    // Basic scroll lock
+                    document.body.style.overflow = 'hidden'; 
+                }
+            };
+        }
+        
+        if (typeof deactivateOverlay === 'undefined') {
+            console.warn('[Profile] deactivateOverlay missing, using fallback');
+            window.deactivateOverlay = function(modal) {
+                if (modal) {
+                    modal.classList.remove('active');
+                    modal.style.display = 'none';
+                    modal.style.opacity = '0';
+                    document.body.style.overflow = ''; 
+                }
+            };
+        }
+        
+        if (typeof logout === 'undefined') {
+            console.warn('[Profile] logout missing, using fallback');
+            window.logout = function() {
+                // Clear storage and redirect
+                localStorage.removeItem('isLoggedIn');
+                window.location.href = 'login.html';
+            };
+        }
+        
+        // --- Auto Location Logic ---
+        let isAutoLocationThrottled = false;
+
         async function handleAutoLocation() {
+            console.log('[Profile] handleAutoLocation called');
+            if (isAutoLocationThrottled) return;
+            
             const btn = document.getElementById('auto-location-btn');
             const statusEl = document.getElementById('auto-location-status');
+            const leftTextSpan = btn.querySelector('.auto-location-left span');
+            const icon = btn.querySelector('.auto-location-icon');
+            
+            // Prevent double-click if already loading
+            if (btn.classList.contains('auto-location-loading')) return;
+
+            // Reset UI State
+            if (leftTextSpan) {
+                leftTextSpan.setAttribute('data-i18n', 'auto_detect_location');
+                leftTextSpan.style.color = ''; // Reset color
+                if (window.i18n) leftTextSpan.textContent = window.i18n.get('auto_detect_location') || 'Auto Detect Location';
+            }
+            if (icon) {
+                icon.style.color = ''; // Reset color
+            }
+
+            isAutoLocationThrottled = true;
+            // Throttle reset after short delay to prevent accidental double taps
+            setTimeout(() => { isAutoLocationThrottled = false; }, 300);
             
             // 1. Set Loading State
             const isMobile = window.innerWidth <= 768;
@@ -207,7 +299,8 @@
                 statusEl.innerHTML = ''; // Clear previous status
             } else {
                 // PC: Spinner
-                statusEl.innerHTML = `<div class="spinner"></div> <span data-i18n="detecting_location">${window.i18n.get('detecting_location') || 'Detecting...'}</span>`;
+                const detectingText = (window.i18n && window.i18n.get('detecting_location')) || 'Detecting...';
+                statusEl.innerHTML = `<div class="spinner"></div> <span data-i18n="detecting_location">${detectingText}</span>`;
             }
             
             try {
@@ -220,6 +313,30 @@
                 // Use unified translation function
                 let locationText = window.autoLocationService.translateAutoSelect(location);
                 
+                // CHECK IF LOCATION IS UNKNOWN
+                // If regionKey is 'region_unknown' or text contains 'Unknown'/'未知', treat as failure
+                if (location.regionKey === 'region_unknown' || locationText.includes('Unknown') || locationText.includes('未知')) {
+                    // Update Left Side (Red Error)
+                    if (leftTextSpan) {
+                         leftTextSpan.setAttribute('data-i18n', 'auto_select_unavailable');
+                         leftTextSpan.style.color = 'var(--danger-color)';
+                         if (window.i18n) leftTextSpan.textContent = window.i18n.get('auto_select_unavailable') || 'Auto Select Unavailable';
+                    }
+                    if (icon) {
+                         icon.style.color = 'var(--danger-color)';
+                    }
+                    
+                    // Update Right Side (Show Reason in Gray)
+                    statusEl.innerHTML = `<span class="location-error" style="color: var(--text-sub);">${locationText}</span>`;
+
+                    // Expand manual selection (ensure it is visible)
+                    const regionList = document.getElementById('region-list');
+                    if (regionList && regionList.style.display === 'none') {
+                        regionList.style.display = 'block';
+                    }
+                    return; // Stop here, do not close modal
+                }
+                
                 const prefix = ''; // Removed "Located: "
                 
                 // Store the raw text for fallback, but ideally use regionKey if available for translation
@@ -227,7 +344,8 @@
                 dynamicSpan.className = 'location-highlight';
                 dynamicSpan.setAttribute('data-i18n-dynamic', 'true');
                 dynamicSpan.setAttribute('data-prefix-key', '');
-                dynamicSpan.setAttribute('data-location-text', locationText);
+                // Save raw location data for re-translation
+                dynamicSpan.setAttribute('data-location-json', JSON.stringify(location)); 
                 
                 // If we have a regionKey (even from auto-detect), use it for better translation
                 if (location.regionKey && location.regionKey !== 'region_unknown') {
@@ -246,18 +364,35 @@
                 let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 user.regionKey = location.regionKey;
                 localStorage.setItem('currentUser', JSON.stringify(user));
+
+                // Close modal on success
+                closeRegionModal();
                 
             } catch (error) {
                 // 4. Error UI
                 btn.classList.remove('auto-location-loading');
-                const errorText = window.i18n.get('location_failed') || 'Location failed, please select manually';
-                statusEl.innerHTML = `<span class="location-error">${errorText}</span>`;
+                
+                // Update Left Side (Red Error)
+                if (leftTextSpan) {
+                     leftTextSpan.setAttribute('data-i18n', 'auto_select_unavailable');
+                     leftTextSpan.style.color = 'var(--danger-color)';
+                     if (window.i18n) leftTextSpan.textContent = window.i18n.get('auto_select_unavailable') || 'Auto Select Unavailable';
+                }
+                if (icon) {
+                     icon.style.color = 'var(--danger-color)';
+                }
+
+                // Update Right Side (Show Error Reason in Gray)
+                const errorText = (window.i18n && window.i18n.get('location_failed')) || 'Location failed';
+                statusEl.innerHTML = `<span class="location-error" style="color: var(--text-sub);">${errorText}</span>`;
                 
                 // Expand manual selection (ensure it is visible)
                 const regionList = document.getElementById('region-list');
-                if (regionList.style.display === 'none') {
+                if (regionList && regionList.style.display === 'none') {
                     regionList.style.display = 'block';
                 }
+                
+                // DO NOT close modal
             }
         }
 
@@ -404,6 +539,43 @@
             }
         }
 
+        // --- Language Change Listener ---
+        window.addEventListener('languageChanged', () => {
+            console.log('[Profile] Language changed, updating location text...');
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            // 1. Update Profile Main Display
+            const regionEl = document.getElementById('current-region');
+            // Check if current region is auto-detected (we can check if we have cached data matching user.regionKey)
+            if (user.regionKey && window.autoLocationService) {
+                 const cached = window.autoLocationService.getCachedLocation();
+                 // Only update if the user's regionKey matches the cached one (meaning they used auto-select)
+                 // And it's not a standard key handled by i18n (or is region_unknown)
+                 if (cached && cached.regionKey === user.regionKey) {
+                     const newText = window.autoLocationService.translateAutoSelect(cached);
+                     if (regionEl) regionEl.textContent = newText;
+                 }
+            }
+
+            // 2. Update Modal Status (if visible/rendered)
+            const statusEl = document.getElementById('auto-location-status');
+            if (statusEl) {
+                const dynamicSpan = statusEl.querySelector('[data-i18n-dynamic="true"]');
+                if (dynamicSpan) {
+                    const json = dynamicSpan.getAttribute('data-location-json');
+                    if (json) {
+                        try {
+                            const loc = JSON.parse(json);
+                            const newText = window.autoLocationService.translateAutoSelect(loc);
+                            // Keep prefix if any (though currently empty)
+                            const prefix = dynamicSpan.getAttribute('data-prefix-key') ? window.i18n.get(dynamicSpan.getAttribute('data-prefix-key')) : '';
+                            dynamicSpan.textContent = `${prefix}${newText}`;
+                        } catch (e) { console.error(e); }
+                    }
+                }
+            }
+        });
+
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             const initProfile = () => {
@@ -436,9 +608,20 @@
                          }
                      }
                  } else if (user.region) {
-                     // Fallback for legacy text data
-                     regionEl.textContent = user.region;
-                 } else {
+                    // Fallback for legacy text data
+                    // Try to find a matching key in regions array to enable i18n
+                    const foundRegion = regions.find(r => r.label === user.region || (r.label.split('·')[0] === user.region));
+                    if (foundRegion) {
+                        regionEl.setAttribute('data-i18n', foundRegion.key);
+                        if (window.i18n && window.i18n.loaded) {
+                            regionEl.textContent = window.i18n.get(foundRegion.key);
+                        } else {
+                            regionEl.textContent = user.region;
+                        }
+                    } else {
+                        regionEl.textContent = user.region;
+                    }
+                } else {
                      // No preference, default to auto (Global service will trigger)
                      regionEl.setAttribute('data-i18n', 'detecting_location');
                      if (window.i18n && window.i18n.loaded) {
@@ -459,8 +642,22 @@
                      }
                  } else if (user.role) {
                     // Fallback
-                    document.getElementById('current-profession').textContent = user.role;
-                    document.querySelector('.profile-role').textContent = user.role;
+                    const elRole = document.getElementById('current-profession');
+                    const elHeaderRole = document.querySelector('.profile-role');
+                    
+                    elRole.textContent = user.role;
+                    elHeaderRole.textContent = user.role;
+                    
+                    // Try to find matching key for legacy role
+                    // This ensures future language switches work
+                    const match = professions.find(p => p.label === user.role);
+                    if (match) {
+                        elRole.setAttribute('data-i18n', match.key);
+                        elHeaderRole.setAttribute('data-i18n', match.key);
+                        // Update user object
+                        user.roleKey = match.key;
+                        localStorage.setItem('currentUser', JSON.stringify(user));
+                    }
                 }
             };
 
