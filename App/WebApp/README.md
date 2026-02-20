@@ -31,20 +31,31 @@ The core logic and UI of the SmartWardrobe application, built with standard web 
    ```
 
 4. **Access the App**
-   Open your browser and navigate to `http://localhost:8000/wardrobe/index.html`.
+   Open your browser and navigate to `http://localhost:8000/index.html`.
 
 ## 📦 Project Structure
 
-```
-App/WebApp/wardrobe/
-├── css/            # Stylesheets (Sass/CSS)
-├── js/             # Application Logic
-│   ├── app.js      # Main entry point
-│   ├── i18n.js     # Localization logic
-│   └── theme.js    # Theme management
-├── images/         # Assets
-└── *.html          # HTML Templates
-```
+### 📂 Directories
+
+- **`css/`**: Stylesheets using CSS/Sass for application styling.
+- **`docs/`**: Additional documentation files.
+- **`images/`**: Static image assets used within the web application.
+- **`js/`**: JavaScript source code files containing application logic.
+- **`tests/`**: Unit and integration tests for the web application.
+
+### 📄 Files
+
+- **`API_DOCUMENTATION.md`**: Detailed reference for API endpoints and data structures.
+- **`AUTO_LOCATION_GUIDE.md`**: Documentation for the auto-location feature implementation.
+- **`BACKEND_INTEGRATION_GUIDE.md`**: Guide for connecting the frontend with backend services.
+- **`en-US.json`**: English language translation file for internationalization.
+- **`index.html`**: The main landing page of the application.
+- **`login.html`**: User authentication and login interface.
+- **`profile.html`**: User profile management page.
+- **`README.md`**: Documentation specific to the Web Application module.
+- **`register.html`**: New user registration interface.
+- **`wardrobe.html`**: The core wardrobe management interface.
+- **`zh-CN.json`**: Chinese (Simplified) language translation file.
 
 ## 🔧 Debugging
 
@@ -55,7 +66,7 @@ App/WebApp/wardrobe/
 ## 📚 API Reference
 
 While this is a client-side app, it mocks backend interactions.
-See [API_DOCUMENTATION.md](wardrobe/API_DOCUMENTATION.md) for details on data structures.
+See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for details on data structures.
 
 ## 📝 Code Style
 
@@ -65,5 +76,5 @@ See [API_DOCUMENTATION.md](wardrobe/API_DOCUMENTATION.md) for details on data st
 
 ---
 **Version**: 1.1.0
-**Last Updated**: 2026-02-19
+**Last Updated**: 2026-02-20
 **Maintainer**: SmartWardrobe Web Team

@@ -31,18 +31,22 @@ The Android shell for the SmartWardrobe web application, providing native capabi
 
 ## 📦 Project Structure
 
-```
-App/AndroidApp/
-├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/       # Native Java/Kotlin code
-│   │   │   ├── res/        # Resources (layouts, drawables)
-│   │   │   └── AndroidManifest.xml
-│   └── build.gradle        # App-level build config
-├── gradle/                 # Gradle wrapper files
-└── build.gradle            # Project-level build config
-```
+### 📂 Directories
+
+- **`.gradle/`**: Caches and internal files used by the Gradle build system.
+- **`app/`**: The main Android application module containing source code and resources.
+- **`build/`**: Directory containing build artifacts and intermediate files.
+- **`gradle/`**: Wrapper files ensuring the correct Gradle version is used.
+
+### 📄 Files
+
+- **`build.gradle.kts`**: Root-level build configuration script using Kotlin DSL.
+- **`gradle.properties`**: Configuration properties for the Gradle build environment.
+- **`gradlew`**: Shell script to run Gradle tasks on Unix-based systems.
+- **`gradlew.bat`**: Batch script to run Gradle tasks on Windows.
+- **`local.properties`**: Local configuration file (e.g., SDK location), usually not version controlled.
+- **`README.md`**: Documentation specific to the Android Application module.
+- **`settings.gradle.kts`**: Defines the project structure and included modules.
 
 ## 🔧 Native Integration
 
@@ -58,5 +62,5 @@ This app uses a `WebView` to load the local HTML files from the `assets` folder.
 
 ---
 **Version**: 1.0.0
-**Last Updated**: 2026-02-19
+**Last Updated**: 2026-02-20
 **Maintainer**: SmartWardrobe Android Team

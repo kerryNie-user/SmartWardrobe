@@ -13,6 +13,27 @@ graph TD
     NativeModules --> WebApp
 ```
 
+## 📦 Project Structure
+
+### 📂 Directories
+
+- **`App/`**: Contains the source code for the Web and Android applications.
+- **`images/`**: Stores general project assets and images.
+- **`node_modules/`**: Dependencies installed via npm.
+- **`scripts/`**: Utility scripts, including the automated Android installer.
+
+### 📄 Files
+
+- **`.gitignore`**: Specifies files and directories to be ignored by Git.
+- **`AppLogo.jpg`**: The official logo of the SmartWardrobe application.
+- **`package-lock.json`**: Auto-generated file that locks the versions of npm dependencies.
+- **`package.json`**: Defines project metadata, scripts, and dependencies.
+- **`README.md`**: The main entry point for project documentation.
+- **`SERVER_SETUP.md`**: Comprehensive guide for setting up the backend server environment.
+- **`server.py`**: A lightweight Python script to serve the web application locally.
+- **`SmartWardrobe.apk`**: The compiled Android application package file.
+- **`USER_GUIDE.md`**: Instructions and manual for end-users of the application.
+
 ## 🛠 Tech Stack
 
 ### Web Application
@@ -44,5 +65,5 @@ For native feature implementation and APK building:
 
 ---
 **Version**: 1.1.0
-**Last Updated**: 2026-02-19
+**Last Updated**: 2026-02-20
 **Maintainer**: SmartWardrobe Team

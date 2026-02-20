@@ -1,28 +1,110 @@
-# MacOS Ignore File
-**/.DS_Store
+# ==========================================
+# 操作系统生成文件 (OS Generated Files)
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Android Studio / IntelliJ IDEA
+# ==========================================
+# IDE 和编辑器配置 (IDE & Editors)
+# ==========================================
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA / Android Studio
 .idea/
-.gradle/
 *.iml
 *.iws
 *.ipr
-local.properties
+out/
 
-# Gradle
+# Eclipse
+.classpath
+.project
+.settings/
+
+# ==========================================
+# Web 前端开发 (Web Development)
+# ==========================================
+# 依赖包
+node_modules/
+jspm_packages/
+
+# 构建产物
+dist/
+build/
+.cache/
+.parcel-cache/
+
+# 调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# 环境配置 (包含敏感信息)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ==========================================
+# Android 开发 (Android Development)
+# ==========================================
+# Gradle构建缓存
 .gradle/
 build/
 app/build/
-!gradle-wrapper.jar
 
-# Android
-captures/
+# 本地配置 (包含SDK路径等)
+local.properties
+
+# 签名文件 (包含敏感信息)
+*.jks
+*.keystore
+*.p12
+
+# 注入文件
 .externalNativeBuild/
 .cxx/
+captures/
 
-# Log Files
+# Google Services (包含API Keys)
+google-services.json
+
+# ==========================================
+# Python 开发 (Python Development)
+# ==========================================
+# 字节码编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+.venv/
+env/
+ENV/
+
+# 分发与打包
+dist/
+build/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# ==========================================
+# 日志与临时文件 (Logs & Temporary Files)
+# ==========================================
 *.log
 *.tmp
 *.bak
-
-
+*.swp
+*~
