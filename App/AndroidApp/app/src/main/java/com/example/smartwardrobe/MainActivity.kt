@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     // Use "10.0.2.2" for Android Emulator to access host localhost.
     // Use actual IP (e.g., "192.168.x.x") for real devices.
     // Serving directory: App/WebApp
-    private val serverUrl = "http://192.168.3.37:8080/index.html"
+    private val serverUrl = "http://10.23.126.78:8080/index.html"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {

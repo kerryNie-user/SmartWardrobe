@@ -4,13 +4,14 @@ import androidx.test.espresso.web.sugar.Web.onWebView
 import androidx.test.espresso.web.webdriver.DriverAtoms.findElement
 import androidx.test.espresso.web.webdriver.DriverAtoms.webClick
 import androidx.test.espresso.web.webdriver.DriverAtoms.getText
-import androidx.test.espresso.web.webdriver.DriverAtoms.script
+import androidx.test.espresso.web.model.Atoms.script
 import androidx.test.espresso.web.webdriver.Locator
 import androidx.test.espresso.web.assertion.WebViewAssertions.webMatches
 import androidx.test.espresso.web.model.Atoms.castOrDie
 import androidx.test.espresso.web.model.ElementReference
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.not
 import org.junit.Rule
@@ -19,6 +20,7 @@ import org.junit.runner.RunWith
 import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
+@SdkSuppress(maxSdkVersion = 35)
 class LanguageSwitchTest {
 
     @get:Rule

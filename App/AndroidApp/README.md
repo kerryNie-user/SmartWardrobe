@@ -5,8 +5,8 @@ The Android shell for the SmartWardrobe web application, providing native capabi
 ## 🛠 Prerequisites
 
 - **Android Studio**: Latest Stable Version (Koala or later recommended)
-- **JDK**: JDK 11 or higher
-- **Android SDK**: API Level 30+ (Android 11+)
+- **JDK**: JDK 17
+- **Android SDK**: API Level 34+ (Android 14+)
 - **Gradle**: Wrapper provided in the project
 
 ## 🚀 Getting Started
@@ -22,7 +22,7 @@ The Android shell for the SmartWardrobe web application, providing native capabi
 
 3. **Run on Emulator**
    - Create an AVD (Android Virtual Device) via AVD Manager.
-   - Select a device (e.g., Pixel 4) with API 30+.
+   - Select a device with API 34+.
    - Click the "Run" button (Green Play Icon).
 
 4. **Build APK**
@@ -57,10 +57,14 @@ This app uses a `WebView` to load the local HTML files from the `assets` folder.
 
 ## 📱 Testing
 
-- Ensure "USB Debugging" is enabled on your physical device.
+- Ensure a device is connected (physical device or emulator).
+- Install debug build: `./gradlew installDebug`
+- Run device tests: `./gradlew connectedDebugAndroidTest`
+- Run unit tests: `./gradlew testDebugUnitTest`
+- Run lint: `./gradlew lintDebug`
 - Use Logcat to view logs from both native code and `console.log` from the WebView (filtered by `chromium`).
 
 ---
-**Version**: 1.0.0
-**Last Updated**: 2026-02-20
+**Version**: 1.1.0
+**Last Updated**: 2026-02-27
 **Maintainer**: SmartWardrobe Android Team
