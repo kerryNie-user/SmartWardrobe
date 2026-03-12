@@ -3,16 +3,16 @@
 // --- Data ---
 
 let wardrobeItems = [
-    { id: 101, name: "White T-Shirt", type: "Top", color: "White", icon: "👕", image: "images/items/101.jpg" },
-    { id: 102, name: "Blue Denim Shorts", type: "Bottom", color: "Blue", icon: "🩳", image: "images/items/102.jpg" },
-    { id: 103, name: "Navy Blazer", type: "Outerwear", color: "Navy", icon: "🧥", image: "images/items/103.jpg" },
-    { id: 104, name: "Beige Trousers", type: "Bottom", color: "Beige", icon: "👖", image: "images/items/1041.jpg" },
-    { id: 105, name: "Black Dress", type: "Full Body", color: "Black", icon: "👗", image: "images/items/1050.jpg" },
-    { id: 106, name: "Red Heels", type: "Shoes", color: "Red", icon: "👠", image: "images/items/106.jpg" },
-    { id: 107, name: "White Sneakers", type: "Shoes", color: "White", icon: "👟", image: "images/items/107.jpg" },
-    { id: 108, name: "Straw Hat", type: "Accessory", color: "Beige", icon: "👒", image: "images/items/1083.jpg" },
-    { id: 109, name: "Leather Jacket", type: "Outerwear", color: "Black", icon: "🧥", image: "images/items/109.jpg" },
-    { id: 110, name: "Grey Hoodie", type: "Top", color: "Grey", icon: "🧥", image: "images/items/1100.jpg" }
+    { id: 101, nameKey: "wardrobe.item.101.name", type: "top", color: "white", icon: "👕", image: "images/items/101.jpg" },
+    { id: 102, nameKey: "wardrobe.item.102.name", type: "bottom", color: "blue", icon: "🩳", image: "images/items/102.jpg" },
+    { id: 103, nameKey: "wardrobe.item.103.name", type: "outerwear", color: "navy", icon: "🧥", image: "images/items/103.jpg" },
+    { id: 104, nameKey: "wardrobe.item.104.name", type: "bottom", color: "beige", icon: "👖", image: "images/items/1041.jpg" },
+    { id: 105, nameKey: "wardrobe.item.105.name", type: "full_body", color: "black", icon: "👗", image: "images/items/1050.jpg" },
+    { id: 106, nameKey: "wardrobe.item.106.name", type: "shoes", color: "red", icon: "👠", image: "images/items/106.jpg" },
+    { id: 107, nameKey: "wardrobe.item.107.name", type: "shoes", color: "white", icon: "👟", image: "images/items/107.jpg" },
+    { id: 108, nameKey: "wardrobe.item.108.name", type: "accessory", color: "beige", icon: "👒", image: "images/items/1083.jpg" },
+    { id: 109, nameKey: "wardrobe.item.109.name", type: "outerwear", color: "black", icon: "🧥", image: "images/items/109.jpg" },
+    { id: 110, nameKey: "wardrobe.item.110.name", type: "top", color: "grey", icon: "🧥", image: "images/items/1100.jpg" }
 ];
 
 let wardrobeItemIndex = new Map();
@@ -23,37 +23,373 @@ function rebuildWardrobeItemIndex() {
 
 rebuildWardrobeItemIndex();
 
+const WARDROBE_DISPLAY_MODE_KEY = 'wardrobe_display_mode';
+const FAVORITE_OUTFITS_KEY = 'favorite_outfits';
+const FAVORITES_CACHE_KEY = 'favorites_v2';
+const CLIENT_ID_KEY = 'client_id';
+const API_BACKOFF_UNTIL_KEY = 'sw_api_backoff_until';
+const FAVORITES_DB_SYNC_AT_KEY = 'favorites_db_sync_at';
+const FAVORITES_DB_FAIL_UNTIL_KEY = 'favorites_db_fail_until';
+const FAVORITES_DB_REFRESH_MS = 2 * 60 * 1000;
+const FAVORITES_DB_BACKOFF_MS = 2 * 60 * 1000;
+const PLANNER_TAB_KEY = 'sw_planner_tab';
+const SCHEDULE_STORAGE_KEY = 'sw_schedule_v1';
+const PLAN_STORAGE_KEY = 'sw_plan_v1';
+
+let favoritesStoreMode = 'local';
+let favoritesReady = false;
+const favoriteSets = {
+    outfit: new Set(),
+    pick: new Set()
+};
+
+function getWardrobeDisplayMode() {
+    const mode = localStorage.getItem(WARDROBE_DISPLAY_MODE_KEY);
+    return mode === 'card' ? 'card' : 'list';
+}
+
+function setWardrobeDisplayMode(mode) {
+    const nextMode = mode === 'card' ? 'card' : 'list';
+    localStorage.setItem(WARDROBE_DISPLAY_MODE_KEY, nextMode);
+    window.dispatchEvent(new CustomEvent('wardrobeDisplayChanged', { detail: { mode: nextMode } }));
+}
+
+function updateWardrobeDisplaySwitcherState() {
+    const mode = getWardrobeDisplayMode();
+    const radios = document.querySelectorAll('input[name="wardrobeDisplay"]');
+    radios.forEach(radio => {
+        radio.checked = radio.value === mode;
+    });
+}
+
+function setupWardrobeDisplaySwitcher() {
+    const radios = document.querySelectorAll('input[name="wardrobeDisplay"]');
+    if (!radios.length) return;
+    radios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.checked) setWardrobeDisplayMode(e.target.value);
+        });
+    });
+    updateWardrobeDisplaySwitcherState();
+}
+
 // Helper to find items by IDs
 function getItemsByIds(ids) {
     return ids.map(id => wardrobeItemIndex.get(id)).filter(Boolean);
 }
 
-function getI18nText(key, fallback = '') {
-    if (window.i18n && typeof window.i18n.get === 'function') {
-        const text = window.i18n.get(key);
-        if (text) return text;
+function tText(key, fallback = '', params = {}) {
+    return window.t(key, fallback, params);
+}
+
+function getClientId() {
+    const existing = localStorage.getItem(CLIENT_ID_KEY);
+    if (existing && /^[A-Za-z0-9_-]{1,64}$/.test(existing)) return existing;
+
+    let generated = '';
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        generated = window.crypto.randomUUID();
+    } else {
+        generated = `cid_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     }
-    return fallback;
+    const normalized = generated.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 64);
+    localStorage.setItem(CLIENT_ID_KEY, normalized);
+    return normalized;
+}
+
+function readTimestamp(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        const ts = Number(raw || '0');
+        return Number.isFinite(ts) ? ts : 0;
+    } catch (_) {
+        return 0;
+    }
+}
+
+function writeTimestamp(key, ts) {
+    try {
+        localStorage.setItem(key, String(ts));
+    } catch (_) {}
+}
+
+function shouldTryFavoritesDbSync() {
+    if (document.visibilityState === 'hidden') return false;
+
+    let apiAllowed = false;
+    try {
+        const host = window.location && window.location.hostname;
+        const force = localStorage.getItem('sw_api_force') === '1';
+        apiAllowed = force || host === 'localhost' || host === '127.0.0.1';
+    } catch (_) {
+        apiAllowed = false;
+    }
+    if (!apiAllowed) return false;
+
+    const apiBackoffUntil = readTimestamp(API_BACKOFF_UNTIL_KEY);
+    if (apiBackoffUntil && apiBackoffUntil > Date.now()) return false;
+
+    const failUntil = readTimestamp(FAVORITES_DB_FAIL_UNTIL_KEY);
+    if (failUntil && failUntil > Date.now()) return false;
+
+    const lastSyncAt = readTimestamp(FAVORITES_DB_SYNC_AT_KEY);
+    if (lastSyncAt && (Date.now() - lastSyncAt) < FAVORITES_DB_REFRESH_MS) return false;
+
+    return true;
+}
+
+function markFavoritesDbSyncSuccess() {
+    writeTimestamp(FAVORITES_DB_SYNC_AT_KEY, Date.now());
+    writeTimestamp(FAVORITES_DB_FAIL_UNTIL_KEY, 0);
+}
+
+function markFavoritesDbSyncFail() {
+    writeTimestamp(FAVORITES_DB_FAIL_UNTIL_KEY, Date.now() + FAVORITES_DB_BACKOFF_MS);
+}
+
+async function apiFetchJson(url, options = {}) {
+    const headers = new Headers(options.headers || {});
+    headers.set('X-Client-Id', getClientId());
+    if (options.body && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+    }
+    const response = await fetch(url, { ...options, headers });
+    if (!response.ok) {
+        const error = new Error('API_ERROR');
+        error.status = response.status;
+        throw error;
+    }
+    return response.json();
+}
+
+function normalizeIdList(ids) {
+    if (!Array.isArray(ids)) return [];
+    const normalized = ids
+        .map(id => String(id))
+        .map(id => id.trim())
+        .filter(Boolean);
+    return Array.from(new Set(normalized));
+}
+
+function readFavoritesCache() {
+    try {
+        const raw = localStorage.getItem(FAVORITES_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return {
+            outfit: normalizeIdList(parsed.outfit),
+            pick: normalizeIdList(parsed.pick)
+        };
+    } catch (_) {
+        return null;
+    }
+}
+
+function writeFavoritesCache(cache) {
+    const payload = {
+        outfit: normalizeIdList(cache?.outfit),
+        pick: normalizeIdList(cache?.pick)
+    };
+    localStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(payload));
+    return payload;
+}
+
+function hydrateFavoriteSets(cache) {
+    favoriteSets.outfit = new Set(normalizeIdList(cache?.outfit));
+    favoriteSets.pick = new Set(normalizeIdList(cache?.pick));
+}
+
+function exportFavoriteSets() {
+    return {
+        outfit: Array.from(favoriteSets.outfit),
+        pick: Array.from(favoriteSets.pick)
+    };
+}
+
+function loadFavoritesFromLocalStorage() {
+    const cached = readFavoritesCache();
+    if (cached) {
+        hydrateFavoriteSets(cached);
+        favoritesReady = true;
+        return;
+    }
+
+    try {
+        const legacy = JSON.parse(localStorage.getItem(FAVORITE_OUTFITS_KEY) || '[]');
+        const migrated = { outfit: normalizeIdList(legacy), pick: [] };
+        hydrateFavoriteSets(migrated);
+        writeFavoritesCache(migrated);
+    } catch (_) {
+        hydrateFavoriteSets({ outfit: [], pick: [] });
+    }
+    favoritesReady = true;
+}
+
+async function tryLoadFavoritesFromDb() {
+    if (!shouldTryFavoritesDbSync()) return false;
+    try {
+        const data = await apiFetchJson('/api/favorites', { method: 'GET' });
+        const favorites = data?.favorites;
+        if (!favorites || typeof favorites !== 'object') return false;
+        hydrateFavoriteSets({
+            outfit: favorites.outfit || [],
+            pick: favorites.pick || []
+        });
+        writeFavoritesCache(exportFavoriteSets());
+        favoritesStoreMode = 'db';
+        favoritesReady = true;
+        markFavoritesDbSyncSuccess();
+        return true;
+    } catch (_) {
+        markFavoritesDbSyncFail();
+        return false;
+    }
+}
+
+async function initFavorites() {
+    loadFavoritesFromLocalStorage();
+    await tryLoadFavoritesFromDb();
+    window.dispatchEvent(new CustomEvent('favoritesReady'));
+}
+
+function isFavorited(type, id) {
+    const t = String(type || '').trim();
+    const normalizedId = String(id);
+    const set = favoriteSets[t];
+    if (!set) return false;
+    return set.has(normalizedId);
+}
+
+function setLocalFavorite(type, id, isOn) {
+    const t = String(type || '').trim();
+    const normalizedId = String(id);
+    const set = favoriteSets[t];
+    if (!set) return false;
+    if (isOn) set.add(normalizedId);
+    else set.delete(normalizedId);
+    writeFavoritesCache(exportFavoriteSets());
+    return set.has(normalizedId);
+}
+
+async function setFavorite(type, id, action) {
+    const t = String(type || '').trim();
+    const normalizedId = String(id);
+    const before = isFavorited(t, normalizedId);
+
+    const next =
+        action === 'add' ? true :
+        action === 'remove' ? false :
+        !before;
+
+    setLocalFavorite(t, normalizedId, next);
+    window.dispatchEvent(new CustomEvent('favoritesChanged', { detail: { type: t, id: normalizedId, isFavorited: next } }));
+
+    if (favoritesStoreMode !== 'db') {
+        return next;
+    }
+
+    try {
+        const res = await apiFetchJson('/api/favorites', {
+            method: 'POST',
+            body: JSON.stringify({ type: t, id: normalizedId, action })
+        });
+        const confirmed = Boolean(res?.isFavorited);
+        if (confirmed !== next) {
+            setLocalFavorite(t, normalizedId, confirmed);
+            window.dispatchEvent(new CustomEvent('favoritesChanged', { detail: { type: t, id: normalizedId, isFavorited: confirmed } }));
+        }
+        return confirmed;
+    } catch (_) {
+        setLocalFavorite(t, normalizedId, before);
+        window.dispatchEvent(new CustomEvent('favoritesChanged', { detail: { type: t, id: normalizedId, isFavorited: before } }));
+        favoritesStoreMode = 'local';
+        return before;
+    }
+}
+
+function toggleFavorite(type, id) {
+    return setFavorite(type, id, 'toggle');
+}
+
+function getFavoriteLabel(isFavorited) {
+    return tText(isFavorited ? 'favorites.button.remove' : 'favorites.button.add', '');
+}
+
+function syncOutfitFavoriteButtons(root = document) {
+    const buttons = root.querySelectorAll('.outfit-favorite-btn[data-favorite-type][data-favorite-id]');
+    buttons.forEach(btn => {
+        const type = btn.getAttribute('data-favorite-type');
+        const id = btn.getAttribute('data-favorite-id');
+        const isFavorited = isFavoritedSafe(type, id);
+        btn.classList.toggle('is-favorited', isFavorited);
+        btn.setAttribute('aria-pressed', isFavorited ? 'true' : 'false');
+        const label = getFavoriteLabel(isFavorited);
+        if (label) {
+            btn.setAttribute('aria-label', label);
+            btn.setAttribute('title', label);
+        }
+    });
+}
+
+function isFavoritedSafe(type, id) {
+    if (!favoritesReady) loadFavoritesFromLocalStorage();
+    return isFavorited(type, id);
+}
+
+function attachOutfitFavoriteButtonHandlers(root = document) {
+    const buttons = root.querySelectorAll('.outfit-favorite-btn[data-favorite-type][data-favorite-id]');
+    buttons.forEach(btn => {
+        if (btn.dataset.favoriteBound === '1') return;
+        btn.dataset.favoriteBound = '1';
+
+        const stop = (e) => {
+            e.stopPropagation();
+        };
+
+        btn.addEventListener('touchstart', stop, { passive: true });
+        btn.addEventListener('touchend', stop, { passive: true });
+        btn.addEventListener('mousedown', stop);
+        btn.addEventListener('mouseup', stop);
+
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const type = btn.getAttribute('data-favorite-type');
+            const id = btn.getAttribute('data-favorite-id');
+            await toggleFavorite(type, id);
+            syncOutfitFavoriteButtons(document);
+            if (document.getElementById('favorites-container')) {
+                renderFavoritesPage();
+            }
+        });
+    });
+}
+
+function isEventFromOutfitFavoriteButton(e) {
+    const target = e?.target;
+    if (!target) return false;
+    if (target.closest) return Boolean(target.closest('.outfit-favorite-btn'));
+    return false;
 }
 
 function getItemTypeKey(type) {
-    return `type_${String(type).toLowerCase().replace(/\s+/g, '_')}`;
+    return `wardrobe.type.${String(type)}`;
 }
 
 function getItemColorKey(color) {
-    return `color_${String(color).toLowerCase()}`;
+    return `wardrobe.color.${String(color)}`;
 }
 
 function getItemName(item) {
-    return getI18nText(`item_name_${item.id}`, item.name);
+    return tText(item.nameKey || '', item.name || '—');
 }
 
 function getItemType(item) {
-    return getI18nText(getItemTypeKey(item.type), item.type);
+    return tText(getItemTypeKey(item.type), '—');
 }
 
 function getItemColor(item) {
-    return getI18nText(getItemColorKey(item.color), item.color);
+    return tText(getItemColorKey(item.color), '—');
 }
 
 function getItemSubtitle(item) {
@@ -65,23 +401,23 @@ function renderImageOrIcon(image, alt, icon, style = 'width:100%; height:100%; o
 }
 
 function renderItemMedia(item) {
-    return renderImageOrIcon(item.image, item.name, item.icon);
+    return renderImageOrIcon(item.image, getItemName(item), item.icon);
 }
 
 function getOutfitDisplay(outfit) {
     return {
         ...outfit,
-        title: getI18nText(`outfit_title_${outfit.id}`, outfit.title),
-        description: getI18nText(`outfit_desc_${outfit.id}`, outfit.description),
-        tag: getI18nText(`outfit_tag_${outfit.id}`, outfit.tag)
+        title: tText(outfit.titleKey, '—'),
+        description: tText(outfit.descriptionKey, ''),
+        tag: tText(outfit.tagKey, '')
     };
 }
 
 function getPickDisplay(pick) {
     return {
         ...pick,
-        title: getI18nText(`pick_title_${pick.id}`, pick.title),
-        description: getI18nText(`pick_desc_${pick.id}`, pick.description)
+        title: tText(pick.titleKey, '—'),
+        description: tText(pick.descriptionKey, '')
     };
 }
 
@@ -91,7 +427,22 @@ function buildItemCardInnerHTML(item) {
         <div class="item-details">
             <div class="item-title">${getItemName(item)}</div>
             <div class="item-subtitle">${getItemSubtitle(item)}</div>
+            <div class="item-tags">
+                <span class="item-chip">${getItemType(item)}</span>
+                <span class="item-chip">${getItemColor(item)}</span>
+            </div>
         </div>
+    `;
+}
+
+function buildFavoriteButtonHTML(type, id, extraClass = '') {
+    const className = `${extraClass ? `${extraClass} ` : ''}outfit-favorite-btn`;
+    const t = String(type);
+    const normalizedId = String(id);
+    return `
+        <button class="${className}" type="button" data-favorite-type="${t}" data-favorite-id="${normalizedId}" aria-pressed="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        </button>
     `;
 }
 
@@ -107,6 +458,7 @@ function buildOutfitCardHTML(outfit) {
     return `
     <div class="outfit-card" id="outfit-${outfit.id}">
         <div class="outfit-image-container">
+            ${buildFavoriteButtonHTML('outfit', outfit.id)}
             <div class="outfit-image-collage">
                 ${collageHTML}
             </div>
@@ -115,10 +467,28 @@ function buildOutfitCardHTML(outfit) {
             <div class="outfit-title">${display.title}</div>
             <div class="outfit-meta">
                 <span class="item-tag">${display.tag}</span>
-                <span>${items.length} ${getI18nText('text_items', 'Items')}</span>
+                <span>${items.length} ${tText('common.items')}</span>
             </div>
         </div>
     </div>
+    `;
+}
+
+function buildPickCardHTML(pick) {
+    const display = getPickDisplay(pick);
+    const items = getItemsByIds(pick.itemIds);
+    const mainItem = items[0];
+    const mainIcon = mainItem ? renderItemMedia(mainItem) : pick.icon;
+
+    return `
+        <div class="pick-card" id="pick-${pick.id}">
+            ${buildFavoriteButtonHTML('pick', pick.id)}
+            <div class="pick-image">${mainIcon}</div>
+            <div class="pick-info">
+                <div class="pick-title">${display.title}</div>
+                <div class="pick-desc">${display.description}</div>
+            </div>
+        </div>
     `;
 }
 
@@ -160,24 +530,24 @@ function getDetailMainMedia(data, items) {
 const outfits = [
     { 
         id: 1, 
-        title: "Summer Breeze", 
+        titleKey: "home.outfit.1.title",
         itemIds: [101, 102, 107, 108], 
-        tag: "Casual",
-        description: "Perfect for a sunny day out in the park."
+        tagKey: "home.outfit.1.tag",
+        descriptionKey: "home.outfit.1.description"
     },
     { 
         id: 2, 
-        title: "Office Chic", 
+        titleKey: "home.outfit.2.title",
         itemIds: [101, 103, 104, 106], 
-        tag: "Work",
-        description: "Professional yet stylish look for meetings."
+        tagKey: "home.outfit.2.tag",
+        descriptionKey: "home.outfit.2.description"
     },
     { 
         id: 3, 
-        title: "Date Night", 
+        titleKey: "home.outfit.3.title",
         itemIds: [105, 109, 106], 
-        tag: "Formal",
-        description: "Elegant black dress with a touch of edge."
+        tagKey: "home.outfit.3.tag",
+        descriptionKey: "home.outfit.3.description"
     }
 ];
 
@@ -186,22 +556,22 @@ const outfits = [
 const todaysPicks = [
     {
         id: 'p1',
-        title: "Morning Coffee",
-        description: "Cozy start to the day",
+        titleKey: "home.pick.p1.title",
+        descriptionKey: "home.pick.p1.description",
         itemIds: [110, 104, 107],
         icon: "☕️"
     },
     {
         id: 'p2',
-        title: "City Walk",
-        description: "Explore the streets",
+        titleKey: "home.pick.p2.title",
+        descriptionKey: "home.pick.p2.description",
         itemIds: [101, 102, 109, 107],
         icon: "🏙️"
     },
     {
         id: 'p3',
-        title: "Dinner Date",
-        description: "Impress your partner",
+        titleKey: "home.pick.p3.title",
+        descriptionKey: "home.pick.p3.description",
         itemIds: [105, 106],
         icon: "🍽️"
     },
@@ -284,7 +654,7 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     
     // Add active class to clicked tab
-    const activeTab = Array.from(document.querySelectorAll('.tab')).find(t => t.textContent.includes(tabName) || t.getAttribute('data-tab') === tabName);
+    const activeTab = Array.from(document.querySelectorAll('.tab')).find(t => t.getAttribute('data-tab') === tabName);
     if (activeTab) activeTab.classList.add('active');
 
     // Filter content based on tab (for Home page)
@@ -294,7 +664,7 @@ function switchTab(tabName) {
             renderOutfits(outfits);
 
         } else if (tabName === 'favorites') {
-            container.innerHTML = `<div style="text-align:center; color:#999; padding:20px;">${window.i18n.get('text_no_favorites')}</div>`;
+            container.innerHTML = `<div style="text-align:center; color:#999; padding:20px;">${tText('favorites.empty')}</div>`;
         }
     }
 }
@@ -309,9 +679,15 @@ function renderOutfits(data) {
     data.forEach(outfit => {
         const el = document.getElementById(`outfit-${outfit.id}`);
         if (el) {
-            attachCardEvents(el, () => openDetail(outfit.id, 'outfit'));
+            attachCardEvents(el, (e) => {
+                if (isEventFromOutfitFavoriteButton(e)) return;
+                openDetail(outfit.id, 'outfit');
+            });
         }
     });
+
+    attachOutfitFavoriteButtonHandlers(container);
+    syncOutfitFavoriteButtons(container);
     
     updateScrollbarVisibility();
 }
@@ -322,31 +698,21 @@ function renderTodaysPicks() {
     const container = document.getElementById('todays-picks-container');
     if (!container) return;
 
-    container.innerHTML = todaysPicks.map(pick => {
-        const display = getPickDisplay(pick);
-        const items = getItemsByIds(pick.itemIds);
-        // Just show the first item icon or a generic one if missing
-        const mainItem = items[0];
-        const mainIcon = mainItem ? renderItemMedia(mainItem) : pick.icon;
-        
-        return `
-        <div class="pick-card" id="pick-${pick.id}">
-            <div class="pick-image">${mainIcon}</div>
-            <div class="pick-info">
-                <div class="pick-title">${display.title}</div>
-                <div class="pick-desc">${display.description}</div>
-            </div>
-        </div>
-        `;
-    }).join('');
+    container.innerHTML = todaysPicks.map(pick => buildPickCardHTML(pick)).join('');
     
     // Attach custom tap/scroll events
     todaysPicks.forEach(pick => {
         const el = document.getElementById(`pick-${pick.id}`);
         if (el) {
-            attachCardEvents(el, () => openDetail(pick.id, 'pick'));
+            attachCardEvents(el, (e) => {
+                if (isEventFromOutfitFavoriteButton(e)) return;
+                openDetail(pick.id, 'pick');
+            });
         }
     });
+
+    attachOutfitFavoriteButtonHandlers(container);
+    syncOutfitFavoriteButtons(container);
     
     updateScrollbarVisibility();
 }
@@ -354,6 +720,8 @@ function renderTodaysPicks() {
 function renderWardrobe(items = wardrobeItems) {
     const container = document.getElementById('wardrobe-list');
     if (!container) return;
+
+    container.classList.toggle('wardrobe-layout-card', getWardrobeDisplayMode() === 'card');
 
     if (isEditing) {
         // Render with checkboxes
@@ -502,10 +870,10 @@ function toggleEditMode() {
     const footer = document.getElementById('edit-footer');
     
     if (isEditing) {
-        btn.innerText = window.i18n.get('btn_done');
+        btn.innerText = tText('common.done');
         footer.classList.add('active');
     } else {
-        btn.innerText = window.i18n.get('edit');
+        btn.innerText = tText('common.edit');
         footer.classList.remove('active');
     }
     
@@ -528,14 +896,14 @@ function updateEditFooter() {
     const countSpan = document.querySelector('.delete-count');
     const deleteBtn = document.getElementById('delete-selected-btn');
     
-    if (countSpan) countSpan.innerText = `${count} ${window.i18n.get('text_selected_count')}`;
+    if (countSpan) countSpan.innerText = `${count} ${tText('common.selected')}`;
     if (deleteBtn) deleteBtn.disabled = count === 0;
 }
 
 function deleteSelected() {
     if (selectedItems.size === 0) return;
     
-    showConfirmModal(window.i18n.get('confirm_delete_items', { count: selectedItems.size }), () => {
+    showConfirmModal(tText('wardrobe.confirm.delete_items', '', { count: selectedItems.size }), () => {
         wardrobeItems = wardrobeItems.filter(item => !selectedItems.has(item.id));
         rebuildWardrobeItemIndex();
         selectedItems.clear();
@@ -545,7 +913,7 @@ function deleteSelected() {
 }
 
 function deleteItem(id) {
-    showConfirmModal(window.i18n.get('confirm_delete_item'), () => {
+    showConfirmModal(tText('wardrobe.confirm.delete_item'), () => {
         wardrobeItems = wardrobeItems.filter(item => item.id !== id);
         rebuildWardrobeItemIndex();
         renderWardrobe();
@@ -648,11 +1016,15 @@ function openDetail(id, type) {
     const headerHTML = isWardrobeItem ? `<div class="detail-header-image">${mainIcon}</div>` : '';
     const contentStyle = isWardrobeItem ? '' : 'height: 100%; max-height: 100%; border-radius: 0;';
     const handleHTML = isWardrobeItem ? '<div class="drag-handle-bar"></div>' : '<div style="height: 60px;"></div>';
+    const shouldShowFavorite = (type === 'outfit' || type === 'pick');
+    const favoriteHTML = shouldShowFavorite ? buildFavoriteButtonHTML(type, id, 'detail-favorite-btn') : '';
     
     content.innerHTML = `
         <button class="detail-back-btn" onclick="closeDetail()">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
         </button>
+
+        ${favoriteHTML}
         
         ${headerHTML}
         
@@ -662,14 +1034,14 @@ function openDetail(id, type) {
                 <div class="detail-title">${data.title}</div>
                 <div class="detail-tags">
                     ${data.tag ? `<span class="tag-badge">${data.tag}</span>` : ''}
-                    ${items.length > 0 ? `<span class="tag-badge">${items.length} ${getI18nText('text_items', 'Items')}</span>` : ''}
+                    ${items.length > 0 ? `<span class="tag-badge">${items.length} ${tText('common.items')}</span>` : ''}
                 </div>
                 <p style="color:#666; line-height:1.5; margin-bottom:20px;">
-                    ${data.description || getI18nText('text_default_description')}
+                    ${data.description || tText('detail.default_description')}
                 </p>
 
                 ${items.length > 0 ? `
-                <div class="items-list-title">${getI18nText('text_items_in_look')}</div>
+                <div class="items-list-title">${tText('detail.items_in_look')}</div>
                 
                 <div class="items-list">
                     ${items.map(item => `
@@ -686,6 +1058,9 @@ function openDetail(id, type) {
     const detailScroll = content.querySelector('.detail-content-scroll');
     activateOverlay(detailView, detailScroll);
     
+    attachOutfitFavoriteButtonHandlers(content);
+    syncOutfitFavoriteButtons(content);
+
     initSwipeBehavior();
 }
 
@@ -805,13 +1180,16 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 });
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     checkAuth(); // Check authentication status first
     updateUIForAuth(); // Update UI based on auth status
     updateUserProfile(); // Update user profile info
     updateWeather();
     updateScrollbarVisibility();
     window.addEventListener('resize', updateScrollbarVisibility);
+    setupWardrobeDisplaySwitcher();
+    await initFavorites();
+    const view = applyFavoritesPageView();
 
     // Global Auto Location Init (Singleton)
     if (window.autoLocationService) {
@@ -852,10 +1230,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     }
+    if (document.getElementById('favorites-container') && view === 'favorites') {
+        renderFavoritesPage();
+    }
+    if (document.getElementById('planner-root') && view !== 'favorites') {
+        initPlannerPage();
+    }
 });
 
 // Listen for language changes to re-render dynamic content
 window.addEventListener('languageChanged', () => {
+    const view = applyFavoritesPageView();
     // Re-render Wardrobe Page
     if (document.getElementById('wardrobe-list')) {
         renderWardrobe(); 
@@ -868,6 +1253,14 @@ window.addEventListener('languageChanged', () => {
         // Re-render Outfits/Collections
         renderCollections();
     }
+
+    if (document.getElementById('favorites-container') && view === 'favorites') {
+        renderFavoritesPage();
+    }
+
+    if (document.getElementById('planner-root') && view !== 'favorites') {
+        renderPlanner();
+    }
     
     // Update Profile User Info (e.g. "Unnamed")
     updateUserProfile();
@@ -878,11 +1271,28 @@ window.addEventListener('languageChanged', () => {
     // Update Edit Mode UI (button text)
     if (typeof isEditing !== 'undefined' && isEditing) {
         const btn = document.getElementById('edit-mode-btn');
-        if (btn) btn.innerText = window.i18n.get('btn_done');
+        if (btn) btn.innerText = tText('common.done');
         updateEditFooter();
     } else {
         const btn = document.getElementById('edit-mode-btn');
-        if (btn) btn.innerText = window.i18n.get('edit');
+        if (btn) btn.innerText = tText('common.edit');
+    }
+
+    syncOutfitFavoriteButtons(document);
+});
+
+window.addEventListener('wardrobeDisplayChanged', () => {
+    updateWardrobeDisplaySwitcherState();
+    if (document.getElementById('wardrobe-list')) {
+        renderWardrobe();
+    }
+});
+
+window.addEventListener('favoritesChanged', () => {
+    const view = applyFavoritesPageView();
+    syncOutfitFavoriteButtons(document);
+    if (document.getElementById('favorites-container') && view === 'favorites') {
+        renderFavoritesPage();
     }
 });
 
@@ -932,8 +1342,8 @@ function updateUIForAuth() {
         // 2. Handle Profile Page Button
         const logoutBtn = document.querySelector('.logout-btn');
         if (logoutBtn) {
-            logoutBtn.textContent = window.i18n.get('btn_sign_in') || "Sign In";
-            logoutBtn.setAttribute('data-i18n', 'btn_sign_in');
+            logoutBtn.textContent = tText('auth.login.button.submit');
+            logoutBtn.setAttribute('data-i18n', 'auth.login.button.submit');
             logoutBtn.onclick = () => window.location.href = 'login.html';
             logoutBtn.classList.add('btn-primary'); 
             // Reset red color if it was set via class
@@ -989,10 +1399,10 @@ function showLoginPrompt() {
                 padding: 20px;
             ">
                 <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
-                <h2 style="margin-bottom: 10px; color: #333;" data-i18n="prompt_signin_required">${window.i18n.get('prompt_signin_required')}</h2>
-                <p style="color: #666; margin-bottom: 30px;" data-i18n="prompt_signin_desc">${window.i18n.get('prompt_signin_desc')}</p>
-                <button class="btn-primary" onclick="window.location.href='login.html'" style="padding: 12px 40px; border-radius: 25px;" data-i18n="btn_sign_in">
-                    ${window.i18n.get('btn_sign_in')}
+                <h2 style="margin-bottom: 10px; color: #333;" data-i18n="auth.prompt.signin_required.title">${tText('auth.prompt.signin_required.title')}</h2>
+                <p style="color: #666; margin-bottom: 30px;" data-i18n="auth.prompt.signin_required.description">${tText('auth.prompt.signin_required.description')}</p>
+                <button class="btn-primary" onclick="window.location.href='login.html'" style="padding: 12px 40px; border-radius: 25px;" data-i18n="auth.login.button.submit">
+                    ${tText('auth.login.button.submit')}
                 </button>
             </div>
         `;
@@ -1023,18 +1433,28 @@ function updateUserProfile() {
         if (nameElement) {
             let displayName = user.name;
             if (!displayName || displayName === 'undefined' || displayName.trim() === '') {
-                // Handle unnamed state
-                if (window.i18n && window.i18n.locale === 'zh-CN') {
-                    displayName = getI18nText('autoSelect.unnamed');
-                } else {
-                    // For other languages, keep original behavior (empty or undefined)
-                    // Or fallback to 'Unnamed' if desired, but user said "only affect zh"
-                    // However, to be safe and consistent, we might want a fallback.
-                    // But strictly following "ensure logic only affects lang=zh"
-                    displayName = displayName || ''; 
-                }
+                displayName = tText('profile.user.unnamed', '');
             }
             nameElement.innerText = displayName;
+        }
+
+        const regionElement = document.getElementById('current-region');
+        if (regionElement && user.regionKey) {
+            regionElement.setAttribute('data-i18n', user.regionKey);
+            regionElement.textContent = window.t(user.regionKey);
+        }
+
+        const professionElement = document.getElementById('current-profession');
+        const roleElement = document.querySelector('.profile-role');
+        if (user.professionKey) {
+            if (professionElement) {
+                professionElement.setAttribute('data-i18n', user.professionKey);
+                professionElement.textContent = window.t(user.professionKey);
+            }
+            if (roleElement) {
+                roleElement.setAttribute('data-i18n', user.professionKey);
+                roleElement.textContent = window.t(user.professionKey);
+            }
         }
 
         // Update profile avatar
@@ -1068,9 +1488,9 @@ function renderCollections() {
         container.innerHTML = `
             <div class="locked-section" onclick="window.location.href='login.html'">
                 <div class="locked-icon-large">🔒</div>
-                <div class="locked-text">${window.i18n.get('content_locked_title') || "Sign in for recommendations"}</div>
-                <div class="locked-subtext">${window.i18n.get('content_locked_desc') || "Get personalized daily outfit suggestions based on your wardrobe."}</div>
-                <button class="btn-primary" style="padding: 8px 24px; font-size: 14px;">${window.i18n.get('btn_sign_in') || "Sign In"}</button>
+                <div class="locked-text">${tText('home.locked.title')}</div>
+                <div class="locked-subtext">${tText('home.locked.description')}</div>
+                <button class="btn-primary" style="padding: 8px 24px; font-size: 14px;">${tText('auth.login.button.submit')}</button>
             </div>
         `;
         updateScrollbarVisibility();
@@ -1078,6 +1498,814 @@ function renderCollections() {
     }
 
     renderOutfits(outfits);
+}
+
+function renderFavoritesPage() {
+    const container = document.getElementById('favorites-container');
+    if (!container) return;
+
+    if (!window.isLoggedIn) {
+        container.innerHTML = `
+            <div class="locked-section" onclick="window.location.href='login.html'">
+                <div class="locked-icon-large">🔒</div>
+                <div class="locked-text">${tText('home.locked.title')}</div>
+                <div class="locked-subtext">${tText('home.locked.description')}</div>
+                <button class="btn-primary" style="padding: 8px 24px; font-size: 14px;">${tText('auth.login.button.submit')}</button>
+            </div>
+        `;
+        updateScrollbarVisibility();
+        return;
+    }
+
+    if (!favoritesReady) loadFavoritesFromLocalStorage();
+    const favoriteOutfitIds = Array.from(favoriteSets.outfit);
+    const favoritePickIds = Array.from(favoriteSets.pick);
+
+    const favoriteOutfits = favoriteOutfitIds
+        .map(id => outfits.find(o => String(o.id) === String(id)))
+        .filter(Boolean);
+    const favoritePicks = favoritePickIds
+        .map(id => todaysPicks.find(p => String(p.id) === String(id)))
+        .filter(Boolean);
+
+    if (!favoriteOutfits.length && !favoritePicks.length) {
+        container.innerHTML = `<div class="favorites-empty">${tText('favorites.empty')}</div>`;
+        updateScrollbarVisibility();
+        return;
+    }
+
+    let html = '';
+    if (favoriteOutfits.length) {
+        html += `<div class="section-title" style="margin: 8px 0 16px;">${tText('favorites.section.outfits')}</div>`;
+        html += favoriteOutfits.map(outfit => buildOutfitCardHTML(outfit)).join('');
+    }
+    if (favoritePicks.length) {
+        html += `<div class="section-title" style="margin: 24px 0 16px;">${tText('favorites.section.picks')}</div>`;
+        html += `<div class="favorites-picks-list">`;
+        html += favoritePicks.map(pick => buildPickCardHTML(pick)).join('');
+        html += `</div>`;
+    }
+
+    container.innerHTML = html;
+
+    favoriteOutfits.forEach(outfit => {
+        const el = document.getElementById(`outfit-${outfit.id}`);
+        if (el) {
+            attachCardEvents(el, (e) => {
+                if (isEventFromOutfitFavoriteButton(e)) return;
+                openDetail(outfit.id, 'outfit');
+            });
+        }
+    });
+    favoritePicks.forEach(pick => {
+        const el = document.getElementById(`pick-${pick.id}`);
+        if (el) {
+            attachCardEvents(el, (e) => {
+                if (isEventFromOutfitFavoriteButton(e)) return;
+                openDetail(pick.id, 'pick');
+            });
+        }
+    });
+
+    attachOutfitFavoriteButtonHandlers(container);
+    syncOutfitFavoriteButtons(container);
+    updateScrollbarVisibility();
+}
+
+const plannerState = {
+    tab: 'schedule',
+    schedule: [],
+    plans: [],
+    editingScheduleId: null,
+    editingPlanId: null,
+    reminderTimerId: null,
+    weekProgressTimerId: null,
+    weekProgressWeekKey: ''
+};
+
+function makeLocalId(prefix) {
+    const p = String(prefix || 'id');
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return `${p}_${window.crypto.randomUUID()}`;
+    }
+    return `${p}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+function readJsonValue(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        return JSON.parse(raw);
+    } catch (_) {
+        return fallback;
+    }
+}
+
+function writeJsonValue(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (_) {}
+}
+
+function getFavoritesPageView() {
+    try {
+        const raw = new URLSearchParams(window.location.search).get('view');
+        return raw === 'favorites' ? 'favorites' : 'schedule';
+    } catch (_) {
+        return 'schedule';
+    }
+}
+
+function applyFavoritesPageView() {
+    const scheduleView = document.getElementById('schedule-view');
+    const favoritesView = document.getElementById('favorites-view');
+    const scheduleHeader = document.getElementById('schedule-header');
+    const favoritesHeader = document.getElementById('favorites-header');
+
+    if (!scheduleView && !favoritesView && !scheduleHeader && !favoritesHeader) {
+        return 'schedule';
+    }
+
+    const view = getFavoritesPageView();
+    const isFavorites = view === 'favorites';
+    if (scheduleView) scheduleView.style.display = isFavorites ? 'none' : '';
+    if (scheduleHeader) scheduleHeader.style.display = isFavorites ? 'none' : '';
+    if (favoritesView) favoritesView.style.display = isFavorites ? '' : 'none';
+    if (favoritesHeader) favoritesHeader.style.display = isFavorites ? '' : 'none';
+
+    const addBtn = document.getElementById('planner-add-btn');
+    if (addBtn) addBtn.style.display = isFavorites ? 'none' : '';
+
+    return view;
+}
+
+function normalizePlannerTab(raw) {
+    return raw === 'plan' ? 'plan' : 'schedule';
+}
+
+function getPlannerTab() {
+    return normalizePlannerTab(localStorage.getItem(PLANNER_TAB_KEY));
+}
+
+function setPlannerTab(tab) {
+    const next = normalizePlannerTab(tab);
+    localStorage.setItem(PLANNER_TAB_KEY, next);
+    return next;
+}
+
+function loadPlannerData() {
+    const scheduleRaw = readJsonValue(SCHEDULE_STORAGE_KEY, []);
+    const planRaw = readJsonValue(PLAN_STORAGE_KEY, []);
+
+    plannerState.schedule = Array.isArray(scheduleRaw) ? scheduleRaw : [];
+    plannerState.plans = Array.isArray(planRaw) ? planRaw : [];
+
+    plannerState.schedule = plannerState.schedule
+        .filter(item => item && typeof item === 'object')
+        .map(item => ({
+            id: String(item.id || makeLocalId('sch')),
+            title: String(item.title || '').trim(),
+            startAt: item.startAt ? String(item.startAt) : '',
+            remindAt: item.remindAt ? String(item.remindAt) : '',
+            note: String(item.note || ''),
+            done: Boolean(item.done),
+            remindedAt: Number(item.remindedAt || 0),
+            createdAt: Number(item.createdAt || Date.now()),
+            updatedAt: Number(item.updatedAt || Date.now())
+        }))
+        .filter(item => item.title);
+
+    plannerState.plans = plannerState.plans
+        .filter(item => item && typeof item === 'object')
+        .map(item => ({
+            id: String(item.id || makeLocalId('plan')),
+            title: String(item.title || '').trim(),
+            type: item.type === 'long' ? 'long' : 'short',
+            startDate: item.startDate ? String(item.startDate) : '',
+            endDate: item.endDate ? String(item.endDate) : '',
+            progress: Math.max(0, Math.min(100, Number(item.progress || 0))),
+            done: Boolean(item.done),
+            note: String(item.note || ''),
+            createdAt: Number(item.createdAt || Date.now()),
+            updatedAt: Number(item.updatedAt || Date.now())
+        }))
+        .filter(item => item.title);
+
+    writeJsonValue(SCHEDULE_STORAGE_KEY, plannerState.schedule);
+    writeJsonValue(PLAN_STORAGE_KEY, plannerState.plans);
+}
+
+function saveScheduleData() {
+    writeJsonValue(SCHEDULE_STORAGE_KEY, plannerState.schedule);
+}
+
+function savePlanData() {
+    writeJsonValue(PLAN_STORAGE_KEY, plannerState.plans);
+}
+
+function formatDateTimeDisplay(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString();
+}
+
+function getWeekRange(now) {
+    const base = new Date(now);
+    base.setHours(0, 0, 0, 0);
+    const day = base.getDay();
+    const diffToMonday = (day + 6) % 7;
+    const start = new Date(base);
+    start.setDate(base.getDate() - diffToMonday);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 7);
+    return { start, end };
+}
+
+function getActiveLocale() {
+    return document.documentElement.getAttribute('lang') || (window.i18n && window.i18n.locale) || navigator.language || 'en-US';
+}
+
+function formatMonthDay(value, locale) {
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    try {
+        return d.toLocaleDateString(locale, { month: 'numeric', day: 'numeric' });
+    } catch (_) {
+        return d.toLocaleDateString();
+    }
+}
+
+function ensureWeeklyProgressUi(weekStart, weekEnd) {
+    const root = document.getElementById('weekly-progress');
+    if (!root) return;
+
+    const weekKey = `${weekStart.toISOString()}_${weekEnd.toISOString()}`;
+    if (plannerState.weekProgressWeekKey === weekKey) return;
+    plannerState.weekProgressWeekKey = weekKey;
+
+    const locale = getActiveLocale();
+
+    const rangeEl = document.getElementById('weekly-progress-range');
+    if (rangeEl) {
+        const lastDay = new Date(weekEnd.getTime() - 1);
+        rangeEl.textContent = `${formatMonthDay(weekStart, locale)} - ${formatMonthDay(lastDay, locale)}`;
+    }
+
+    const ticks = document.getElementById('weekly-progress-ticks');
+    if (ticks) {
+        ticks.innerHTML = '';
+        for (let i = 0; i <= 7; i += 1) {
+            const tick = document.createElement('div');
+            tick.className = 'week-tick';
+            tick.style.left = `${(i / 7) * 100}%`;
+            ticks.appendChild(tick);
+        }
+    }
+
+    const days = document.getElementById('weekly-progress-days');
+    if (days) {
+        days.innerHTML = '';
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        for (let i = 0; i < 7; i += 1) {
+            const d = new Date(weekStart);
+            d.setDate(weekStart.getDate() + i);
+            const chip = document.createElement('div');
+            chip.className = 'week-day-chip';
+            chip.textContent = String(d.getDate());
+            const d0 = new Date(d);
+            d0.setHours(0, 0, 0, 0);
+            if (d0.getTime() === today.getTime()) chip.classList.add('is-today');
+            days.appendChild(chip);
+        }
+    }
+}
+
+function updateWeeklyProgress() {
+    const root = document.getElementById('weekly-progress');
+    if (!root) return;
+
+    const fill = document.getElementById('weekly-progress-fill');
+    const meta = document.getElementById('weekly-progress-meta');
+    const nowDot = document.getElementById('weekly-progress-now');
+    if (!fill || !meta || !nowDot) return;
+
+    const { start, end } = getWeekRange(Date.now());
+    ensureWeeklyProgressUi(start, end);
+
+    const totalMs = end.getTime() - start.getTime();
+    const nowMs = Date.now();
+    const elapsedMs = Math.max(0, Math.min(totalMs, nowMs - start.getTime()));
+    const pct = totalMs ? (elapsedMs / totalMs) * 100 : 0;
+    const pctRounded = Math.max(0, Math.min(100, Math.round(pct)));
+
+    fill.style.width = `${pct}%`;
+    nowDot.style.left = `${pct}%`;
+
+    const leftMs = Math.max(0, end.getTime() - nowMs);
+    const hourMs = 60 * 60 * 1000;
+    const dayMs = 24 * hourMs;
+    const leftDays = Math.floor(leftMs / dayMs);
+    const leftHours = Math.floor((leftMs % dayMs) / hourMs);
+
+    const leftText = (getActiveLocale() || '').toLowerCase().startsWith('zh')
+        ? `${leftDays}天${leftHours}小时`
+        : `${leftDays}d ${leftHours}h`;
+
+    meta.textContent = tText('planner.week_progress.meta', '', { pct: pctRounded, left: leftText });
+}
+
+function initPlannerPage() {
+    plannerState.tab = 'schedule';
+    loadPlannerData();
+
+    const tabs = document.getElementById('planner-tabs');
+    if (tabs && tabs.dataset.plannerBound !== '1') {
+        tabs.dataset.plannerBound = '1';
+        tabs.addEventListener('click', (e) => {
+            const btn = e.target && e.target.closest ? e.target.closest('[data-planner-tab]') : null;
+            if (!btn) return;
+            const next = setPlannerTab(btn.getAttribute('data-planner-tab'));
+            plannerState.tab = next;
+            tabs.querySelectorAll('[data-planner-tab]').forEach(el => {
+                el.classList.toggle('active', el.getAttribute('data-planner-tab') === next);
+            });
+            applyPlannerTabVisibility();
+        });
+    }
+
+    const addBtn = document.getElementById('planner-add-btn');
+    if (addBtn && addBtn.dataset.plannerBound !== '1') {
+        addBtn.dataset.plannerBound = '1';
+        addBtn.addEventListener('click', () => {
+            openScheduleModal();
+        });
+    }
+
+    const planProgress = document.getElementById('plan-progress');
+    const planProgressValue = document.getElementById('plan-progress-value');
+    if (planProgress && planProgressValue && planProgress.dataset.bound !== '1') {
+        planProgress.dataset.bound = '1';
+        planProgress.addEventListener('input', () => {
+            planProgressValue.textContent = `${Number(planProgress.value || 0)}%`;
+        });
+    }
+
+    const scheduleSaveBtn = document.getElementById('schedule-save-btn');
+    if (scheduleSaveBtn && scheduleSaveBtn.dataset.bound !== '1') {
+        scheduleSaveBtn.dataset.bound = '1';
+        scheduleSaveBtn.addEventListener('click', saveScheduleModal);
+    }
+
+    const planSaveBtn = document.getElementById('plan-save-btn');
+    if (planSaveBtn && planSaveBtn.dataset.bound !== '1') {
+        planSaveBtn.dataset.bound = '1';
+        planSaveBtn.addEventListener('click', savePlanModal);
+    }
+
+    applyPlannerTabVisibility();
+    renderPlanner();
+    startPlannerReminderEngine();
+    if (plannerState.weekProgressTimerId) {
+        clearInterval(plannerState.weekProgressTimerId);
+    }
+    plannerState.weekProgressTimerId = setInterval(updateWeeklyProgress, 60 * 1000);
+}
+
+function applyPlannerTabVisibility() {
+    const tabs = document.getElementById('planner-tabs');
+    if (tabs) {
+        tabs.querySelectorAll('[data-planner-tab]').forEach(el => {
+            el.classList.toggle('active', el.getAttribute('data-planner-tab') === plannerState.tab);
+        });
+    }
+
+    const scheduleContainer = document.getElementById('schedule-container');
+    const planContainer = document.getElementById('plan-container');
+    if (scheduleContainer) scheduleContainer.style.display = plannerState.tab === 'schedule' ? '' : 'none';
+    if (planContainer) planContainer.style.display = plannerState.tab === 'plan' ? '' : 'none';
+}
+
+function renderPlanner() {
+    if (!document.getElementById('planner-root')) return;
+    renderScheduleList();
+    renderPlanList();
+    updateWeeklyProgress();
+}
+
+function renderScheduleList() {
+    const container = document.getElementById('schedule-container');
+    if (!container) return;
+
+    const items = plannerState.schedule
+        .slice()
+        .sort((a, b) => {
+            const ta = new Date(a.startAt || 0).getTime() || 0;
+            const tb = new Date(b.startAt || 0).getTime() || 0;
+            return ta - tb;
+        });
+
+    if (!items.length) {
+        container.innerHTML = `<div class="planner-empty">${tText('schedule.empty')}</div>`;
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="planner-list">
+            ${items.map(item => {
+                const startText = formatDateTimeDisplay(item.startAt);
+                const remindText = item.remindAt ? formatDateTimeDisplay(item.remindAt) : '';
+                const note = String(item.note || '').trim();
+                return `
+                    <div class="planner-item ${item.done ? 'is-done' : ''}" id="schedule-${item.id}">
+                        <div class="planner-item-row">
+                            <input class="planner-done-toggle" type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleScheduleDone('${item.id}')">
+                            <div class="planner-item-main" onclick="openScheduleModal('${item.id}')">
+                                <div class="planner-item-title">${escapeHtml(item.title)}</div>
+                                <div class="planner-item-meta">
+                                    ${startText ? `<span class="planner-item-time">${escapeHtml(startText)}</span>` : ''}
+                                    ${remindText ? `<span class="planner-item-remind">${escapeHtml(remindText)}</span>` : ''}
+                                </div>
+                                ${note ? `<div class="planner-item-note">${escapeHtml(note)}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="planner-item-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="openScheduleModal('${item.id}')" data-i18n="schedule.action.edit">${tText('schedule.action.edit')}</button>
+                            <button class="btn btn-secondary btn-sm" onclick="deleteScheduleItem('${item.id}')" data-i18n="schedule.action.delete">${tText('schedule.action.delete')}</button>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+function renderPlanList() {
+    const container = document.getElementById('plan-container');
+    if (!container) return;
+
+    const filterEl = document.getElementById('plan-filter');
+    const filter = filterEl ? String(filterEl.value || 'all') : 'all';
+
+    let items = plannerState.plans.slice();
+    if (filter === 'short' || filter === 'long') {
+        items = items.filter(p => p.type === filter);
+    }
+    items.sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
+
+    const filterHtml = `
+        <div class="planner-filter-row">
+            <select id="plan-filter" class="form-control">
+                <option value="all" ${filter === 'all' ? 'selected' : ''} data-i18n="plan.filter.all">${tText('plan.filter.all')}</option>
+                <option value="short" ${filter === 'short' ? 'selected' : ''} data-i18n="plan.filter.short">${tText('plan.filter.short')}</option>
+                <option value="long" ${filter === 'long' ? 'selected' : ''} data-i18n="plan.filter.long">${tText('plan.filter.long')}</option>
+            </select>
+        </div>
+    `;
+
+    if (!items.length) {
+        container.innerHTML = `${filterHtml}<div class="planner-empty">${tText('plan.empty')}</div>`;
+        const sel = document.getElementById('plan-filter');
+        if (sel && sel.dataset.bound !== '1') {
+            sel.dataset.bound = '1';
+            sel.addEventListener('change', renderPlanner);
+        }
+        return;
+    }
+
+    container.innerHTML = `
+        ${filterHtml}
+        <div class="planner-list">
+            ${items.map(plan => {
+                const pct = Math.max(0, Math.min(100, Number(plan.progress || 0)));
+                const dateRange = [plan.startDate, plan.endDate].filter(Boolean).join(' ~ ');
+                const note = String(plan.note || '').trim();
+                const typeLabel = tText(plan.type === 'long' ? 'plan.type.long' : 'plan.type.short');
+                const toggleKey = plan.done ? 'plan.action.mark_undone' : 'plan.action.mark_done';
+                const toggleText = tText(toggleKey);
+                return `
+                    <div class="plan-card ${plan.done ? 'is-done' : ''}" id="plan-${plan.id}">
+                        <div class="plan-card-head">
+                            <div class="plan-title">${escapeHtml(plan.title)}</div>
+                            <div class="plan-type">${escapeHtml(typeLabel)}</div>
+                        </div>
+                        ${dateRange ? `<div class="plan-dates">${escapeHtml(dateRange)}</div>` : ''}
+                        <div class="plan-progress">
+                            <div class="plan-progress-bar"><div class="plan-progress-fill" style="width:${pct}%"></div></div>
+                            <div class="plan-progress-meta">
+                                <span class="plan-progress-value">${pct}%</span>
+                                <input type="range" class="plan-progress-range" min="0" max="100" step="1" value="${pct}" oninput="updatePlanProgress('${plan.id}', this.value)">
+                            </div>
+                        </div>
+                        ${note ? `<div class="plan-note">${escapeHtml(note)}</div>` : ''}
+                        <div class="planner-item-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="openPlanModal('${plan.id}')" data-i18n="plan.action.edit">${tText('plan.action.edit')}</button>
+                            <button class="btn btn-secondary btn-sm" onclick="deletePlanItem('${plan.id}')" data-i18n="plan.action.delete">${tText('plan.action.delete')}</button>
+                            <button class="btn btn-primary btn-sm" onclick="togglePlanDone('${plan.id}')" data-i18n="${toggleKey}">${escapeHtml(toggleText)}</button>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+
+    const sel = document.getElementById('plan-filter');
+    if (sel && sel.dataset.bound !== '1') {
+        sel.dataset.bound = '1';
+        sel.addEventListener('change', renderPlanner);
+    }
+}
+
+function openScheduleModal(id) {
+    plannerState.editingScheduleId = id || null;
+    const item = id ? plannerState.schedule.find(s => s.id === id) : null;
+
+    const titleEl = document.getElementById('schedule-modal-title');
+    const titleKey = item ? 'schedule.modal.title.edit' : 'schedule.modal.title.add';
+    if (titleEl) {
+        titleEl.setAttribute('data-i18n', titleKey);
+        titleEl.textContent = tText(titleKey);
+    }
+
+    const titleInput = document.getElementById('schedule-title');
+    const startInput = document.getElementById('schedule-start-at');
+    const remindInput = document.getElementById('schedule-remind-at');
+    const noteInput = document.getElementById('schedule-note');
+
+    if (titleInput) titleInput.value = item ? item.title : '';
+    if (startInput) startInput.value = item && item.startAt ? toDatetimeLocalValue(item.startAt) : '';
+    if (remindInput) remindInput.value = item && item.remindAt ? toDatetimeLocalValue(item.remindAt) : '';
+    if (noteInput) noteInput.value = item ? item.note : '';
+
+    openModal('schedule-modal');
+}
+
+function saveScheduleModal() {
+    const title = (document.getElementById('schedule-title')?.value || '').trim();
+    const startAtLocal = document.getElementById('schedule-start-at')?.value || '';
+    const remindAtLocal = document.getElementById('schedule-remind-at')?.value || '';
+    const note = document.getElementById('schedule-note')?.value || '';
+
+    if (!title || !startAtLocal) {
+        showToast(tText('error.fill_fields'));
+        return;
+    }
+
+    const startAtIso = fromDatetimeLocalValue(startAtLocal);
+    const remindAtIso = remindAtLocal ? fromDatetimeLocalValue(remindAtLocal) : '';
+
+    const now = Date.now();
+    const existingId = plannerState.editingScheduleId;
+    const idx = existingId ? plannerState.schedule.findIndex(s => s.id === existingId) : -1;
+
+    if (idx >= 0) {
+        const prev = plannerState.schedule[idx];
+        plannerState.schedule[idx] = {
+            ...prev,
+            title,
+            startAt: startAtIso,
+            remindAt: remindAtIso,
+            note,
+            updatedAt: now,
+            remindedAt: remindAtIso !== prev.remindAt ? 0 : prev.remindedAt
+        };
+    } else {
+        plannerState.schedule.unshift({
+            id: makeLocalId('sch'),
+            title,
+            startAt: startAtIso,
+            remindAt: remindAtIso,
+            note,
+            done: false,
+            remindedAt: 0,
+            createdAt: now,
+            updatedAt: now
+        });
+    }
+
+    saveScheduleData();
+    closeModal('schedule-modal');
+    plannerState.editingScheduleId = null;
+    renderPlanner();
+    maybeRequestNotificationPermission(remindAtIso);
+}
+
+function deleteScheduleItem(id) {
+    const item = plannerState.schedule.find(s => s.id === id);
+    if (!item) return;
+    showConfirmModal(tText('schedule.confirm.delete', 'Delete this schedule?'), () => {
+        plannerState.schedule = plannerState.schedule.filter(s => s.id !== id);
+        saveScheduleData();
+        renderPlanner();
+    });
+}
+
+function toggleScheduleDone(id) {
+    const idx = plannerState.schedule.findIndex(s => s.id === id);
+    if (idx === -1) return;
+    plannerState.schedule[idx].done = !plannerState.schedule[idx].done;
+    plannerState.schedule[idx].updatedAt = Date.now();
+    saveScheduleData();
+    renderPlanner();
+}
+
+function openPlanModal(id) {
+    plannerState.editingPlanId = id || null;
+    const item = id ? plannerState.plans.find(p => p.id === id) : null;
+
+    const titleEl = document.getElementById('plan-modal-title');
+    const titleKey = item ? 'plan.modal.title.edit' : 'plan.modal.title.add';
+    if (titleEl) {
+        titleEl.setAttribute('data-i18n', titleKey);
+        titleEl.textContent = tText(titleKey);
+    }
+
+    const titleInput = document.getElementById('plan-title');
+    const typeInput = document.getElementById('plan-type');
+    const startInput = document.getElementById('plan-start-date');
+    const endInput = document.getElementById('plan-end-date');
+    const progressInput = document.getElementById('plan-progress');
+    const progressValue = document.getElementById('plan-progress-value');
+    const noteInput = document.getElementById('plan-note');
+
+    if (titleInput) titleInput.value = item ? item.title : '';
+    if (typeInput) typeInput.value = item ? item.type : 'short';
+    if (startInput) startInput.value = item ? item.startDate : '';
+    if (endInput) endInput.value = item ? item.endDate : '';
+    if (progressInput) progressInput.value = item ? String(item.progress || 0) : '0';
+    if (progressValue) progressValue.textContent = `${item ? (item.progress || 0) : 0}%`;
+    if (noteInput) noteInput.value = item ? item.note : '';
+
+    openModal('plan-modal');
+}
+
+function savePlanModal() {
+    const title = (document.getElementById('plan-title')?.value || '').trim();
+    const type = document.getElementById('plan-type')?.value === 'long' ? 'long' : 'short';
+    const startDate = document.getElementById('plan-start-date')?.value || '';
+    const endDate = document.getElementById('plan-end-date')?.value || '';
+    const progress = Math.max(0, Math.min(100, Number(document.getElementById('plan-progress')?.value || 0)));
+    const note = document.getElementById('plan-note')?.value || '';
+
+    if (!title) {
+        showToast(tText('error.fill_fields'));
+        return;
+    }
+
+    const now = Date.now();
+    const existingId = plannerState.editingPlanId;
+    const idx = existingId ? plannerState.plans.findIndex(p => p.id === existingId) : -1;
+
+    if (idx >= 0) {
+        const prev = plannerState.plans[idx];
+        plannerState.plans[idx] = {
+            ...prev,
+            title,
+            type,
+            startDate,
+            endDate,
+            progress,
+            note,
+            updatedAt: now
+        };
+    } else {
+        plannerState.plans.unshift({
+            id: makeLocalId('plan'),
+            title,
+            type,
+            startDate,
+            endDate,
+            progress,
+            done: false,
+            note,
+            createdAt: now,
+            updatedAt: now
+        });
+    }
+
+    savePlanData();
+    closeModal('plan-modal');
+    plannerState.editingPlanId = null;
+    renderPlanner();
+}
+
+function deletePlanItem(id) {
+    const item = plannerState.plans.find(p => p.id === id);
+    if (!item) return;
+    showConfirmModal(tText('plan.confirm.delete', 'Delete this plan?'), () => {
+        plannerState.plans = plannerState.plans.filter(p => p.id !== id);
+        savePlanData();
+        renderPlanner();
+    });
+}
+
+function togglePlanDone(id) {
+    const idx = plannerState.plans.findIndex(p => p.id === id);
+    if (idx === -1) return;
+    plannerState.plans[idx].done = !plannerState.plans[idx].done;
+    plannerState.plans[idx].updatedAt = Date.now();
+    if (plannerState.plans[idx].done) plannerState.plans[idx].progress = 100;
+    savePlanData();
+    renderPlanner();
+}
+
+function updatePlanProgress(id, value) {
+    const idx = plannerState.plans.findIndex(p => p.id === id);
+    if (idx === -1) return;
+    const pct = Math.max(0, Math.min(100, Number(value || 0)));
+    plannerState.plans[idx].progress = pct;
+    plannerState.plans[idx].done = pct >= 100;
+    plannerState.plans[idx].updatedAt = Date.now();
+    savePlanData();
+
+    const card = document.getElementById(`plan-${id}`);
+    if (!card) return;
+    const fill = card.querySelector('.plan-progress-fill');
+    if (fill) fill.style.width = `${pct}%`;
+    const label = card.querySelector('.plan-progress-value');
+    if (label) label.textContent = `${pct}%`;
+}
+
+function startPlannerReminderEngine() {
+    if (plannerState.reminderTimerId) {
+        clearInterval(plannerState.reminderTimerId);
+        plannerState.reminderTimerId = null;
+    }
+    plannerState.reminderTimerId = setInterval(checkScheduleReminders, 30000);
+    checkScheduleReminders();
+
+    if (!window.__plannerVisibilityBound) {
+        window.__plannerVisibilityBound = true;
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') checkScheduleReminders();
+        });
+    }
+}
+
+function checkScheduleReminders() {
+    if (!plannerState.schedule.length) return;
+    const now = Date.now();
+
+    let changed = false;
+    plannerState.schedule.forEach(item => {
+        if (item.done) return;
+        if (!item.remindAt) return;
+        if (item.remindedAt) return;
+        const due = new Date(item.remindAt).getTime();
+        if (!Number.isFinite(due)) return;
+        if (due > now) return;
+
+        item.remindedAt = now;
+        item.updatedAt = now;
+        changed = true;
+        showScheduleReminder(item);
+    });
+
+    if (changed) saveScheduleData();
+}
+
+function showScheduleReminder(item) {
+    const title = tText('schedule.reminder.title', 'Reminder');
+    const body = `${item.title}${item.startAt ? `\n${formatDateTimeDisplay(item.startAt)}` : ''}`;
+
+    if (window.Notification && window.isSecureContext && Notification.permission === 'granted') {
+        try {
+            new Notification(title, { body });
+            return;
+        } catch (_) {}
+    }
+    showToast(`${title}: ${item.title}`);
+}
+
+function maybeRequestNotificationPermission(remindAtIso) {
+    if (!remindAtIso) return;
+    if (!window.Notification) return;
+    if (!window.isSecureContext) return;
+    if (Notification.permission !== 'default') return;
+    Notification.requestPermission().catch(() => {});
+}
+
+function toDatetimeLocalValue(isoString) {
+    const d = new Date(isoString);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fromDatetimeLocalValue(localValue) {
+    const d = new Date(localValue);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString();
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 let uploadedImage = null;
@@ -1110,13 +2338,13 @@ function addItem() {
     if (name && type) {
         // Simple icon mapping based on type
         let icon = "👕";
-        if (type === 'Bottom') icon = "👖";
-        if (type === 'Shoes') icon = "👟";
-        if (type === 'Outerwear') icon = "🧥";
-        if (type === 'Accessory') icon = "🧢";
+        if (type === 'bottom') icon = "👖";
+        if (type === 'shoes') icon = "👟";
+        if (type === 'outerwear') icon = "🧥";
+        if (type === 'accessory') icon = "🧢";
         const image = uploadedImage || null;
 
-        wardrobeItems.unshift({ id: Date.now(), name, type, color: "New", icon, image });
+        wardrobeItems.unshift({ id: Date.now(), name, type, color: "new", icon, image });
         rebuildWardrobeItemIndex();
         renderWardrobe();
         closeModal('add-modal');
@@ -1131,7 +2359,7 @@ function addItem() {
         if(placeholder) placeholder.style.display = 'block';
 
     } else {
-        showToast(window.i18n ? (window.i18n.get('msg_fill_fields') || 'Please fill in all fields') : 'Please fill in all fields');
+        showToast(tText('error.fill_fields'));
     }
 }
 
@@ -1167,7 +2395,7 @@ function updateWeather() {
 
     widget.innerHTML = `
         <span class="weather-icon">${icon}</span>
-        <span class="weather-temp">${tempLow}° - ${tempHigh}°C</span>
+        <span class="weather-temp">${tempLow}° - ${tempHigh}°</span>
     `;
 }
 
@@ -1178,7 +2406,7 @@ function filterByType(element, type) {
     element.classList.add('active');
 
     // Filter items
-    if (type === 'All') {
+    if (type === 'all') {
         renderWardrobe(wardrobeItems);
     } else {
         const filtered = wardrobeItems.filter(item => item.type === type);
@@ -1249,11 +2477,11 @@ window.showConfirmModal = function(message, onConfirm) {
         modal.className = 'modal-overlay';
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 320px; text-align: center;">
-                <div class="modal-title" style="margin-bottom: 12px; justify-content: center;">${window.i18n ? (window.i18n.get('text_confirm') || 'Confirm') : 'Confirm'}</div>
+                <div class="modal-title" style="margin-bottom: 12px; justify-content: center;">${tText('modal.confirm.title')}</div>
                 <p id="confirm-message" style="color: var(--text-sub); margin-bottom: 24px; line-height: 1.5; font-size: 15px;"></p>
                 <div class="modal-actions" style="justify-content: center; gap: 12px; margin-top: 0;">
-                    <button class="btn btn-cancel" onclick="closeConfirmModal()" style="flex: 1;">${window.i18n ? (window.i18n.get('btn_cancel') || 'Cancel') : 'Cancel'}</button>
-                    <button class="btn btn-primary" id="confirm-yes-btn" style="background: var(--error-color, #ff3b30); border: none; flex: 1;">${window.i18n ? (window.i18n.get('btn_confirm') || 'Confirm') : 'Confirm'}</button>
+                    <button class="btn btn-cancel" onclick="closeConfirmModal()" style="flex: 1;">${tText('common.cancel')}</button>
+                    <button class="btn btn-primary" id="confirm-yes-btn" style="background: var(--error-color, #ff3b30); border: none; flex: 1;">${tText('common.confirm')}</button>
                 </div>
             </div>
         `;

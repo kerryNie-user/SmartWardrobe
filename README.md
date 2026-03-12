@@ -64,6 +64,6 @@ For native feature implementation and APK building:
 [Go to Android Development Guide](App/AndroidApp/README.md)
 
 ---
-**Version**: 1.1.0
-**Last Updated**: 2026-02-20
+**Version**: 1.2.0
+**Last Updated**: 2026-03-12
 **Maintainer**: SmartWardrobe Team

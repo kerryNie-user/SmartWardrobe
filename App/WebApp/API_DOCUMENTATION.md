@@ -2,6 +2,37 @@
 
 This documentation defines the backend API interfaces required to support the Smart Wardrobe frontend application.
 
+## 0. I18n (Implemented in `server.py`)
+This project currently ships a lightweight i18n API used by the frontend at runtime.
+
+### 0.1 Get Language Pack
+- **Endpoint**: `/api/i18n?locale=zh-CN`
+- **Method**: `GET`
+- **Base URL (local dev)**: `http://localhost:8080`
+
+**Response (200 OK):**
+Returns a JSON object whose keys are i18n keys and values are localized strings.
+
+```json
+{
+  "nav.home": "首页",
+  "wardrobe.search.placeholder": "搜索衣物..."
+}
+```
+
+**Errors:**
+- `400` `{ "error": "invalid_locale" }`
+- `404` `{ "error": "locale_not_found" }`
+- `500` `{ "error": "db_error" }`
+
+**MySQL schema & seed:**
+- Init SQL: `scripts/mysql/init_i18n_test.sql`
+- Table: `i18n_test.language_packs(locale, key, value, updated_at)`
+
+**Sync behavior:**
+- The API response is sourced from MySQL.
+- On successful fetch, the server also overwrites `App/WebApp/en-US.json` or `App/WebApp/zh-CN.json` to mirror the latest DB content.
+
 ## Base URL
 All API requests should be prefixed with:
 `http://localhost:3000/api/v1`

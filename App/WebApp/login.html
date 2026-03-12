@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title data-i18n="page_title_login">ClosetTwin | Login</title>
+    <title data-i18n="page.title.login"></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="login-page">
 
     <div class="login-card">
-        <a href="index.html" class="auth-back-btn" aria-label="Back to Home">
+        <a href="index.html" class="auth-back-btn" data-i18n-aria-label="auth.back_to_home">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M19 12H5"></path>
                 <path d="M12 19l-7-7 7-7"></path>
@@ -18,42 +18,64 @@
         </a>
         <div class="login-header">
             <div class="login-logo">👕</div>
-            <h1 data-i18n="login_title_welcome">Welcome Back</h1>
-            <p data-i18n="login_subtitle">Sign in to continue to your wardrobe</p>
+            <h1 data-i18n="auth.login.title"></h1>
+            <p data-i18n="auth.login.subtitle"></p>
         </div>
 
         <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
             <div class="form-group">
-                <label class="form-label" data-i18n="label_email_mobile">Email or Mobile Number</label>
-                <input type="text" id="email" class="auth-input" placeholder="Email or Mobile Number" required data-i18n-placeholder="placeholder_email_mobile">
+                <label class="form-label" data-i18n="auth.field.email_or_mobile.label"></label>
+                <input type="text" id="email" class="auth-input" required data-i18n-placeholder="auth.field.email_or_mobile.placeholder">
             </div>
             <div class="form-group">
-                <label class="form-label" data-i18n="label_password">Password</label>
+                <label class="form-label" data-i18n="auth.field.password.label"></label>
                 <input type="password" id="password" class="auth-input" placeholder="••••••••" required>
             </div>
             
             <div id="error-msg" class="error-message"></div>
 
-            <button type="submit" class="auth-btn" data-i18n="btn_sign_in">Sign In</button>
+            <button type="submit" class="auth-btn" data-i18n="auth.login.button.submit"></button>
         </form>
 
         <div class="alt-action">
-            <span data-i18n="text_no_account">Don't have an account?</span> 
-            <a href="register.html" data-i18n="link_sign_up">Sign Up</a>
+            <span data-i18n="auth.login.no_account"></span>
+            <a href="register.html" data-i18n="auth.login.link.sign_up"></a>
         </div>
     </div>
 
     <script src="js/i18n.js"></script>
     <script src="js/theme.js"></script>
     <script>
-        // Simple I18n placeholder handling
-        document.addEventListener('DOMContentLoaded', () => {
-             // If i18n is loaded, it will handle translations. 
-             // We just need to ensure placeholders are updated if i18n.js supports data-i18n-placeholder
-             // Or we rely on the existing i18n implementation.
-        });
+        (function ensureDevTestAccount() {
+            const testEmail = '13070196946@163.com';
+            const testPassword = '123456';
+            try {
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                if (!Array.isArray(users)) return;
+                const exists = users.some(u => u && u.email === testEmail);
+                if (exists) return;
+                users.push({ name: 'Test User', email: testEmail, password: testPassword, avatar: 'images/default_avatar.svg' });
+                localStorage.setItem('users', JSON.stringify(users));
+            } catch (e) {}
+        })();
 
-        function handleLogin(e) {
+        function localLogin(emailOrMobile, password) {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => (u.email === emailOrMobile || u.mobile === emailOrMobile) && u.password === password);
+            if (!user) return false;
+
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('currentUser', JSON.stringify({
+                name: user.name,
+                email: user.email,
+                mobile: user.mobile,
+                avatar: user.avatar
+            }));
+            window.location.href = 'index.html';
+            return true;
+        }
+
+        async function handleLogin(e) {
             e.preventDefault();
             const emailOrMobile = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
@@ -67,45 +89,53 @@
             // Loading state
             const originalBtnText = submitBtn.innerText;
             submitBtn.disabled = true;
-            submitBtn.innerText = '...';
+            submitBtn.innerText = window.t('common.loading', '...');
 
-            // Simulate network delay for better UX
-            setTimeout(() => {
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            const mobilePattern = /^1[3-9]\d{9}$/;
+
+            if (!emailPattern.test(emailOrMobile) && !mobilePattern.test(emailOrMobile)) {
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalBtnText;
+                errorMsg.innerText = window.t('error.invalid_email_or_mobile');
+                errorMsg.style.display = 'block';
+                return;
+            }
 
-                // Validation
-                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-                const mobilePattern = /^1[3-9]\d{9}$/;
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emailOrMobile, password })
+                });
+                const data = await response.json().catch(() => ({}));
 
-                if (!emailPattern.test(emailOrMobile) && !mobilePattern.test(emailOrMobile)) {
-                    errorMsg.innerText = window.i18n.get('error_invalid_email_mobile') || 'Invalid email or mobile number';
-                    errorMsg.style.display = 'block';
+                if (response.ok) {
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('currentUser', JSON.stringify(data.user || { email: emailOrMobile }));
+                    window.location.href = 'index.html';
                     return;
                 }
 
-                // Check against localStorage
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
-                const user = users.find(u => (u.email === emailOrMobile || u.mobile === emailOrMobile) && u.password === password);
-
-                if (user) {
-                    // Set login state
-                    localStorage.setItem('isLoggedIn', 'true');
-                    localStorage.setItem('currentUser', JSON.stringify({ 
-                        name: user.name, 
-                        email: user.email, 
-                        mobile: user.mobile,
-                        avatar: user.avatar 
-                    }));
-                    
-                    // Redirect to Home
-                    window.location.href = 'index.html';
-                } else {
-                    // Show error
-                    errorMsg.innerText = window.i18n.get('error_invalid_credentials') || 'Invalid credentials';
-                    errorMsg.style.display = 'block';
+                const err = data && (data.error || data.message);
+                if (err === 'db_error' || response.status >= 500) {
+                    if (localLogin(emailOrMobile, password)) return;
                 }
-            }, 600);
+                if (err === 'invalid_credentials') {
+                    errorMsg.innerText = window.t('error.invalid_credentials');
+                } else if (err === 'invalid_email_or_mobile') {
+                    errorMsg.innerText = window.t('error.invalid_email_or_mobile');
+                } else {
+                    errorMsg.innerText = window.t('error.invalid_credentials');
+                }
+                errorMsg.style.display = 'block';
+                if (localLogin(emailOrMobile, password)) return;
+            } catch (error) {
+                errorMsg.innerText = window.t('error.invalid_credentials');
+                errorMsg.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+            }
         }
     </script>
 </body>

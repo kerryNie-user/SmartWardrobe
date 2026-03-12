@@ -75,6 +75,6 @@ See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for details on data structures.
 - Ensure all text is internationalized using `data-i18n` attributes.
 
 ---
-**Version**: 1.1.0
-**Last Updated**: 2026-02-20
+**Version**: 1.2.0
+**Last Updated**: 2026-03-12
 **Maintainer**: SmartWardrobe Web Team

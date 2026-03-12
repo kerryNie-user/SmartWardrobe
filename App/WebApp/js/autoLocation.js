@@ -69,10 +69,10 @@ class AutoLocationService {
         // Handle null/undefined location
         if (!location) {
             console.warn('[AutoLocation Log] Location data is empty or null');
-            location = { regionKey: 'region_unknown' }; // Fallback to unknown
+            location = { regionKey: 'region.unknown' };
         }
 
-        if (location.regionKey === 'region_unknown') {
+        if (location.regionKey === 'region.unknown') {
             console.warn('[AutoLocation Log] Region is unknown', location);
         }
 
@@ -85,8 +85,8 @@ class AutoLocationService {
         let locationText = this.translateAutoSelect(location);
         
         // Double check if we got a variable name back (should not happen with updated i18n, but safety first)
-        if (locationText === 'region_unknown') {
-             locationText = window.i18n?.get('region_unknown') || 'Unknown Region';
+        if (locationText === 'region.unknown') {
+             locationText = window.t('region.unknown');
         }
 
         // Update span in profile page if exists
@@ -107,8 +107,8 @@ class AutoLocationService {
         if (status === 'loading') {
             // Only show spinner if not already showing something useful
             // Force spinner when reloading
-            const detectingText = window.i18n?.get('detecting_location') || 'Detecting...';
-            statusEl.innerHTML = `<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> <span data-i18n="detecting_location" style="font-size:12px;color:var(--text-sub);">${detectingText}</span>`;
+            const detectingText = window.t('region.status.detecting');
+            statusEl.innerHTML = `<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> <span data-i18n="region.status.detecting" style="font-size:12px;color:var(--text-sub);">${detectingText}</span>`;
             
         } else if (status === 'success') {
             const dynamicSpan = document.createElement('span');
@@ -116,7 +116,7 @@ class AutoLocationService {
             dynamicSpan.style.color = 'var(--text-main)';
             dynamicSpan.style.fontWeight = '500';
             
-            if (regionKey && regionKey !== 'region_unknown') {
+            if (regionKey && regionKey !== 'region.unknown') {
                  dynamicSpan.setAttribute('data-i18n', regionKey);
             }
             dynamicSpan.textContent = text;
@@ -124,12 +124,12 @@ class AutoLocationService {
             statusEl.innerHTML = '';
             statusEl.appendChild(dynamicSpan);
         } else if (status === 'error') {
-            const errorText = window.i18n?.get('location_failed') || 'Failed';
+            const errorText = window.t('region.status.failed');
             // Add a refresh hint/button for better UX
-            const refreshHint = window.i18n?.get('click_to_retry') || 'Tap to retry';
+            const refreshHint = window.t('common.tap_to_retry');
             statusEl.innerHTML = `
-                <span class="location-error" style="color:var(--danger-color);font-size:12px;" data-i18n="location_failed">${errorText}</span>
-                <span style="font-size:10px;color:var(--text-sub);margin-left:4px;">(<span data-i18n="click_to_retry">${refreshHint}</span>)</span>
+                <span class="location-error" style="color:var(--danger-color);font-size:12px;" data-i18n="region.status.failed">${errorText}</span>
+                <span style="font-size:10px;color:var(--text-sub);margin-left:4px;">(<span data-i18n="common.tap_to_retry">${refreshHint}</span>)</span>
             `;
         }
     }
@@ -203,13 +203,12 @@ class AutoLocationService {
              
              // Try to find a matching region key from known regions (naive matching)
             // In a real app, you'd have a mapping table or use geocoding API that returns standard codes
-            let regionKey = 'region_unknown';
+            let regionKey = 'region.unknown';
             
             // Try to match city name to a region key
             if (data.city) {
-                const potentialKey = `region_${data.city.toLowerCase().replace(/\s+/g, '_')}`;
-                // Check if this key exists in i18n (check EN as base)
-                if (window.i18n && window.i18n.translations && window.i18n.translations['en'] && window.i18n.translations['en'][potentialKey]) {
+                const potentialKey = `region.preset.${data.city.toLowerCase().replace(/\s+/g, '_')}`;
+                if (window.i18n && window.i18n.translations && window.i18n.translations['en-US'] && window.i18n.translations['en-US'][potentialKey]) {
                     regionKey = potentialKey;
                 }
             }
@@ -284,11 +283,11 @@ class AutoLocationService {
         // Lat > 30 && Lat < 32 && Lon > 120 && Lon < 122 -> Shanghai
         
         let result = {
-            regionKey: 'region_new_york',
-            label: 'New York',
-            province: 'New York',
-            city: 'New York City',
-            district: 'Manhattan'
+            regionKey: 'region.preset.new_york',
+            label: '',
+            province: 'new york',
+            city: 'new york',
+            district: ''
         };
 
         // If we are actually in the browser and not mocking coords, this might vary.
@@ -333,20 +332,20 @@ class AutoLocationService {
         const i18n = window.i18n;
         
         if (!locationData) {
-             return i18n?.get('location_empty') || 'Location info not acquired';
+             return window.t('region.status.empty');
         }
         
         // Use i18n system as our "cache" and translation service
         if (!i18n) return locationData.label || '';
         
         // 1. Check if we have a direct regionKey translation
-        if (locationData.regionKey && i18n.get(locationData.regionKey) !== locationData.regionKey) {
-            return i18n.get(locationData.regionKey);
+        if (locationData.regionKey) {
+            const direct = window.t(locationData.regionKey);
+            if (direct) return direct;
         }
         
-        // If regionKey is region_unknown but no translation found (should be covered by step 1 if JSON is correct)
-        if (locationData.regionKey === 'region_unknown') {
-            return i18n.get('region_unknown');
+        if (locationData.regionKey === 'region.unknown') {
+            return window.t('region.unknown');
         }
         
         // 2. Translate components
@@ -360,8 +359,9 @@ class AutoLocationService {
             if (!term) return term;
             
             // Special cases
-            if (term === 'IP City' || term === 'Unknown City' || term === 'IP 城市') return i18n.get('location_ip_city') || term;
-            if (term === 'Unknown Province' || term === 'Unknown Region' || term === '未知省份') return i18n.get('location_unknown_province') || term;
+            if (term === 'IP City' || term === 'IP 城市') return window.t('region.ip_city') || term;
+            if (term === 'Unknown City' || term === '未知城市') return window.t('region.unknown_city') || term;
+            if (term === 'Unknown Province' || term === 'Unknown Region' || term === '未知省份') return window.t('region.unknown_province') || term;
             
             const lower = term.toLowerCase();
             
@@ -371,7 +371,10 @@ class AutoLocationService {
             
             // B. Check Static Map (regionMapping)
             const mapKey = i18n.regionMapping?.[type === 'city' ? 'cities' : 'provinces']?.[lower];
-            if (mapKey && i18n.get(mapKey)) return i18n.get(mapKey);
+            if (mapKey) {
+                const mapped = window.t(mapKey);
+                if (mapped) return mapped;
+            }
 
             return term;
         };

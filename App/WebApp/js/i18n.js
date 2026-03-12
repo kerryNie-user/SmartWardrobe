@@ -1,278 +1,400 @@
-const regionMapping = {
-    // Mapping lowercase normalized names to translation keys
+const REGION_MAPPING = {
     cities: {
-        'shanghai': 'city_Shanghai',
-        'beijing': 'city_Beijing',
-        'guangzhou': 'city_Guangzhou',
-        'shenzhen': 'city_Shenzhen',
-        'hangzhou': 'city_Hangzhou',
-        'chengdu': 'city_Chengdu',
-        'wuhan': 'city_Wuhan',
-        'nanjing': 'city_Nanjing',
-        'chongqing': 'city_Chongqing',
-        'tianjin': 'city_Tianjin',
-        'suzhou': 'city_Suzhou',
-        'xian': 'city_Xian',
-        'xi\'an': 'city_Xian',
-        'new york': 'city_New_York',
-        'new york city': 'city_New_York',
-        'london': 'city_London',
-        'paris': 'city_Paris',
-        'tokyo': 'city_Tokyo',
-        'los angeles': 'city_Los_Angeles',
-        'chicago': 'city_Chicago',
-        'toronto': 'city_Toronto',
-        'berlin': 'city_Berlin',
-        'milan': 'city_Milan',
-        'seoul': 'city_Seoul',
-        'bangkok': 'city_Bangkok',
-        'dubai': 'city_Dubai',
-        'mumbai': 'city_Mumbai',
-        'sydney': 'city_Sydney',
-        'singapore': 'city_Singapore'
+        'shanghai': 'region.city.shanghai',
+        'beijing': 'region.city.beijing',
+        'guangzhou': 'region.city.guangzhou',
+        'shenzhen': 'region.city.shenzhen',
+        'hangzhou': 'region.city.hangzhou',
+        'chengdu': 'region.city.chengdu',
+        'wuhan': 'region.city.wuhan',
+        'nanjing': 'region.city.nanjing',
+        'chongqing': 'region.city.chongqing',
+        'tianjin': 'region.city.tianjin',
+        'suzhou': 'region.city.suzhou',
+        'xian': 'region.city.xian',
+        "xi'an": 'region.city.xian',
+        'new york': 'region.city.new_york',
+        'new york city': 'region.city.new_york',
+        'london': 'region.city.london',
+        'paris': 'region.city.paris',
+        'tokyo': 'region.city.tokyo',
+        'los angeles': 'region.city.los_angeles',
+        'chicago': 'region.city.chicago',
+        'toronto': 'region.city.toronto',
+        'berlin': 'region.city.berlin',
+        'milan': 'region.city.milan',
+        'seoul': 'region.city.seoul',
+        'bangkok': 'region.city.bangkok',
+        'dubai': 'region.city.dubai',
+        'mumbai': 'region.city.mumbai',
+        'sydney': 'region.city.sydney',
+        'singapore': 'region.city.singapore'
     },
     provinces: {
-        'shanghai': 'province_Shanghai',
-        'beijing': 'province_Beijing',
-        'guangdong': 'province_Guangdong',
-        'zhejiang': 'province_Zhejiang',
-        'sichuan': 'province_Sichuan',
-        'hubei': 'province_Hubei',
-        'jiangsu': 'province_Jiangsu',
-        'shaanxi': 'province_Shaanxi',
-        'new york': 'province_New_York',
-        'greater london': 'province_Greater_London',
-        'ile-de-france': 'province_Ile_de_France',
-        'tokyo': 'province_Tokyo',
-        'california': 'province_California',
-        'illinois': 'province_Illinois',
-        'ontario': 'province_Ontario',
-        'berlin': 'province_Berlin',
-        'lombardy': 'province_Lombardy',
-        'seoul': 'province_Seoul',
-        'bangkok': 'province_Bangkok',
-        'dubai': 'province_Dubai',
-        'maharashtra': 'province_Maharashtra',
-        'new south wales': 'province_New_South_Wales',
-        'singapore': 'province_Singapore'
+        'shanghai': 'region.province.shanghai',
+        'beijing': 'region.province.beijing',
+        'guangdong': 'region.province.guangdong',
+        'zhejiang': 'region.province.zhejiang',
+        'sichuan': 'region.province.sichuan',
+        'hubei': 'region.province.hubei',
+        'jiangsu': 'region.province.jiangsu',
+        'shaanxi': 'region.province.shaanxi',
+        'new york': 'region.province.new_york',
+        'greater london': 'region.province.greater_london',
+        'ile-de-france': 'region.province.ile_de_france',
+        'tokyo': 'region.province.tokyo',
+        'california': 'region.province.california',
+        'illinois': 'region.province.illinois',
+        'ontario': 'region.province.ontario',
+        'berlin': 'region.province.berlin',
+        'lombardy': 'region.province.lombardy',
+        'seoul': 'region.province.seoul',
+        'bangkok': 'region.province.bangkok',
+        'dubai': 'region.province.dubai',
+        'maharashtra': 'region.province.maharashtra',
+        'new south wales': 'region.province.new_south_wales',
+        'singapore': 'region.province.singapore'
     }
 };
+
+const I18N_API_REFRESH_MS = 60 * 60 * 1000;
+const I18N_API_BACKOFF_MS = 2 * 60 * 1000;
+const I18N_API_BACKOFF_UNTIL_KEY = 'sw_api_backoff_until';
 
 class I18n {
     constructor() {
         this.translations = {};
-        this.regionMapping = regionMapping;
-        
-        // Detect system language
-        const systemLang = navigator.language || navigator.userLanguage;
-        // Default to zh-CN only if system is Chinese, otherwise English
-        const defaultLang = systemLang.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en';
-        
-        this.locale = localStorage.getItem('app_language') || defaultLang;
+        this.regionMapping = REGION_MAPPING;
+
+        const systemLang = navigator.language || navigator.userLanguage || '';
+        const defaultLocale = systemLang.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US';
+
+        this.locale = localStorage.getItem('app_locale') || defaultLocale;
         this.loaded = false;
 
-        // Start loading translations
-        this.loadTranslations(this.locale);
-        
-        // Setup listener for dynamic content updates
-        document.addEventListener('DOMContentLoaded', () => {
-            if (this.loaded) {
-                this.init();
-            }
-            // If not loaded yet, init() will be called after loadTranslations
-        });
+        this.installErrorGuards();
+        const cached = this.readCache(this.locale);
+        if (cached) {
+            this.translations[this.locale] = cached;
+            this.loaded = true;
+        }
+
+        const boot = () => {
+            this.init();
+            setTimeout(() => {
+                this.load(this.locale).catch(() => {});
+            }, 0);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', boot);
+        } else {
+            boot();
+        }
     }
 
-    async loadTranslations(lang) {
-        const filename = lang === 'en' ? 'en-US.json' : `${lang}.json`;
+    getCacheKey(locale) {
+        return `i18n_pack_${locale}`;
+    }
+
+    readCache(locale) {
         try {
-            const response = await fetch(filename);
-            if (!response.ok) throw new Error(`Failed to load ${filename}`);
-            const data = await response.json();
-            
-            this.translations[lang] = data;
-            this.locale = lang;
-            this.loaded = true;
-            localStorage.setItem('app_language', lang);
-            
-            // If DOM is ready, initialize
-            if (document.readyState !== 'loading') {
-                this.init();
+            const raw = localStorage.getItem(this.getCacheKey(locale));
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (_) {
+            return null;
+        }
+    }
+
+    writeCache(locale, data) {
+        try {
+            localStorage.setItem(this.getCacheKey(locale), JSON.stringify(data));
+            localStorage.setItem(`${this.getCacheKey(locale)}_at`, String(Date.now()));
+        } catch (_) {}
+    }
+
+    getCacheTimestamp(locale) {
+        try {
+            const raw = localStorage.getItem(`${this.getCacheKey(locale)}_at`);
+            const ts = Number(raw || '0');
+            return Number.isFinite(ts) ? ts : 0;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    isCacheFresh(locale) {
+        const ts = this.getCacheTimestamp(locale);
+        if (!ts) return false;
+        return (Date.now() - ts) < I18N_API_REFRESH_MS;
+    }
+
+    getApiBackoffUntil() {
+        try {
+            const raw = localStorage.getItem(I18N_API_BACKOFF_UNTIL_KEY);
+            const ts = Number(raw || '0');
+            return Number.isFinite(ts) ? ts : 0;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    setApiBackoff(ms) {
+        try {
+            localStorage.setItem(I18N_API_BACKOFF_UNTIL_KEY, String(Date.now() + ms));
+        } catch (_) {}
+    }
+
+    shouldTryApi(locale) {
+        let apiAllowed = false;
+        try {
+            const host = window.location && window.location.hostname;
+            const force = localStorage.getItem('sw_api_force') === '1';
+            apiAllowed = force || host === 'localhost' || host === '127.0.0.1';
+        } catch (_) {
+            apiAllowed = false;
+        }
+        if (!apiAllowed) return false;
+
+        const backoffUntil = this.getApiBackoffUntil();
+        if (backoffUntil && backoffUntil > Date.now()) return false;
+        if (this.isCacheFresh(locale)) return false;
+        return true;
+    }
+
+    async fetchFromApi(locale) {
+        if (!this.shouldTryApi(locale)) {
+            const skipped = new Error('I18N_API_SKIPPED');
+            skipped.code = 'SKIPPED';
+            throw skipped;
+        }
+        let response;
+        try {
+            response = await fetch(`/api/i18n?locale=${encodeURIComponent(locale)}`, { cache: 'no-store' });
+        } catch (err) {
+            if (err && (err.name === 'AbortError' || String(err).includes('ERR_ABORTED'))) {
+                this.setApiBackoff(I18N_API_BACKOFF_MS);
+                const aborted = new Error('I18N_ABORTED');
+                aborted.code = 'ABORTED';
+                throw aborted;
             }
-            
-            // Dispatch event
-            window.dispatchEvent(new CustomEvent('i18nReady', { detail: { language: lang } }));
-            
-        } catch (error) {
-            console.error('[I18n] Load error:', error);
-            // Fallback to en if zh-CN fails, or just log error
-            if (lang !== 'en') {
-                console.log('[I18n] Falling back to en');
-                this.loadTranslations('en');
+            this.setApiBackoff(I18N_API_BACKOFF_MS);
+            throw err;
+        }
+        if (!response.ok) {
+            const error = new Error('I18N_API_ERROR');
+            error.status = response.status;
+            if (response.status >= 500) {
+                this.setApiBackoff(I18N_API_BACKOFF_MS);
+            }
+            throw error;
+        }
+        return response.json();
+    }
+
+    async fetchFromFile(locale) {
+        const filename = locale === 'en-US' ? 'en-US.json' : `${locale}.json`;
+        const response = await fetch(filename, { cache: 'no-store' });
+        if (!response.ok) {
+            const error = new Error('I18N_FILE_ERROR');
+            error.status = response.status;
+            throw error;
+        }
+        return response.json();
+    }
+
+    async load(locale) {
+        const normalized = locale === 'en' ? 'en-US' : locale;
+
+        let data = null;
+        try {
+            data = await this.fetchFromApi(normalized);
+        } catch (err) {
+            data = this.readCache(normalized);
+            if (!data) {
+                try {
+                    data = await this.fetchFromFile(normalized);
+                } catch (_) {}
             }
         }
+
+        if (!data && normalized !== 'en-US') {
+            return this.load('en-US');
+        }
+
+        if (!data) return;
+
+        try {
+            const fromFile = await this.fetchFromFile(normalized);
+            if (fromFile && typeof fromFile === 'object' && data && typeof data === 'object') {
+                data = { ...fromFile, ...data };
+            }
+        } catch (_) {}
+
+        this.translations[normalized] = data;
+        this.locale = normalized;
+        this.loaded = true;
+        localStorage.setItem('app_locale', normalized);
+        this.writeCache(normalized, data);
+
+        if (document.readyState !== 'loading') {
+            this.updatePage();
+            this.updateSwitcherState();
+        }
+
+        window.dispatchEvent(new CustomEvent('i18nReady', { detail: { locale: normalized } }));
+        window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: normalized } }));
+    }
+
+    installErrorGuards() {
+        if (window.__i18n_error_guard_installed) return;
+        window.__i18n_error_guard_installed = true;
+
+        const shouldIgnore = (reasonOrMessage) => {
+            const msg = String(reasonOrMessage || '');
+            if (!msg) return false;
+            if (msg.includes('ERR_ABORTED') && msg.includes('/api/i18n')) return true;
+            if (msg.includes('ERR_ABORTED') && msg.includes('/api/favorites')) return true;
+            if (msg.includes('I18N_ABORTED')) return true;
+            if (msg.includes('/api/i18n') && msg.toLowerCase().includes('aborted')) return true;
+            return false;
+        };
+
+        window.addEventListener('unhandledrejection', (event) => {
+            const reason = event && event.reason;
+            const msg = reason && (reason.message || String(reason));
+            const name = reason && reason.name;
+            if (name === 'AbortError' || shouldIgnore(msg)) {
+                event.preventDefault();
+            }
+        });
+
+        window.addEventListener('error', (event) => {
+            const msg = event && (event.message || '');
+            if (shouldIgnore(msg)) {
+                event.preventDefault();
+            }
+        });
     }
 
     init() {
-        this.updatePage();
         this.setupLanguageSwitcher();
-        // Post-load consistency check
-        setTimeout(() => this.consistencyCheck(), 100);
-    }
-    
-    consistencyCheck() {
-        if (!this.translations[this.locale]) return;
-        
-        // Scan for untranslated elements and force update
-        const elements = document.querySelectorAll('[data-i18n], [data-i18n-placeholder]');
-        let fixCount = 0;
-        elements.forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            const placeholderKey = el.getAttribute('data-i18n-placeholder');
-            
-            if (key) {
-                const translation = this.translations[this.locale][key];
-                const currentText = el.tagName === 'INPUT' ? el.placeholder : el.innerText;
-                
-                if (translation && currentText !== translation) {
-                    if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
-                        el.placeholder = translation;
-                    } else {
-                        el.innerText = translation;
-                    }
-                    fixCount++;
-                }
-            }
-            
-            if (placeholderKey) {
-                const translation = this.translations[this.locale][placeholderKey];
-                if (translation && el.getAttribute('placeholder') !== translation) {
-                    el.setAttribute('placeholder', translation);
-                    fixCount++;
-                }
-            }
-        });
-        
-        if (fixCount > 0) {
-            console.log(`[I18n] Consistency check: Fixed ${fixCount} untranslated elements.`);
+        if (this.loaded) {
+            this.updatePage();
+            this.updateSwitcherState();
         }
     }
 
-    setLanguage(lang) {
-        if (this.translations[lang]) {
-            this.locale = lang;
-            localStorage.setItem('app_language', lang);
+    setLanguage(locale) {
+        const normalized = locale === 'en' ? 'en-US' : locale;
+        if (normalized === this.locale) return;
+        if (this.translations[normalized]) {
+            this.locale = normalized;
+            localStorage.setItem('app_locale', normalized);
             this.updatePage();
             this.updateSwitcherState();
-        } else {
-            this.loadTranslations(lang);
+            window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: normalized } }));
+            return;
         }
+        this.load(normalized).catch(() => {});
+    }
+
+    t(key, fallback = '', params = {}) {
+        const pack = this.translations[this.locale];
+        let text = pack ? pack[key] : null;
+        if (text == null || text === '') {
+            text = fallback || '';
+        }
+        if (!text) return '';
+
+        let rendered = String(text);
+        for (const prop in params) {
+            rendered = rendered.replace(new RegExp(`\\{${prop}\\}`, 'g'), String(params[prop]));
+        }
+        return rendered;
+    }
+
+    get(key, params = {}) {
+        return this.t(key, '', params);
     }
 
     updatePage() {
         if (!this.translations[this.locale]) return;
 
-        // Update document title if needed
-        // document.title = this.translations[this.locale]['page_title_' + document.body.dataset.pageId] || document.title;
-        
-        // Use fresh query selector to catch dynamically added elements
-        const elements = document.querySelectorAll('[data-i18n], [data-i18n-placeholder]');
+        document.documentElement.setAttribute('lang', this.locale);
+
+        const elements = document.querySelectorAll(
+            [
+                '[data-i18n]',
+                '[data-i18n-placeholder]',
+                '[data-i18n-aria-label]',
+                '[data-i18n-alt]',
+                '[data-i18n-title]',
+                '[data-i18n-value]'
+            ].join(', ')
+        );
+
         elements.forEach(el => {
-            const key = el.getAttribute('data-i18n');
+            const textKey = el.getAttribute('data-i18n');
             const placeholderKey = el.getAttribute('data-i18n-placeholder');
-            
-            if (key) {
-                const translation = this.translations[this.locale][key];
-                if (translation) {
-                    if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
-                        el.placeholder = translation;
-                    } else {
-                        el.innerText = translation;
-                    }
-                }
+            const ariaLabelKey = el.getAttribute('data-i18n-aria-label');
+            const altKey = el.getAttribute('data-i18n-alt');
+            const titleKey = el.getAttribute('data-i18n-title');
+            const valueKey = el.getAttribute('data-i18n-value');
+
+            if (textKey) {
+                const translation = this.t(textKey);
+                if (translation) el.textContent = translation;
             }
-            
             if (placeholderKey) {
-                const translation = this.translations[this.locale][placeholderKey];
-                if (translation) {
-                    el.setAttribute('placeholder', translation);
-                }
+                const translation = this.t(placeholderKey);
+                if (translation) el.setAttribute('placeholder', translation);
+            }
+            if (ariaLabelKey) {
+                const translation = this.t(ariaLabelKey);
+                if (translation) el.setAttribute('aria-label', translation);
+            }
+            if (altKey) {
+                const translation = this.t(altKey);
+                if (translation) el.setAttribute('alt', translation);
+            }
+            if (titleKey) {
+                const translation = this.t(titleKey);
+                if (translation) el.setAttribute('title', translation);
+            }
+            if (valueKey) {
+                const translation = this.t(valueKey);
+                if (translation) el.setAttribute('value', translation);
             }
         });
-        
-        // Handle dynamic location text
-        const dynamicElements = document.querySelectorAll('[data-i18n-dynamic="true"]');
-        dynamicElements.forEach(el => {
-            const prefixKey = el.getAttribute('data-prefix-key');
-            let locationText = el.getAttribute('data-location-text');
-            
-            // If the element has a stored region key, use that
-            if (el.dataset.regionKey && this.translations[this.locale][el.dataset.regionKey]) {
-                locationText = this.translations[this.locale][el.dataset.regionKey];
-            }
-
-            const prefix = (prefixKey && this.translations[this.locale][prefixKey]) || '';
-            el.innerHTML = `${prefix}${locationText}`;
-        });
-        
-        // Dispatch event for other components to listen
-        window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: this.locale } }));
-    }
-
-    get(key, params = {}) {
-        if (!this.translations[this.locale]) return key;
-        
-        let text = this.translations[this.locale][key] || key;
-        for (const prop in params) {
-            text = text.replace(new RegExp('{' + prop + '}', 'g'), params[prop]);
-        }
-        return text;
     }
 
     setupLanguageSwitcher() {
         const radios = document.querySelectorAll('input[name="language"]');
-        let debounceTimer;
+        if (!radios.length) return;
 
+        let debounceTimer;
         radios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(() => {
-                        this.setLanguage(e.target.value);
-                    }, 300);
-                }
+            radio.addEventListener('change', e => {
+                if (!e.target.checked) return;
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => this.setLanguage(e.target.value), 150);
             });
         });
         this.updateSwitcherState();
-        
-        // Legacy button support (optional/cleanup)
-        const switchBtn = document.getElementById('language-switch-btn');
-        if (switchBtn) {
-            switchBtn.onclick = () => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    const newLang = this.locale === 'en' ? 'zh-CN' : 'en';
-                    this.setLanguage(newLang);
-                }, 300);
-            };
-        }
     }
-    
+
     updateSwitcherState() {
         const radios = document.querySelectorAll('input[name="language"]');
         radios.forEach(radio => {
-            if (radio.value === this.locale) {
-                radio.checked = true;
-            }
+            radio.checked = radio.value === this.locale;
         });
-
-        const switchBtn = document.getElementById('language-switch-btn');
-        const statusText = document.getElementById('language-status');
-        if (switchBtn && statusText) {
-            statusText.innerText = this.locale === 'en' ? 'English' : '中文';
-        }
     }
 }
 
-// Initialize immediately so window.i18n is available for other scripts
 window.i18n = new I18n();
+window.t = (key, fallback = '', params = {}) => {
+    if (window.i18n && typeof window.i18n.t === 'function') return window.i18n.t(key, fallback, params);
+    return fallback || '';
+};

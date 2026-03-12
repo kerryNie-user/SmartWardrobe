@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title data-i18n="page_title_profile">ClosetTwin | Profile</title>
+    <title data-i18n="page.title.profile"></title>
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,97 +11,65 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/auto-location.css">
-    
-    <style>
-        /* Styles moved to css/style.css */
-        
-        /* 
-           CRITICAL FIX: Ensure overlays are hidden and don't block clicks 
-           when not active. This prevents "ghost" overlays from disabling the UI.
-        */
-        .modal-overlay:not(.active),
-        .detail-view:not(.active),
-        .image-modal-overlay:not(.active) {
-            display: none !important;
-            pointer-events: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-            z-index: -1 !important; /* Send to back just in case */
-        }
-        
-        /* Ensure body is interactive */
-        html, body {
-            pointer-events: auto !important;
-            height: 100%; /* Ensure full height */
-            overflow-y: auto; /* Allow scrolling by default */
-        }
-
-        /* Fix for specific auto-location button context */
-        #auto-location-btn {
-            pointer-events: auto !important;
-            cursor: pointer !important;
-            position: relative; /* Ensure z-index works */
-            z-index: 10;
-        }
-        
-        /* Debug helper to visualize click zones if needed (commented out) */
-        /* * { outline: 1px solid rgba(255,0,0,0.1); } */
-    </style>
 </head>
 <body>
 
     <div class="profile-header">
-        <button class="edit-btn" onclick="openEditModal()" data-i18n="edit">
+        <button class="edit-btn" onclick="openModal('edit-modal')" data-i18n="common.edit">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
         </button>
-        <img src="images/default_avatar.svg" class="profile-avatar" alt="Profile Avatar">
-        <h2 class="profile-name" id="display-name">User</h2>
-        <p class="profile-role" data-i18n="user_role">Fashion Enthusiast</p>
+        <img src="images/default_avatar.svg" class="profile-avatar" data-i18n-alt="profile.avatar.alt">
+        <h2 class="profile-name" id="display-name"></h2>
+        <p class="profile-role" data-i18n="profile.role.default"></p>
     </div>
 
     <!-- Edit Profile Modal -->
     <div class="modal-overlay" id="edit-modal">
         <div class="modal-content">
-            <div class="modal-title" data-i18n="edit_profile_title">Edit Profile</div>
+            <div class="modal-title" data-i18n="profile.edit.title"></div>
             
             <div class="form-group">
-                <label class="form-label" data-i18n="label_name">Name</label>
-                <input type="text" class="form-input" id="edit-name" value="User">
+                <label class="form-label" data-i18n="profile.edit.label.name"></label>
+                <input type="text" class="form-input" id="edit-name">
             </div>
             
             <div class="form-group">
-                <label class="form-label" data-i18n="label_avatar">Avatar</label>
+                <label class="form-label" data-i18n="profile.edit.label.avatar"></label>
                 <div class="avatar-upload-container">
                     <img id="edit-avatar-preview" src="" class="profile-avatar avatar-preview-lg" onclick="document.getElementById('edit-avatar-input').click()">
                     <input type="file" id="edit-avatar-input" accept="image/*" onchange="previewAvatar(this)" hidden>
-                    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('edit-avatar-input').click()" data-i18n="btn_choose_image">Choose Image</button>
+                    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('edit-avatar-input').click()" data-i18n="common.choose_image"></button>
                 </div>
             </div>
 
             <div class="modal-actions">
-                <button class="btn btn-cancel" onclick="closeEditModal()" data-i18n="btn_cancel">Cancel</button>
-                <button class="btn btn-save" onclick="saveProfile()" data-i18n="btn_save">Save</button>
+                <button class="btn btn-cancel" onclick="closeModal('edit-modal')" data-i18n="common.cancel"></button>
+                <button class="btn btn-save" onclick="saveProfile()" data-i18n="common.save"></button>
             </div>
         </div>
     </div>
 
     <div class="menu-list">
-        <div class="menu-item" onclick="openRegionModal()">
-            <span data-i18n="menu_region">Region</span>
+        <div class="menu-item" onclick="openModal('region-modal')">
+            <span data-i18n="profile.menu.region"></span>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="text-sub" id="current-region" style="font-size: 13px;" data-i18n="detecting_location">定位中...</span>
+                <span class="text-sub" id="current-region" style="font-size: 13px;" data-i18n="region.status.detecting"></span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
         </div>
-        <div class="menu-item" onclick="openProfessionModal()">
-            <span data-i18n="menu_profession">Profession</span>
+        <div class="menu-item" onclick="openModal('profession-modal')">
+            <span data-i18n="profile.menu.profession"></span>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="text-sub" id="current-profession" style="font-size: 13px;">Fashion Enthusiast</span>
+                <span class="text-sub" id="current-profession" style="font-size: 13px;" data-i18n="profession.fashion_enthusiast"></span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
         </div>
-        <div class="menu-item" onclick="openSettingsModal()">
-            <span data-i18n="menu_settings">Settings</span>
+        <div class="menu-item" onclick="window.location.href='favorites.html?view=favorites'">
+            <span data-i18n="profile.menu.favorites"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </div>
+        <div class="menu-item" onclick="openModal('settings-modal')">
+            <span data-i18n="profile.menu.settings"></span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </div>
     </div>
@@ -110,12 +78,12 @@
     <div class="modal-overlay" id="region-modal">
         <div class="modal-content" style="height: 80vh; max-height: 600px; display: flex; flex-direction: column;">
             <div class="modal-header">
-                <div class="modal-title" data-i18n="header_region">Select Region</div>
-                <button class="close-btn" onclick="closeRegionModal()">×</button>
+                <div class="modal-title" data-i18n="region.modal.title"></div>
+                <button class="close-btn" onclick="closeModal('region-modal')">×</button>
             </div>
             
             <div class="search-container" style="margin-bottom: 16px; background: transparent; padding: 0; border: none;">
-                <input type="text" class="form-input" id="region-search" data-i18n-placeholder="placeholder_search_region" placeholder="Search region..." oninput="filterRegions(this.value)">
+                <input type="text" class="form-input" id="region-search" data-i18n-placeholder="region.search.placeholder" oninput="filterRegions(this.value)">
             </div>
             
             <div class="isolated-scroll" id="region-list-scroll-container" style="flex: 1; padding-right: 12px;">
@@ -124,7 +92,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="auto-location-icon">
                             <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
                         </svg>
-                        <span data-i18n="auto_detect_location">Auto Detect Location</span>
+                        <span data-i18n="region.auto_detect"></span>
                     </div>
                     <div class="auto-location-right" id="auto-location-status">
                         <!-- Status injected via JS -->
@@ -141,12 +109,12 @@
     <div class="modal-overlay" id="profession-modal">
         <div class="modal-content" style="height: 80vh; max-height: 600px; display: flex; flex-direction: column;">
             <div class="modal-header">
-                <div class="modal-title" data-i18n="header_profession">Select Profession</div>
-                <button class="close-btn" onclick="closeProfessionModal()">×</button>
+                <div class="modal-title" data-i18n="profession.modal.title"></div>
+                <button class="close-btn" onclick="closeModal('profession-modal')">×</button>
             </div>
             
             <div class="search-container" style="margin-bottom: 16px; background: transparent; padding: 0; border: none;">
-                <input type="text" class="form-input" id="profession-search" data-i18n-placeholder="placeholder_search_profession" placeholder="Search profession..." oninput="filterProfessions(this.value)">
+                <input type="text" class="form-input" id="profession-search" data-i18n-placeholder="profession.search.placeholder" oninput="filterProfessions(this.value)">
             </div>
             
             <div class="isolated-scroll" id="profession-list" style="flex: 1;">
@@ -158,65 +126,94 @@
     <!-- Settings Modal -->
     <div class="modal-overlay" id="settings-modal">
         <div class="modal-content">
-            <div class="modal-title" data-i18n="header_settings">Settings</div>
+            <div class="modal-title" data-i18n="settings.title"></div>
             
             <div class="form-group">
-                <div class="form-label form-label-mb" data-i18n="lang_switch_label">Language</div>
+                <div class="form-label form-label-mb" data-i18n="settings.section.language"></div>
                 <div class="theme-selector">
                     <label class="theme-option">
-                        <input type="radio" name="language" value="en">
-                        <span class="theme-label">English</span>
+                        <input type="radio" name="language" value="en-US">
+                        <span class="theme-label" data-i18n="language.english"></span>
                     </label>
                     <label class="theme-option">
                         <input type="radio" name="language" value="zh-CN">
-                        <span class="theme-label">中文</span>
+                        <span class="theme-label" data-i18n="language.chinese"></span>
                     </label>
                     <div class="theme-slider"></div>
                 </div>
             </div>
             
             <div class="form-group form-section-divider">
-                <div class="form-label form-label-mb" data-i18n="settings_appearance">Appearance</div>
+                <div class="form-label form-label-mb" data-i18n="settings.section.appearance"></div>
                 <div class="theme-selector">
                     <label class="theme-option">
                         <input type="radio" name="theme" value="light">
-                        <span class="theme-label" data-i18n="theme_light">Light</span>
+                        <span class="theme-label" data-i18n="theme.light"></span>
                     </label>
                     <label class="theme-option">
                         <input type="radio" name="theme" value="dark">
-                        <span class="theme-label" data-i18n="theme_dark">Dark</span>
+                        <span class="theme-label" data-i18n="theme.dark"></span>
                     </label>
                     <label class="theme-option">
                         <input type="radio" name="theme" value="system">
-                        <span class="theme-label" data-i18n="theme_system">System</span>
+                        <span class="theme-label" data-i18n="theme.system"></span>
+                    </label>
+                    <div class="theme-slider"></div>
+                </div>
+            </div>
+
+            <div class="form-group form-section-divider">
+                <div class="form-label form-label-mb" data-i18n="settings.section.wardrobe_display"></div>
+                <div class="theme-selector">
+                    <label class="theme-option">
+                        <input type="radio" name="wardrobeDisplay" value="list">
+                        <span class="theme-label" data-i18n="wardrobe.display.list"></span>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="wardrobeDisplay" value="card">
+                        <span class="theme-label" data-i18n="wardrobe.display.card"></span>
                     </label>
                     <div class="theme-slider"></div>
                 </div>
             </div>
             
             <div class="form-group">
-                <button class="logout-btn" onclick="logout()" data-i18n="btn_sign_out">Sign Out</button>
+                <button class="logout-btn" onclick="logout()" data-i18n="auth.sign_out"></button>
             </div>
 
             <div class="modal-actions">
-                <button class="btn btn-cancel" onclick="closeSettingsModal()" data-i18n="btn_close">Close</button>
+                <button class="btn btn-cancel" onclick="closeModal('settings-modal')" data-i18n="common.close"></button>
             </div>
         </div>
+    </div>
+
+    <div id="detail-view" class="detail-view">
+        <div id="detail-content-body">
+        </div>
+    </div>
+
+    <div id="image-modal" class="image-modal-overlay" onclick="closeImageModal()">
+        <span class="close-image-btn">&times;</span>
+        <img class="modal-image" id="modal-image-content">
     </div>
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <a href="index.html" class="nav-item">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            <span data-i18n="nav_home">Home</span>
+            <span data-i18n="nav.home"></span>
         </a>
         <a href="wardrobe.html" class="nav-item">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path></svg>
-            <span data-i18n="nav_wardrobe">Wardrobe</span>
+            <span data-i18n="nav.wardrobe"></span>
+        </a>
+        <a href="favorites.html" class="nav-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span data-i18n="nav.schedule"></span>
         </a>
         <a href="profile.html" class="nav-item active">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span data-i18n="nav_profile">Profile</span>
+            <span data-i18n="nav.profile"></span>
         </a>
     </nav>
 
@@ -226,602 +223,174 @@
     <script src="js/autoLocation.js"></script>
     <script src="js/app.js"></script>
     <script>
-        // --- Fallback & Safety Logic ---
-        // Ensure activateOverlay/deactivateOverlay exist even if app.js fails
-        if (typeof activateOverlay === 'undefined') {
-            console.warn('[Profile] activateOverlay missing, using fallback');
-            window.activateOverlay = function(modal) {
-                if (modal) {
-                    modal.classList.add('active');
-                    modal.style.display = 'flex';
-                    modal.style.opacity = '1';
-                    // Basic scroll lock
-                    document.body.style.overflow = 'hidden'; 
-                }
-            };
-        }
-        
-        if (typeof deactivateOverlay === 'undefined') {
-            console.warn('[Profile] deactivateOverlay missing, using fallback');
-            window.deactivateOverlay = function(modal) {
-                if (modal) {
-                    modal.classList.remove('active');
-                    modal.style.display = 'none';
-                    modal.style.opacity = '0';
-                    document.body.style.overflow = ''; 
-                }
-            };
-        }
-        
-        if (typeof logout === 'undefined') {
-            console.warn('[Profile] logout missing, using fallback');
-            window.logout = function() {
-                // Clear storage and redirect
-                localStorage.removeItem('isLoggedIn');
-                window.location.href = 'login.html';
-            };
-        }
-        
-        // --- Auto Location Logic ---
-        let isAutoLocationThrottled = false;
+        (function() {
+            const REGION_KEYS = [
+                'region.preset.new_york',
+                'region.preset.london',
+                'region.preset.paris',
+                'region.preset.tokyo',
+                'region.preset.shanghai',
+                'region.preset.beijing',
+                'region.preset.hong_kong',
+                'region.preset.singapore',
+                'region.preset.sydney',
+                'region.preset.los_angeles',
+                'region.preset.chicago',
+                'region.preset.toronto',
+                'region.preset.berlin',
+                'region.preset.milan',
+                'region.preset.seoul',
+                'region.preset.bangkok',
+                'region.preset.dubai',
+                'region.preset.mumbai'
+            ];
 
-        async function handleAutoLocation() {
-            console.log('[Profile] handleAutoLocation called');
-            if (isAutoLocationThrottled) return;
-            
-            const btn = document.getElementById('auto-location-btn');
-            const statusEl = document.getElementById('auto-location-status');
-            const leftTextSpan = btn.querySelector('.auto-location-left span');
-            const icon = btn.querySelector('.auto-location-icon');
-            
-            // Prevent double-click if already loading
-            if (btn.classList.contains('auto-location-loading')) return;
+            const PROFESSION_KEYS = [
+                'profession.fashion_enthusiast',
+                'profession.student',
+                'profession.teacher',
+                'profession.programmer',
+                'profession.designer',
+                'profession.model',
+                'profession.blogger',
+                'profession.stylist',
+                'profession.photographer',
+                'profession.editor',
+                'profession.artist',
+                'profession.musician',
+                'profession.actor',
+                'profession.writer',
+                'profession.doctor',
+                'profession.lawyer',
+                'profession.engineer',
+                'profession.architect',
+                'profession.chef',
+                'profession.other'
+            ];
 
-            // Reset UI State
-            if (leftTextSpan) {
-                leftTextSpan.setAttribute('data-i18n', 'auto_detect_location');
-                leftTextSpan.style.color = ''; // Reset color
-                if (window.i18n) leftTextSpan.textContent = window.i18n.get('auto_detect_location') || 'Auto Detect Location';
-            }
-            if (icon) {
-                icon.style.color = ''; // Reset color
-            }
+            const normalize = (v) => String(v || '').trim().toLowerCase();
 
-            isAutoLocationThrottled = true;
-            // Throttle reset after short delay to prevent accidental double taps
-            setTimeout(() => { isAutoLocationThrottled = false; }, 1000); // Increased throttle slightly
-            
-            // FORCE REFRESH: Clear cache to ensure new detection
-            if (window.autoLocationService) {
-                window.autoLocationService.clearCache();
-            }
-            
-            // 1. Set Loading State
-            // Unified loading style (Spinner + Text) for both Mobile and PC
-            btn.classList.add('auto-location-loading');
-            
-            const detectingText = (window.i18n && window.i18n.get('detecting_location')) || 'Detecting...';
-            // Ensure layout is preserved: Left side remains, Right side shows spinner
-            // Add inline style to spinner to match text size better if needed
-            statusEl.innerHTML = `<div class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:6px;"></div><span data-i18n="detecting_location" style="font-size:12px;color:var(--text-sub);">${detectingText}</span>`;
-            
-            try {
-                // 2. Call Service
-                const location = await window.autoLocationService.detectLocation();
-                
-                // 3. Success UI
-                btn.classList.remove('auto-location-loading');
-                
-                // Use unified translation function
-                let locationText = window.autoLocationService.translateAutoSelect(location);
-                
-                // CHECK IF LOCATION IS UNKNOWN
-                // If regionKey is 'region_unknown' or text contains 'Unknown'/'未知', treat as failure
-                if (location.regionKey === 'region_unknown' || locationText.includes('Unknown') || locationText.includes('未知')) {
-                    // Update Left Side (Red Error)
-                    if (leftTextSpan) {
-                         leftTextSpan.setAttribute('data-i18n', 'auto_select_unavailable');
-                         leftTextSpan.style.color = 'var(--danger-color)';
-                         if (window.i18n) leftTextSpan.textContent = window.i18n.get('auto_select_unavailable') || 'Auto Select Unavailable';
-                    }
-                    if (icon) {
-                         icon.style.color = 'var(--danger-color)';
-                    }
-                    
-                    // Update Right Side (Show Reason in Gray)
-                    // ADDED: data attributes for dynamic translation update
-                    // Escape single quotes in JSON for HTML attribute safety
-                    const jsonStr = JSON.stringify(location).replace(/'/g, "&apos;");
-                    statusEl.innerHTML = `<span class="location-error" style="color: var(--text-sub);" 
-                                            data-i18n-dynamic="true" 
-                                            data-location-json='${jsonStr}'>
-                                            ${locationText}
-                                          </span>`;
-
-                    // Expand manual selection (ensure it is visible)
-                    const regionList = document.getElementById('region-list');
-                    if (regionList && regionList.style.display === 'none') {
-                        regionList.style.display = 'block';
-                    }
-                    return; // Stop here, do not close modal
-                }
-                
-                const prefix = ''; // Removed "Located: "
-                
-                // Store the raw text for fallback, but ideally use regionKey if available for translation
-                const dynamicSpan = document.createElement('span');
-                dynamicSpan.className = 'location-highlight';
-                dynamicSpan.setAttribute('data-i18n-dynamic', 'true');
-                dynamicSpan.setAttribute('data-prefix-key', '');
-                // Save raw location data for re-translation
-                dynamicSpan.setAttribute('data-location-json', JSON.stringify(location)); 
-                
-                // If we have a regionKey (even from auto-detect), use it for better translation
-                if (location.regionKey && location.regionKey !== 'region_unknown') {
-                     dynamicSpan.setAttribute('data-region-key', location.regionKey);
-                }
-                
-                dynamicSpan.innerHTML = `${prefix}${locationText}`;
-                statusEl.innerHTML = '';
-                statusEl.appendChild(dynamicSpan);
-                
-                // Update Main Profile UI
-                document.getElementById('current-region').textContent = locationText; // Use translated text
-                document.getElementById('current-region').setAttribute('data-i18n', location.regionKey);
-                
-                // Update LocalStorage
-                let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                user.regionKey = location.regionKey;
-                localStorage.setItem('currentUser', JSON.stringify(user));
-
-                // Close modal on success
-                closeRegionModal();
-                
-            } catch (error) {
-                // 4. Error UI
-                btn.classList.remove('auto-location-loading');
-                
-                // Update Left Side (Red Error)
-                if (leftTextSpan) {
-                     leftTextSpan.setAttribute('data-i18n', 'auto_select_unavailable');
-                     leftTextSpan.style.color = 'var(--danger-color)';
-                     if (window.i18n) leftTextSpan.textContent = window.i18n.get('auto_select_unavailable') || 'Auto Select Unavailable';
-                }
-                if (icon) {
-                     icon.style.color = 'var(--danger-color)';
-                }
-
-                // Update Right Side (Show Error Reason in Gray)
-                const errorText = (window.i18n && window.i18n.get('location_failed')) || 'Location failed';
-                const refreshHint = (window.i18n && window.i18n.get('location_retry')) || 'Retry';
-                
-                statusEl.innerHTML = `<span class="location-error" style="color: var(--text-sub);" data-i18n="location_failed">${errorText}</span> <span style="font-size:10px;color:var(--text-sub);margin-left:4px;">(<span data-i18n="location_retry">${refreshHint}</span>)</span>`;
-                
-                // Expand manual selection (ensure it is visible)
-                const regionList = document.getElementById('region-list');
-                if (regionList && regionList.style.display === 'none') {
-                    regionList.style.display = 'block';
-                }
-                
-                // DO NOT close modal
-            }
-        }
-
-        // Sample Data with Keys for Translation
-        const regions = [
-            { key: "region_new_york", label: "New York" },
-            { key: "region_london", label: "London" },
-            { key: "region_paris", label: "Paris" },
-            { key: "region_tokyo", label: "Tokyo" },
-            { key: "region_shanghai", label: "Shanghai" },
-            { key: "region_beijing", label: "Beijing" },
-            { key: "region_hong_kong", label: "Hong Kong" },
-            { key: "region_singapore", label: "Singapore" },
-            { key: "region_sydney", label: "Sydney" },
-            { key: "region_los_angeles", label: "Los Angeles" },
-            { key: "region_chicago", label: "Chicago" },
-            { key: "region_toronto", label: "Toronto" },
-            { key: "region_berlin", label: "Berlin" },
-            { key: "region_milan", label: "Milan" },
-            { key: "region_seoul", label: "Seoul" },
-            { key: "region_bangkok", label: "Bangkok" },
-            { key: "region_dubai", label: "Dubai" },
-            { key: "region_mumbai", label: "Mumbai" }
-        ];
-        
-        const professions = [
-            { key: "profession_fashion_enthusiast", label: "Fashion Enthusiast" },
-            { key: "profession_student", label: "Student" },
-            { key: "profession_teacher", label: "Teacher" },
-            { key: "profession_programmer", label: "Programmer" },
-            { key: "profession_designer", label: "Designer" },
-            { key: "profession_model", label: "Model" },
-            { key: "profession_blogger", label: "Blogger" },
-            { key: "profession_stylist", label: "Stylist" },
-            { key: "profession_photographer", label: "Photographer" },
-            { key: "profession_editor", label: "Editor" },
-            { key: "profession_artist", label: "Artist" },
-            { key: "profession_musician", label: "Musician" },
-            { key: "profession_actor", label: "Actor" },
-            { key: "profession_writer", label: "Writer" },
-            { key: "profession_doctor", label: "Doctor" },
-            { key: "profession_lawyer", label: "Lawyer" },
-            { key: "profession_engineer", label: "Engineer" },
-            { key: "profession_architect", label: "Architect" },
-            { key: "profession_chef", label: "Chef" },
-            { key: "profession_other", label: "Other" }
-        ];
-
-        // --- Region Logic ---
-        function openRegionModal() {
-            const modal = document.getElementById('region-modal');
-            activateOverlay(modal, modal.querySelector('.modal-content'));
-            renderList('region-list', regions, selectRegion);
-        }
-
-        function closeRegionModal() {
-            deactivateOverlay(document.getElementById('region-modal'));
-        }
-
-        function filterRegions(query) {
-            const lang = window.i18n.locale;
-            const filtered = regions.filter(r => {
-                const text = window.i18n.get(r.key) || r.label;
-                return text.toLowerCase().includes(query.toLowerCase());
-            });
-            renderList('region-list', filtered, selectRegion);
-        }
-
-        function selectRegion(regionItem) {
-            // Update UI
-            const regionName = window.i18n.get(regionItem.key) || regionItem.label;
-            document.getElementById('current-region').textContent = regionName;
-            document.getElementById('current-region').setAttribute('data-i18n', regionItem.key);
-            
-            // Simulate Backend Call
-            console.log(`[Backend Sync] User region updated to: ${regionItem.key}`);
-            
-            // Save to LocalStorage
-            let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            user.regionKey = regionItem.key; // Save key instead of text
-            localStorage.setItem('currentUser', JSON.stringify(user));
-
-            closeRegionModal();
-        }
-
-        // --- Profession Logic ---
-        function openProfessionModal() {
-            const modal = document.getElementById('profession-modal');
-            activateOverlay(modal, modal.querySelector('.modal-content'));
-            renderList('profession-list', professions, selectProfession);
-        }
-
-        function closeProfessionModal() {
-            deactivateOverlay(document.getElementById('profession-modal'));
-        }
-
-        function filterProfessions(query) {
-            const filtered = professions.filter(p => {
-                const text = window.i18n.get(p.key) || p.label;
-                return text.toLowerCase().includes(query.toLowerCase());
-            });
-            renderList('profession-list', filtered, selectProfession);
-        }
-
-        function selectProfession(professionItem) {
-            // Update UI
-            const professionName = window.i18n.get(professionItem.key) || professionItem.label;
-            document.getElementById('current-profession').textContent = professionName;
-            document.getElementById('current-profession').setAttribute('data-i18n', professionItem.key);
-            
-            const profileRole = document.querySelector('.profile-role');
-            profileRole.textContent = professionName;
-            profileRole.setAttribute('data-i18n', professionItem.key);
-            
-            // Save to LocalStorage
-            let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            user.roleKey = professionItem.key; // Save key
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            
-            closeProfessionModal();
-        }
-
-        // --- Helper: Render List ---
-        function renderList(containerId, items, clickHandler) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'menu-item'; // Reuse menu-item style
-                div.style.padding = '16px 0';
-                div.style.borderBottom = '1px solid var(--border-color)';
-                
-                // Get translated text
-                div.textContent = window.i18n.get(item.key) || item.label;
-                
-                div.onclick = () => clickHandler(item);
-                container.appendChild(div);
-            });
-            
-            if (items.length === 0) {
-                const noResultsText = window.i18n.get('msg_no_results') || 'No results found';
-                container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-sub);">${noResultsText}</div>`;
-            }
-        }
-
-        // --- Language Change Listener ---
-        window.addEventListener('languageChanged', () => {
-            console.log('[Profile] Language changed, updating location text...');
-            
-            // Debounce/Delay to ensure DOM and i18n are fully ready
-            setTimeout(() => {
+            const getCurrentUser = () => {
                 try {
-                    const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                    
-                    // 1. Update Profile Main Display
-                    const regionEl = document.getElementById('current-region');
-                    if (regionEl) {
-                        // Force redraw trigger
-                        regionEl.style.display = 'none';
-                        regionEl.offsetHeight; // Trigger reflow
-                        regionEl.style.display = '';
-
-                        // Check if current region is auto-detected (we can check if we have cached data matching user.regionKey)
-                        if (user.regionKey && window.autoLocationService) {
-                             const cached = window.autoLocationService.getCachedLocation();
-                             // Only update if the user's regionKey matches the cached one (meaning they used auto-select)
-                             // And it's not a standard key handled by i18n (or is region_unknown)
-                             if (cached && cached.regionKey === user.regionKey) {
-                                 const newText = window.autoLocationService.translateAutoSelect(cached);
-                                 if (newText) regionEl.textContent = newText;
-                             } else if (user.regionKey !== 'auto_detect_pending' && window.i18n && window.i18n.loaded) {
-                                 // Fallback for standard keys if i18n didn't catch it
-                                 const translated = window.i18n.get(user.regionKey);
-                                 if (translated && translated !== user.regionKey) {
-                                     regionEl.textContent = translated;
-                                 }
-                             }
-                        }
-                    }
-        
-                    // 2. Update Modal Status (if visible/rendered)
-                    const statusEl = document.getElementById('auto-location-status');
-                    if (statusEl) {
-                        const dynamicSpan = statusEl.querySelector('[data-i18n-dynamic="true"]');
-                        if (dynamicSpan) {
-                            const json = dynamicSpan.getAttribute('data-location-json');
-                            if (json) {
-                                try {
-                                    const loc = JSON.parse(json);
-                                    if (window.autoLocationService) {
-                                        const newText = window.autoLocationService.translateAutoSelect(loc);
-                                        // Keep prefix if any
-                                        const prefixKey = dynamicSpan.getAttribute('data-prefix-key');
-                                        const prefix = prefixKey ? (window.i18n.get(prefixKey) || '') : '';
-                                        dynamicSpan.textContent = `${prefix}${newText}`;
-                                    }
-                                } catch (e) { console.error('[Profile] Error updating modal location:', e); }
-                            }
-                        }
-                    }
-                } catch (err) {
-                    console.error('[Profile] Error in languageChanged listener:', err);
-                }
-            }, 50);
-        });
-
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const initProfile = () => {
-                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                const regionEl = document.getElementById('current-region');
-                
-                // 1. Check User Preference for initial render (Fast Paint)
-                // The global auto-location service in app.js will handle the actual detection and update if needed.
-                // Here we just set the initial state based on what we have.
-                if (user.regionKey) {
-                      if (user.regionKey !== 'auto_detect_pending') {
-                          regionEl.setAttribute('data-i18n', user.regionKey);
-                          // Translate immediately if i18n is ready
-                          if (window.i18n && window.i18n.loaded) {
-                              regionEl.textContent = window.i18n.get(user.regionKey);
-                          } else {
-                              // Fallback if i18n not ready yet
-                              regionEl.textContent = user.regionKey;
-                          }
-
-                          // If it's a known key, i18n.js will translate it.
-                          // Check cache for custom keys text
-                          const cached = window.autoLocationService.getCachedLocation();
-                          if (cached && cached.regionKey === user.regionKey) {
-                              const locationText = window.autoLocationService.translateAutoSelect(cached);
-                              regionEl.textContent = locationText;
-                          }
-                     } else {
-                         // Pending state, let global service handle it
-                         regionEl.setAttribute('data-i18n', 'detecting_location');
-                         if (window.i18n && window.i18n.loaded) {
-                             regionEl.textContent = window.i18n.get('detecting_location');
-                         }
-                     }
-                 } else if (user.region) {
-                    // Fallback for legacy text data
-                    // Try to find a matching key in regions array to enable i18n
-                    const foundRegion = regions.find(r => r.label === user.region || (r.label.split('·')[0] === user.region));
-                    if (foundRegion) {
-                        regionEl.setAttribute('data-i18n', foundRegion.key);
-                        if (window.i18n && window.i18n.loaded) {
-                            regionEl.textContent = window.i18n.get(foundRegion.key);
-                        } else {
-                            regionEl.textContent = user.region;
-                        }
-                    } else {
-                        regionEl.textContent = user.region;
-                    }
-                } else {
-                     // No preference, default to auto (Global service will trigger)
-                     regionEl.setAttribute('data-i18n', 'detecting_location');
-                     if (window.i18n && window.i18n.loaded) {
-                         regionEl.textContent = window.i18n.get('detecting_location');
-                     }
-                 }
-                 
-                 // FIX: Ensure role/profession also syncs correctly on init
-                 if (user.roleKey) {
-                     const elRole = document.getElementById('current-profession');
-                     const elHeaderRole = document.querySelector('.profile-role');
-                     
-                     elRole.setAttribute('data-i18n', user.roleKey);
-                     elHeaderRole.setAttribute('data-i18n', user.roleKey);
-                     
-                     if (window.i18n && window.i18n.loaded) {
-                         elRole.textContent = window.i18n.get(user.roleKey);
-                         elHeaderRole.textContent = window.i18n.get(user.roleKey);
-                     }
-                 } else if (user.role) {
-                    // Fallback
-                    const elRole = document.getElementById('current-profession');
-                    const elHeaderRole = document.querySelector('.profile-role');
-                    
-                    elRole.textContent = user.role;
-                    elHeaderRole.textContent = user.role;
-                    
-                    // Try to find matching key for legacy role
-                    // This ensures future language switches work
-                    const match = professions.find(p => p.label === user.role);
-                    if (match) {
-                        elRole.setAttribute('data-i18n', match.key);
-                        elHeaderRole.setAttribute('data-i18n', match.key);
-                        // Update user object
-                        user.roleKey = match.key;
-                        localStorage.setItem('currentUser', JSON.stringify(user));
-                    }
-                } else {
-                    // Default Case for new users (fix for untranslated default text)
-                    const defaultRoleKey = 'profession_fashion_enthusiast';
-                    const elRole = document.getElementById('current-profession');
-                    const elHeaderRole = document.querySelector('.profile-role');
-                    
-                    elRole.setAttribute('data-i18n', defaultRoleKey);
-                    elHeaderRole.setAttribute('data-i18n', defaultRoleKey);
-                    
-                    if (window.i18n && window.i18n.loaded) {
-                        const text = window.i18n.get(defaultRoleKey);
-                        elRole.textContent = text;
-                        elHeaderRole.textContent = text;
-                    }
+                    return JSON.parse(localStorage.getItem('currentUser') || '{}') || {};
+                } catch (_) {
+                    return {};
                 }
             };
 
-            if (window.i18n && window.i18n.loaded) {
-                initProfile();
-            } else {
-                window.addEventListener('i18nReady', initProfile, { once: true });
-            }
-        });
+            const setCurrentUser = (user) => {
+                localStorage.setItem('currentUser', JSON.stringify(user || {}));
+            };
 
+            const renderKeyList = (containerId, keys, query, onSelect) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
 
-        function openEditModal() {
-            const currentName = document.getElementById('display-name').innerText;
-            const currentAvatar = document.querySelector('.profile-header .profile-avatar').src;
-            
-            document.getElementById('edit-name').value = currentName;
-            document.getElementById('edit-avatar-preview').src = currentAvatar;
-            document.getElementById('edit-avatar-input').value = ''; // Reset file input
-            
-            const editModal = document.getElementById('edit-modal');
-            const editContent = editModal ? editModal.querySelector('.modal-content') : null;
-            activateOverlay(editModal, editContent);
-        }
+                const q = normalize(query);
+                const filtered = !q
+                    ? keys
+                    : keys.filter((key) => normalize(window.t(key)).includes(q) || normalize(key).includes(q));
 
-        function closeEditModal() {
-            const editModal = document.getElementById('edit-modal');
-            deactivateOverlay(editModal);
-        }
+                filtered.forEach((key) => {
+                    const item = document.createElement('div');
+                    item.className = 'menu-item';
 
-        function previewAvatar(input) {
-            if (input.files && input.files[0]) {
+                    const span = document.createElement('span');
+                    span.setAttribute('data-i18n', key);
+                    span.textContent = window.t(key);
+                    item.appendChild(span);
+
+                    item.addEventListener('click', () => onSelect(key));
+                    container.appendChild(item);
+                });
+            };
+
+            const applyRegion = (key) => {
+                const el = document.getElementById('current-region');
+                if (el) {
+                    el.setAttribute('data-i18n', key);
+                    el.textContent = window.t(key);
+                }
+                const user = getCurrentUser();
+                user.regionKey = key;
+                setCurrentUser(user);
+                if (window.autoLocationService) window.autoLocationService.clearCache();
+                closeModal('region-modal');
+            };
+
+            const applyProfession = (key) => {
+                const el = document.getElementById('current-profession');
+                if (el) {
+                    el.setAttribute('data-i18n', key);
+                    el.textContent = window.t(key);
+                }
+                const headerRole = document.querySelector('.profile-role');
+                if (headerRole) {
+                    headerRole.setAttribute('data-i18n', key);
+                    headerRole.textContent = window.t(key);
+                }
+                const user = getCurrentUser();
+                user.professionKey = key;
+                setCurrentUser(user);
+                closeModal('profession-modal');
+            };
+
+            window.filterRegions = (value) => renderKeyList('region-list', REGION_KEYS, value, applyRegion);
+            window.filterProfessions = (value) => renderKeyList('profession-list', PROFESSION_KEYS, value, applyProfession);
+
+            window.handleAutoLocation = async () => {
+                const btn = document.getElementById('auto-location-btn');
+                if (btn) btn.classList.add('auto-location-loading');
+                if (window.autoLocationService) {
+                    window.autoLocationService.clearCache();
+                    await window.autoLocationService.initAutoLocation();
+                }
+                if (btn) btn.classList.remove('auto-location-loading');
+            };
+
+            window.previewAvatar = (input) => {
+                if (!input || !input.files || !input.files[0]) return;
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('edit-avatar-preview').src = e.target.result;
-                }
+                reader.onload = (e) => {
+                    const img = document.getElementById('edit-avatar-preview');
+                    if (img) img.src = e.target.result;
+                };
                 reader.readAsDataURL(input.files[0]);
-            }
-        }
+            };
 
-        function saveProfile() {
-            const newName = document.getElementById('edit-name').value;
-            const avatarPreviewSrc = document.getElementById('edit-avatar-preview').src;
-            
-            if (newName.trim() === '') {
-                // alert(window.i18n.get('msg_name_required'));
-                if (window.showToast) {
-                    showToast(window.i18n.get('msg_name_required') || 'Name is required');
-                } else {
-                    alert(window.i18n.get('msg_name_required') || 'Name is required');
+            window.saveProfile = () => {
+                const newName = (document.getElementById('edit-name')?.value || '').trim();
+                const avatarPreviewSrc = document.getElementById('edit-avatar-preview')?.src || '';
+
+                if (!newName) {
+                    if (window.showToast) showToast(window.t('error.name_required'));
+                    return;
                 }
-                return;
-            }
 
-            // Update UI
-            document.getElementById('display-name').innerText = newName;
-            document.querySelector('.profile-header .profile-avatar').src = avatarPreviewSrc;
-            
-            // Update localStorage
-            const userStr = localStorage.getItem('currentUser');
-            if (userStr) {
-                const user = JSON.parse(userStr);
+                const user = getCurrentUser();
                 user.name = newName;
-                user.avatar = avatarPreviewSrc; // Save avatar data
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                
-                // Also update the user in the 'users' array if needed for login consistency
+                if (avatarPreviewSrc) user.avatar = avatarPreviewSrc;
+                setCurrentUser(user);
+
                 const users = JSON.parse(localStorage.getItem('users') || '[]');
-                const userIndex = users.findIndex(u => u.email === user.email);
-                if (userIndex !== -1) {
-                    users[userIndex].name = newName;
-                    users[userIndex].avatar = avatarPreviewSrc; // Save avatar data
+                const idx = users.findIndex(u => u.email && user.email && u.email === user.email);
+                if (idx !== -1) {
+                    users[idx] = { ...users[idx], name: newName, avatar: avatarPreviewSrc || users[idx].avatar };
                     localStorage.setItem('users', JSON.stringify(users));
                 }
-            }
 
-            closeEditModal();
-            alert(window.i18n.get('msg_profile_updated'));
-        }
+                closeModal('edit-modal');
+                updateUserProfile();
+                if (window.showToast) showToast(window.t('profile.edit.saved'));
+            };
 
-        // Close modal when clicking outside
-        document.getElementById('edit-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeEditModal();
-            }
-        });
-
-        // Settings Modal Logic
-        function openSettingsModal() {
-            const settingsModal = document.getElementById('settings-modal');
-            const settingsContent = settingsModal ? settingsModal.querySelector('.modal-content') : null;
-            activateOverlay(settingsModal, settingsContent);
-            
-            // Force update sliders when modal opens
-            // Use small delay to allow display:block to take effect
-            setTimeout(() => {
-                if (window.themeManager) {
-                    window.themeManager.updateAllSliders();
-                }
-            }, 50);
-        }
-
-        function closeSettingsModal() {
-            const settingsModal = document.getElementById('settings-modal');
-            deactivateOverlay(settingsModal);
-        }
-
-        document.getElementById('settings-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeSettingsModal();
-            }
-        });
+            document.addEventListener('DOMContentLoaded', () => {
+                window.filterRegions('');
+                window.filterProfessions('');
+                updateUserProfile();
+            });
+        })();
     </script>
 </body>
 </html>

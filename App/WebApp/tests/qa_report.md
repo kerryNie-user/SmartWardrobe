@@ -38,3 +38,11 @@ The following changes have been applied to the codebase:
 -   Automated script `scripts/content_qa.py` was run to identify mixed content issues.
 -   Manual review of `profile.html` and other key files confirmed no other obvious violations in `span`, `div`, or `h1` elements (username and h1 are exempt).
 -   `AndroidApp` resources were checked and found clean.
+
+## I18n Refactor Test Report (2026-03-11)
+- Command: `npm test`
+- Results:
+  - PASS HTML 模板不应包含裸露英文可见文本
+  - PASS en-US.json 与 zh-CN.json 的 key 集合必须完全一致
+  - PASS i18n 接口 404/500 时应回退到缓存
+  - PASS i18n 接口 500 时应回退到静态 JSON

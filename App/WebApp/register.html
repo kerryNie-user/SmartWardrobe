@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title data-i18n="page_title_register">ClosetTwin | Register</title>
+    <title data-i18n="page.title.register"></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="login-page">
 
     <div class="login-card">
-        <a href="index.html" class="auth-back-btn" aria-label="Back to Home">
+        <a href="index.html" class="auth-back-btn" data-i18n-aria-label="auth.back_to_home">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M19 12H5"></path>
                 <path d="M12 19l-7-7 7-7"></path>
@@ -18,43 +18,76 @@
         </a>
         <div class="login-header">
             <div class="login-logo">✨</div>
-            <h1 data-i18n="register_title">Create Account</h1>
-            <p data-i18n="register_subtitle">Sign up to start organizing your wardrobe</p>
+            <h1 data-i18n="auth.register.title"></h1>
+            <p data-i18n="auth.register.subtitle"></p>
         </div>
 
         <form id="register-form" class="auth-form" onsubmit="handleRegister(event)">
             <div class="form-group">
-                <label class="form-label" data-i18n="label_full_name">Full Name</label>
-                <input type="text" id="name" class="auth-input" placeholder="John Doe" required data-i18n-placeholder="placeholder_full_name">
+                <label class="form-label" data-i18n="auth.field.full_name.label"></label>
+                <input type="text" id="name" class="auth-input" required data-i18n-placeholder="auth.field.full_name.placeholder">
             </div>
             <div class="form-group">
-                <label class="form-label" data-i18n="label_email_mobile">Email or Mobile Number</label>
-                <input type="text" id="email" class="auth-input" placeholder="Email or Mobile Number" required data-i18n-placeholder="placeholder_email_mobile">
+                <label class="form-label" data-i18n="auth.field.email_or_mobile.label"></label>
+                <input type="text" id="email" class="auth-input" required data-i18n-placeholder="auth.field.email_or_mobile.placeholder">
             </div>
             <div class="form-group">
-                <label class="form-label" data-i18n="label_password">Password</label>
+                <label class="form-label" data-i18n="auth.field.password.label"></label>
                 <input type="password" id="password" class="auth-input" placeholder="••••••••" required>
             </div>
             <div class="form-group">
-                <label class="form-label" data-i18n="label_confirm_password">Confirm Password</label>
+                <label class="form-label" data-i18n="auth.field.confirm_password.label"></label>
                 <input type="password" id="confirm-password" class="auth-input" placeholder="••••••••" required>
             </div>
             
             <div id="error-msg" class="error-message"></div>
 
-            <button type="submit" class="auth-btn" data-i18n="btn_sign_up">Sign Up</button>
+            <button type="submit" class="auth-btn" data-i18n="auth.register.button.submit"></button>
         </form>
 
         <div class="alt-action">
-            <span data-i18n="text_have_account">Already have an account?</span> 
-            <a href="login.html" data-i18n="link_sign_in">Sign In</a>
+            <span data-i18n="auth.register.have_account"></span>
+            <a href="login.html" data-i18n="auth.register.link.sign_in"></a>
         </div>
     </div>
 
     <script src="js/i18n.js"></script>
     <script src="js/theme.js"></script>
     <script>
-        function handleRegister(e) {
+        function localRegister(name, emailOrMobile, password) {
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            const mobilePattern = /^1[3-9]\d{9}$/;
+
+            const isEmail = emailPattern.test(emailOrMobile);
+            const isMobile = mobilePattern.test(emailOrMobile);
+            if (!isEmail && !isMobile) {
+                showError(window.t('error.invalid_email_or_mobile'));
+                return false;
+            }
+
+            let users = JSON.parse(localStorage.getItem('users') || '[]');
+            if (isEmail && users.find(u => u.email === emailOrMobile)) {
+                showError(window.t('error.email_registered'));
+                return false;
+            }
+            if (isMobile && users.find(u => u.mobile === emailOrMobile)) {
+                showError(window.t('error.mobile_registered'));
+                return false;
+            }
+
+            const newUser = { name, password, avatar: 'images/default_avatar.svg' };
+            if (isEmail) newUser.email = emailOrMobile;
+            if (isMobile) newUser.mobile = emailOrMobile;
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+            window.location.href = 'index.html';
+            return true;
+        }
+
+        async function handleRegister(e) {
             e.preventDefault();
             const name = document.getElementById('name').value;
             const emailOrMobile = document.getElementById('email').value.trim();
@@ -70,72 +103,74 @@
             // Loading state
             const originalBtnText = submitBtn.innerText;
             submitBtn.disabled = true;
-            submitBtn.innerText = '...';
+            submitBtn.innerText = window.t('common.loading', '...');
 
-            setTimeout(() => {
+            if (password !== confirmPassword) {
+                showError(window.t('error.password_mismatch'));
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalBtnText;
+                return;
+            }
 
-                // Validation
-                if (password !== confirmPassword) {
-                    showError(window.i18n.get('error_password_mismatch') || 'Passwords do not match');
+            if (password.length < 6) {
+                showError(window.t('error.password_too_short'));
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalBtnText;
+                return;
+            }
+
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            const mobilePattern = /^1[3-9]\d{9}$/;
+            if (!emailPattern.test(emailOrMobile) && !mobilePattern.test(emailOrMobile)) {
+                showError(window.t('error.invalid_email_or_mobile'));
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalBtnText;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, emailOrMobile, password })
+                });
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok) {
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('currentUser', JSON.stringify(data.user || { name, email: emailOrMobile, avatar: 'images/default_avatar.svg' }));
+                    window.location.href = 'index.html';
                     return;
                 }
 
-                if (password.length < 6) {
-                    showError(window.i18n.get('error_password_length') || 'Password must be at least 6 characters');
-                    return;
+                const err = data && (data.error || data.message);
+                if (err === 'db_error' || response.status >= 500) {
+                    if (localRegister(name, emailOrMobile, password)) return;
                 }
-
-                // Check format
-                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-                const mobilePattern = /^1[3-9]\d{9}$/;
-                
-                let isEmail = false;
-                let isMobile = false;
-
-                if (emailPattern.test(emailOrMobile)) {
-                    isEmail = true;
-                } else if (mobilePattern.test(emailOrMobile)) {
-                    isMobile = true;
+                if (err === 'email_registered') {
+                    showError(window.t('error.email_registered'));
+                } else if (err === 'mobile_registered') {
+                    showError(window.t('error.mobile_registered'));
+                } else if (err === 'password_too_short') {
+                    showError(window.t('error.password_too_short'));
+                } else if (err === 'invalid_email_or_mobile') {
+                    showError(window.t('error.invalid_email_or_mobile'));
                 } else {
-                    showError(window.i18n.get('error_invalid_email_mobile') || 'Invalid email or mobile number');
-                    return;
+                    showError(window.t('error.fill_fields'));
                 }
-
-                // Check if user exists (simulate backend)
-                let users = JSON.parse(localStorage.getItem('users') || '[]');
-                
-                if (isEmail && users.find(u => u.email === emailOrMobile)) {
-                    showError(window.i18n.get('error_email_registered') || 'Email already registered');
-                    return;
-                }
-                if (isMobile && users.find(u => u.mobile === emailOrMobile)) {
-                    showError(window.i18n.get('error_mobile_registered') || 'Mobile number already registered');
-                    return;
-                }
-
-                // Save user
-                const newUser = { name, password, avatar: 'images/default_avatar.svg' };
-                if (isEmail) newUser.email = emailOrMobile;
-                if (isMobile) newUser.mobile = emailOrMobile;
-
-                users.push(newUser);
-                localStorage.setItem('users', JSON.stringify(users));
-
-                // Auto login
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('currentUser', JSON.stringify(newUser));
-                
-                // alert(window.i18n.get('msg_account_created') || 'Account created successfully!');
-                window.location.href = 'index.html';
-            }, 600);
+                if (localRegister(name, emailOrMobile, password)) return;
+            } catch (error) {
+                showError(window.t('error.fill_fields'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalBtnText;
         }
 
         function showError(msg) {
             const errorMsg = document.getElementById('error-msg');
             errorMsg.innerText = msg;
             errorMsg.style.display = 'block';
+        }
         }
     </script>
 </body>
