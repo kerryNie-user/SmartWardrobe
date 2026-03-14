@@ -21,7 +21,7 @@ SmartWardrobe 的 Web 端核心 UI 与前端逻辑（纯静态页面 + JavaScrip
    ```
 
 3. **Launch Development Server**
-   You can use any static file server. For example with Python:
+   You can use any static file server (UI only). For example with Python:
    ```bash
    python3 -m http.server 8001
    ```
@@ -32,6 +32,16 @@ SmartWardrobe 的 Web 端核心 UI 与前端逻辑（纯静态页面 + JavaScrip
 
 4. **Access the App**
    Open your browser and navigate to `http://localhost:8001/index.html`.
+
+### Using the Local Backend (Recommended for API features)
+To use MySQL-backed APIs (e.g. i18n / favorites / schedules), run the integrated local server from repository root:
+
+```bash
+cd ../../
+python3 server.py
+```
+
+Then open `http://localhost:8080/index.html`.
 
 ## 📦 Project Structure
 
@@ -76,8 +86,8 @@ npm test
 
 ## 📚 API Reference
 
-While this is a client-side app, it mocks backend interactions.
-See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for details on data structures.
+This project includes a lightweight local backend for API interactions.
+See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for endpoints and data structures.
 
 ## 📝 Code Style
 
