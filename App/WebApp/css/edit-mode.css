@@ -14,7 +14,7 @@
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    border: 2px solid #cbd5e1;
+    border: 2px solid var(--border-color);
     margin-right: 12px;
     display: flex;
     align-items: center;
@@ -40,9 +40,10 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    background: white;
+    background: var(--card-bg);
     padding: 16px 24px;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    border-top: 1px solid var(--border-color);
     z-index: 200; /* Above nav and fab */
     display: flex;
     justify-content: space-between;
@@ -61,7 +62,7 @@
 }
 
 .btn-danger {
-    background: #ef4444;
+    background: var(--danger-color);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -72,6 +73,7 @@
 }
 
 .btn-danger:disabled {
-    background: #cbd5e1;
+    background: var(--border-color);
+    color: var(--text-sub);
     cursor: not-allowed;
 }

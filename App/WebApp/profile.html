@@ -15,10 +15,8 @@
 <body>
 
     <div class="profile-header">
-        <button class="edit-btn" onclick="openModal('edit-modal')" data-i18n="common.edit">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-        </button>
-        <img src="images/default_avatar.svg" class="profile-avatar" data-i18n-alt="profile.avatar.alt">
+        <button class="edit-btn" onclick="openModal('edit-modal')" data-i18n="common.edit"></button>
+        <img src="images/avatar_minimal_light.svg" class="profile-avatar" data-avatar-style="minimal" data-i18n-alt="profile.avatar.alt">
         <h2 class="profile-name" id="display-name"></h2>
         <p class="profile-role" data-i18n="profile.role.default"></p>
     </div>
@@ -36,7 +34,7 @@
             <div class="form-group">
                 <label class="form-label" data-i18n="profile.edit.label.avatar"></label>
                 <div class="avatar-upload-container">
-                    <img id="edit-avatar-preview" src="" class="profile-avatar avatar-preview-lg" onclick="document.getElementById('edit-avatar-input').click()">
+                    <img id="edit-avatar-preview" src="images/avatar_minimal_light.svg" class="profile-avatar avatar-preview-lg" data-avatar-style="minimal" onclick="document.getElementById('edit-avatar-input').click()">
                     <input type="file" id="edit-avatar-input" accept="image/*" onchange="previewAvatar(this)" hidden>
                     <button class="btn btn-secondary btn-sm" onclick="document.getElementById('edit-avatar-input').click()" data-i18n="common.choose_image"></button>
                 </div>
@@ -64,11 +62,11 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
         </div>
-        <div class="menu-item" onclick="window.location.href='favorites.html?view=favorites'">
+        <div class="menu-item" onclick="window.location.href='favorites.html'">
             <span data-i18n="profile.menu.favorites"></span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </div>
-        <div class="menu-item" onclick="openModal('settings-modal')">
+        <div class="menu-item" onclick="window.location.href='settings.html'">
             <span data-i18n="profile.menu.settings"></span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </div>
@@ -193,8 +191,12 @@
     </div>
 
     <div id="image-modal" class="image-modal-overlay" onclick="closeImageModal()">
-        <span class="close-image-btn">&times;</span>
-        <img class="modal-image" id="modal-image-content">
+        <div class="image-modal-sheet">
+            <div class="image-modal-sheet-head">
+                <button class="close-btn" type="button" onclick="closeImageModal()">×</button>
+            </div>
+            <img class="modal-image" id="modal-image-content">
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -207,7 +209,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path></svg>
             <span data-i18n="nav.wardrobe"></span>
         </a>
-        <a href="favorites.html" class="nav-item">
+        <a href="schedule.html" class="nav-item">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span data-i18n="nav.schedule"></span>
         </a>

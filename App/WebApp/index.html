@@ -21,17 +21,21 @@
         </div>
     </header>
 
-    <!-- Today's Picks Section -->
-    <div class="section-title" data-i18n="home.section.todays_picks">
+    <div class="section-header">
+        <div class="section-title" data-i18n="home.section.today_schedule"></div>
+        <a class="section-link" href="schedule.html" data-i18n="common.view_all"></a>
     </div>
-    <div class="todays-picks-scroll" id="todays-picks-container">
+    <div class="schedule-preview-scroll" id="home-schedule-container"></div>
+
+    <!-- Today's Picks Section -->
+    <div class="section-title" data-i18n="home.section.todays_picks"></div>
+    <div class="picks-grid" id="todays-picks-container">
         <!-- Picks injected by JS -->
     </div>
 
     <!-- Main Content List -->
-    <div class="section-title" data-i18n="home.section.recommended">
-    </div>
-    <div class="container" id="content-container">
+    <div class="section-title" data-i18n="home.section.recommended"></div>
+    <div class="container recommend-grid" id="content-container">
         <!-- Content injected by JS -->
     </div>
 
@@ -44,8 +48,12 @@
 
     <!-- Image Modal -->
     <div id="image-modal" class="image-modal-overlay" onclick="closeImageModal()">
-        <span class="close-image-btn">&times;</span>
-        <img class="modal-image" id="modal-image-content">
+        <div class="image-modal-sheet">
+            <div class="image-modal-sheet-head">
+                <button class="close-btn" type="button" onclick="closeImageModal()">×</button>
+            </div>
+            <img class="modal-image" id="modal-image-content">
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -58,7 +66,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path></svg>
             <span data-i18n="nav.wardrobe"></span>
         </a>
-        <a href="favorites.html" class="nav-item">
+        <a href="schedule.html" class="nav-item">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span data-i18n="nav.schedule"></span>
         </a>

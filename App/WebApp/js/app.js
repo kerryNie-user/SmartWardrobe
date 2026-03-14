@@ -45,7 +45,7 @@ const favoriteSets = {
 
 function getWardrobeDisplayMode() {
     const mode = localStorage.getItem(WARDROBE_DISPLAY_MODE_KEY);
-    return mode === 'card' ? 'card' : 'list';
+    return mode === 'list' ? 'list' : 'card';
 }
 
 function setWardrobeDisplayMode(mode) {
@@ -672,12 +672,31 @@ function switchTab(tabName) {
 function renderOutfits(data) {
     const container = document.getElementById('content-container');
     if (!container) return;
-    
-    container.innerHTML = data.map(outfit => buildOutfitCardHTML(outfit)).join('');
-    
-    // Attach events after rendering
+
+    const isHomeGrid = container.classList.contains('recommend-grid');
+    if (!isHomeGrid) {
+        container.innerHTML = data.map(outfit => buildOutfitCardHTML(outfit)).join('');
+
+        data.forEach(outfit => {
+            const el = document.getElementById(`outfit-${outfit.id}`);
+            if (el) {
+                attachCardEvents(el, (e) => {
+                    if (isEventFromOutfitFavoriteButton(e)) return;
+                    openDetail(outfit.id, 'outfit');
+                });
+            }
+        });
+
+        attachOutfitFavoriteButtonHandlers(container);
+        syncOutfitFavoriteButtons(container);
+        updateScrollbarVisibility();
+        return;
+    }
+
+    container.innerHTML = data.map(outfit => buildHomeOutfitTileHTML(outfit)).join('');
+
     data.forEach(outfit => {
-        const el = document.getElementById(`outfit-${outfit.id}`);
+        const el = document.getElementById(`home-outfit-${outfit.id}`);
         if (el) {
             attachCardEvents(el, (e) => {
                 if (isEventFromOutfitFavoriteButton(e)) return;
@@ -688,8 +707,26 @@ function renderOutfits(data) {
 
     attachOutfitFavoriteButtonHandlers(container);
     syncOutfitFavoriteButtons(container);
-    
     updateScrollbarVisibility();
+}
+
+function buildHomeOutfitTileHTML(outfit) {
+    const items = getItemsByIds(outfit.itemIds);
+    const firstWithImage = items.find(i => i && i.image);
+    const cover = firstWithImage
+        ? `<img src="${firstWithImage.image}" alt="${escapeHtml(getItemName(firstWithImage))}" class="home-outfit-img">`
+        : `<div class="home-outfit-collage">${items.slice(0, 4).map(item => `
+            <div class="home-outfit-collage-item">${renderItemMedia(item)}</div>
+        `).join('')}</div>`;
+
+    return `
+        <div class="home-outfit-tile" id="home-outfit-${outfit.id}">
+            <div class="home-outfit-media">
+                ${buildFavoriteButtonHTML('outfit', outfit.id)}
+                ${cover}
+            </div>
+        </div>
+    `;
 }
 
 
@@ -717,11 +754,108 @@ function renderTodaysPicks() {
     updateScrollbarVisibility();
 }
 
+function toLocalDayKey(value) {
+    const d = value instanceof Date ? new Date(value) : new Date(value || 0);
+    if (Number.isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function formatTimeHM(value, locale) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    try {
+        return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    } catch (_) {
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${hh}:${mm}`;
+    }
+}
+
+function toTimeValue(value) {
+    if (!value) return '';
+    const d = value instanceof Date ? new Date(value) : new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+}
+
+function buildIsoFromDayKeyAndTime(dayKey, timeValue) {
+    if (!dayKey || !timeValue) return '';
+    const d = new Date(`${dayKey}T${timeValue}`);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString();
+}
+
+function getDefaultScheduleTimeRange(dayKey) {
+    const todayKey = toLocalDayKey(new Date());
+    const dayBase = parseDayKey(dayKey) || new Date();
+    dayBase.setHours(0, 0, 0, 0);
+
+    const step = 30;
+    let minutes;
+    if (dayKey === todayKey) {
+        const now = new Date();
+        minutes = now.getHours() * 60 + now.getMinutes();
+        minutes = Math.ceil(minutes / step) * step;
+        minutes = Math.min(minutes, 23 * 60);
+    } else {
+        minutes = 12 * 60 + 30;
+    }
+
+    const start = new Date(dayBase);
+    start.setMinutes(minutes, 0, 0);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    return { startTime: toTimeValue(start), endTime: toTimeValue(end) };
+}
+
+function renderHomeSchedulePreview() {
+    const container = document.getElementById('home-schedule-container');
+    if (!container) return;
+
+    const locale = getActiveLocale();
+    const raw = readJsonValue(SCHEDULE_STORAGE_KEY, []);
+    const list = Array.isArray(raw) ? raw : [];
+
+    const normalized = list
+        .filter(item => item && typeof item === 'object')
+        .map(item => ({
+            id: String(item.id || ''),
+            title: String(item.title || '').trim(),
+            startAt: item.startAt ? String(item.startAt) : ''
+        }))
+        .filter(item => item.title && item.startAt);
+
+    const todayKey = toLocalDayKey(new Date());
+    const todays = normalized
+        .filter(item => toLocalDayKey(item.startAt) === todayKey)
+        .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+        .slice(0, 4);
+
+    if (!todays.length) {
+        container.innerHTML = `<div class="schedule-preview-empty">${tText('schedule.empty')}</div>`;
+        return;
+    }
+
+    container.innerHTML = todays.map(item => `
+        <div class="schedule-pill" onclick="window.location.href='schedule.html'">
+            <div class="schedule-pill-title">${escapeHtml(item.title)}</div>
+            <div class="schedule-pill-time">${escapeHtml(formatTimeHM(item.startAt, locale))}</div>
+        </div>
+    `).join('');
+}
+
 function renderWardrobe(items = wardrobeItems) {
     const container = document.getElementById('wardrobe-list');
     if (!container) return;
 
-    container.classList.toggle('wardrobe-layout-card', getWardrobeDisplayMode() === 'card');
+    const isCardMode = getWardrobeDisplayMode() === 'card';
+    container.classList.toggle('wardrobe-layout-card', isCardMode);
 
     if (isEditing) {
         // Render with checkboxes
@@ -739,27 +873,39 @@ function renderWardrobe(items = wardrobeItems) {
         if (fab) fab.style.display = 'none';
         
     } else {
-        // Render with swipe support
-        container.innerHTML = items.map(item => `
-            <div class="item-wrapper">
-                <div class="item-delete-action" onclick="deleteItem(${item.id})">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        if (isCardMode) {
+            container.innerHTML = items.map(item => `
+                <div class="item-wrapper">
+                    <div class="item-card" id="item-${item.id}" onclick="openDetail('${item.id}', 'item')">
+                        ${buildItemCardInnerHTML(item)}
+                    </div>
                 </div>
-                <div class="item-card" id="item-${item.id}" onclick="openDetail('${item.id}', 'item')">
-                    ${buildItemCardInnerHTML(item)}
+            `).join('');
+        } else {
+            // Render with swipe support
+            container.innerHTML = items.map(item => `
+                <div class="item-wrapper">
+                    <div class="item-delete-action" onclick="deleteItem(${item.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </div>
+                    <div class="item-card" id="item-${item.id}" onclick="openDetail('${item.id}', 'item')">
+                        ${buildItemCardInnerHTML(item)}
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
         
         // Show FAB in normal mode
         const fab = document.querySelector('.fab');
         if (fab) fab.style.display = 'flex';
 
-        // Init swipe listeners
-        items.forEach(item => {
-            const el = document.getElementById(`item-${item.id}`);
-            if (el) initSwipe(el, item.id);
-        });
+        if (!isCardMode) {
+            // Init swipe listeners
+            items.forEach(item => {
+                const el = document.getElementById(`item-${item.id}`);
+                if (el) initSwipe(el, item.id);
+            });
+        }
     }
     updateScrollbarVisibility();
 }
@@ -1013,6 +1159,43 @@ function openDetail(id, type) {
     const mainIcon = getDetailMainMedia(data, items);
 
     const isWardrobeItem = (type === 'item');
+    if (isWardrobeItem) {
+        if (detailView) detailView.dataset.detailType = 'item';
+        const item =
+            wardrobeItemIndex.get(Number(id)) ||
+            wardrobeItems.find(i => String(i.id) === String(id)) ||
+            null;
+        const cardInner = item
+            ? buildItemCardInnerHTML(item)
+            : `
+                <div class="item-image">${mainIcon}</div>
+                <div class="item-details">
+                    <div class="item-title">${escapeHtml(data.title || '')}</div>
+                    <div class="item-subtitle">${escapeHtml([data.tag, data.description].filter(Boolean).join(' • '))}</div>
+                </div>
+            `;
+
+        const cardClick = item && item.image ? `onclick="openImageModal('${item.image}')"` : '';
+
+        content.innerHTML = `
+            <div class="detail-topbar">
+                <button class="detail-back-inline" type="button" onclick="closeDetail()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+            </div>
+            <div class="detail-item-container">
+                <div class="item-card detail-item-card" ${cardClick}>
+                    ${cardInner}
+                </div>
+            </div>
+        `;
+
+        activateOverlay(detailView, detailView);
+        updateScrollbarVisibility();
+        return;
+    }
+    if (detailView) detailView.dataset.detailType = '';
+
     const headerHTML = isWardrobeItem ? `<div class="detail-header-image">${mainIcon}</div>` : '';
     const contentStyle = isWardrobeItem ? '' : 'height: 100%; max-height: 100%; border-radius: 0;';
     const handleHTML = isWardrobeItem ? '<div class="drag-handle-bar"></div>' : '<div style="height: 60px;"></div>';
@@ -1151,6 +1334,7 @@ function restoreBodyScroll() {
 
 function closeDetail() {
     const detailView = document.getElementById('detail-view');
+    if (detailView) detailView.dataset.detailType = '';
     deactivateOverlay(detailView);
 }
 
@@ -1168,6 +1352,67 @@ function closeModal(modalId) {
     if (modal) {
         deactivateOverlay(modal);
     }
+}
+
+function initSettingsPage() {
+    const root = document.getElementById('settings-page-root');
+    if (!root) return;
+
+    const languageValue = document.getElementById('settings-language-value');
+    const themeValue = document.getElementById('settings-theme-value');
+    const wardrobeValue = document.getElementById('settings-wardrobe-display-value');
+
+    const updateSummary = () => {
+        const locale = (window.i18n && window.i18n.locale) ? String(window.i18n.locale || '') : String(localStorage.getItem('app_locale') || '');
+        const isZh = locale.toLowerCase().startsWith('zh');
+        if (languageValue) languageValue.textContent = isZh ? tText('language.chinese') : tText('language.english');
+
+        const storedTheme = (window.themeManager && window.themeManager.currentTheme) ? String(window.themeManager.currentTheme || '') : String(localStorage.getItem('app_theme') || 'system');
+        const themeKey = storedTheme === 'dark' ? 'theme.dark' : storedTheme === 'light' ? 'theme.light' : 'theme.system';
+        if (themeValue) themeValue.textContent = tText(themeKey);
+
+        const mode = getWardrobeDisplayMode();
+        if (wardrobeValue) wardrobeValue.textContent = tText(mode === 'list' ? 'wardrobe.display.list' : 'wardrobe.display.card');
+    };
+
+    const openSheet = (id) => {
+        openModal(id);
+        setTimeout(() => {
+            if (window.themeManager && typeof window.themeManager.updateAllSliders === 'function') {
+                window.themeManager.updateAllSliders(false);
+            }
+        }, 30);
+    };
+
+    const showInfo = (titleKey) => {
+        const titleEl = document.getElementById('settings-info-title');
+        const bodyEl = document.getElementById('settings-info-body');
+        if (titleEl) titleEl.textContent = tText(titleKey);
+        if (bodyEl) bodyEl.textContent = tText('common.coming_soon');
+        openModal('settings-info-modal');
+    };
+
+    const bindItem = (id, handler) => {
+        const el = document.getElementById(id);
+        if (!el || el.dataset.bound === '1') return;
+        el.dataset.bound = '1';
+        el.addEventListener('click', handler);
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') handler();
+        });
+    };
+
+    bindItem('settings-language-item', () => openSheet('settings-language-modal'));
+    bindItem('settings-theme-item', () => openSheet('settings-theme-modal'));
+    bindItem('settings-wardrobe-display-item', () => openSheet('settings-wardrobe-display-modal'));
+    bindItem('settings-notifications-item', () => showInfo('settings.item.notifications'));
+    bindItem('settings-privacy-item', () => showInfo('settings.item.privacy_policy'));
+    bindItem('settings-terms-item', () => showInfo('settings.item.terms'));
+
+    updateSummary();
+    window.addEventListener('languageChanged', updateSummary);
+    window.addEventListener('themeChanged', updateSummary);
+    window.addEventListener('wardrobeDisplayChanged', updateSummary);
 }
 
 // Close modal when clicking outside
@@ -1189,7 +1434,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('resize', updateScrollbarVisibility);
     setupWardrobeDisplaySwitcher();
     await initFavorites();
-    const view = applyFavoritesPageView();
 
     // Global Auto Location Init (Singleton)
     if (window.autoLocationService) {
@@ -1199,6 +1443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check which page we are on
     if (document.getElementById('content-container')) {
         renderTodaysPicks();
+        renderHomeSchedulePreview();
         renderCollections(); // Replaced switchTab('daily')
     }
     if (document.getElementById('wardrobe-list')) {
@@ -1230,17 +1475,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     }
-    if (document.getElementById('favorites-container') && view === 'favorites') {
+    if (document.getElementById('favorites-container')) {
         renderFavoritesPage();
     }
-    if (document.getElementById('planner-root') && view !== 'favorites') {
+    if (document.getElementById('planner-root')) {
         initPlannerPage();
+    }
+    if (document.getElementById('settings-page-root')) {
+        initSettingsPage();
     }
 });
 
 // Listen for language changes to re-render dynamic content
 window.addEventListener('languageChanged', () => {
-    const view = applyFavoritesPageView();
     // Re-render Wardrobe Page
     if (document.getElementById('wardrobe-list')) {
         renderWardrobe(); 
@@ -1250,15 +1497,16 @@ window.addEventListener('languageChanged', () => {
     if (document.getElementById('content-container')) {
         // Re-render Todays Picks
         renderTodaysPicks();
+        renderHomeSchedulePreview();
         // Re-render Outfits/Collections
         renderCollections();
     }
 
-    if (document.getElementById('favorites-container') && view === 'favorites') {
+    if (document.getElementById('favorites-container')) {
         renderFavoritesPage();
     }
 
-    if (document.getElementById('planner-root') && view !== 'favorites') {
+    if (document.getElementById('planner-root')) {
         renderPlanner();
     }
     
@@ -1289,9 +1537,8 @@ window.addEventListener('wardrobeDisplayChanged', () => {
 });
 
 window.addEventListener('favoritesChanged', () => {
-    const view = applyFavoritesPageView();
     syncOutfitFavoriteButtons(document);
-    if (document.getElementById('favorites-container') && view === 'favorites') {
+    if (document.getElementById('favorites-container')) {
         renderFavoritesPage();
     }
 });
@@ -1423,6 +1670,46 @@ function logout() {
     window.location.href = 'index.html';
 }
 
+function getThemeMode() {
+    const mode = String(document.documentElement.getAttribute('data-theme') || '').trim();
+    return mode === 'dark' ? 'dark' : 'light';
+}
+
+function isPlaceholderAvatar(src) {
+    const raw = String(src || '').trim();
+    if (!raw) return true;
+    try {
+        const url = new URL(raw, window.location.href);
+        const name = String(url.pathname || '').split('/').pop();
+        return name === 'default_avatar.svg' || name === 'avatar_minimal_light.svg' || name === 'avatar_minimal_dark.svg';
+    } catch (_) {
+        return false;
+    }
+}
+
+function getAvatarForStyle(style) {
+    const s = String(style || '').trim();
+    if (s === 'minimal') {
+        return getThemeMode() === 'dark' ? 'images/avatar_minimal_dark.svg' : 'images/avatar_minimal_light.svg';
+    }
+    return 'images/default_avatar.svg';
+}
+
+function applyUserAvatarToElements(userAvatar) {
+    const usePlaceholder = isPlaceholderAvatar(userAvatar);
+    const avatarElements = document.querySelectorAll('img.profile-avatar');
+    avatarElements.forEach(img => {
+        if (!usePlaceholder) {
+            img.src = userAvatar;
+            return;
+        }
+        const style = img.getAttribute('data-avatar-style');
+        if (style) {
+            img.src = getAvatarForStyle(style);
+        }
+    });
+}
+
 function updateUserProfile() {
     const userStr = localStorage.getItem('currentUser');
     if (userStr) {
@@ -1457,13 +1744,7 @@ function updateUserProfile() {
             }
         }
 
-        // Update profile avatar
-        if (user.avatar) {
-            const avatarElements = document.querySelectorAll('.profile-avatar');
-            avatarElements.forEach(img => {
-                img.src = user.avatar;
-            });
-        }
+        applyUserAvatarToElements(user.avatar);
 
         // Update edit input if it exists
         const editNameInput = document.getElementById('edit-name');
@@ -1476,6 +1757,21 @@ function updateUserProfile() {
         // if (greeting && greeting.innerText === 'Smart Wardrobe') {
         //     greeting.innerText = `Hi, ${user.name.split(' ')[0]}`;
         // }
+    }
+    if (!userStr) {
+        applyUserAvatarToElements('');
+    }
+
+    if (!window.__avatarThemeBound) {
+        window.__avatarThemeBound = true;
+        window.addEventListener('themeChanged', () => {
+            try {
+                const current = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                applyUserAvatarToElements(current?.avatar);
+            } catch (_) {
+                applyUserAvatarToElements('');
+            }
+        });
     }
 }
 
@@ -1498,6 +1794,53 @@ function renderCollections() {
     }
 
     renderOutfits(outfits);
+}
+
+function buildFavoritesOutfitCardHTML(outfit) {
+    const items = getItemsByIds(outfit.itemIds);
+    const collageHTML = items.slice(0, 4).map(item => `
+        <div class="favorite-collage-item">
+            ${renderItemMedia(item)}
+        </div>
+    `).join('');
+    const display = getOutfitDisplay(outfit);
+    const meta = `${items.length} ${tText('common.items')}`;
+
+    return `
+        <div class="favorite-card" id="favorite-outfit-${outfit.id}">
+            <div class="favorite-media favorite-media-collage">
+                ${buildFavoriteButtonHTML('outfit', outfit.id, 'favorite-fav-btn')}
+                <div class="favorite-collage">${collageHTML}</div>
+            </div>
+            <div class="favorite-body">
+                <div class="favorite-title">${escapeHtml(display.title)}</div>
+                <div class="favorite-meta">
+                    <span class="favorite-chip">${escapeHtml(display.tag)}</span>
+                    <span class="favorite-meta-text">${escapeHtml(meta)}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function buildFavoritesPickCardHTML(pick) {
+    const display = getPickDisplay(pick);
+    const items = getItemsByIds(pick.itemIds);
+    const mainItem = items[0];
+    const media = mainItem ? renderItemMedia(mainItem) : (pick.icon || '');
+
+    return `
+        <div class="favorite-card" id="favorite-pick-${pick.id}">
+            <div class="favorite-media">
+                ${buildFavoriteButtonHTML('pick', pick.id, 'favorite-fav-btn')}
+                <div class="favorite-media-main">${media}</div>
+            </div>
+            <div class="favorite-body">
+                <div class="favorite-title">${escapeHtml(display.title)}</div>
+                <div class="favorite-sub">${escapeHtml(display.description || '')}</div>
+            </div>
+        </div>
+    `;
 }
 
 function renderFavoritesPage() {
@@ -1534,22 +1877,27 @@ function renderFavoritesPage() {
         return;
     }
 
-    let html = '';
-    if (favoriteOutfits.length) {
-        html += `<div class="section-title" style="margin: 8px 0 16px;">${tText('favorites.section.outfits')}</div>`;
-        html += favoriteOutfits.map(outfit => buildOutfitCardHTML(outfit)).join('');
-    }
-    if (favoritePicks.length) {
-        html += `<div class="section-title" style="margin: 24px 0 16px;">${tText('favorites.section.picks')}</div>`;
-        html += `<div class="favorites-picks-list">`;
-        html += favoritePicks.map(pick => buildPickCardHTML(pick)).join('');
-        html += `</div>`;
-    }
-
-    container.innerHTML = html;
+    container.innerHTML = `
+        ${favoriteOutfits.length ? `
+            <section class="favorites-section">
+                <div class="favorites-section-title">${tText('favorites.section.outfits')}</div>
+                <div class="favorites-grid">
+                    ${favoriteOutfits.map(outfit => buildFavoritesOutfitCardHTML(outfit)).join('')}
+                </div>
+            </section>
+        ` : ''}
+        ${favoritePicks.length ? `
+            <section class="favorites-section">
+                <div class="favorites-section-title">${tText('favorites.section.picks')}</div>
+                <div class="favorites-grid">
+                    ${favoritePicks.map(pick => buildFavoritesPickCardHTML(pick)).join('')}
+                </div>
+            </section>
+        ` : ''}
+    `;
 
     favoriteOutfits.forEach(outfit => {
-        const el = document.getElementById(`outfit-${outfit.id}`);
+        const el = document.getElementById(`favorite-outfit-${outfit.id}`);
         if (el) {
             attachCardEvents(el, (e) => {
                 if (isEventFromOutfitFavoriteButton(e)) return;
@@ -1558,7 +1906,7 @@ function renderFavoritesPage() {
         }
     });
     favoritePicks.forEach(pick => {
-        const el = document.getElementById(`pick-${pick.id}`);
+        const el = document.getElementById(`favorite-pick-${pick.id}`);
         if (el) {
             attachCardEvents(el, (e) => {
                 if (isEventFromOutfitFavoriteButton(e)) return;
@@ -1580,7 +1928,8 @@ const plannerState = {
     editingPlanId: null,
     reminderTimerId: null,
     weekProgressTimerId: null,
-    weekProgressWeekKey: ''
+    weekProgressWeekKey: '',
+    selectedDayKey: ''
 };
 
 function makeLocalId(prefix) {
@@ -1666,6 +2015,10 @@ function loadPlannerData() {
             id: String(item.id || makeLocalId('sch')),
             title: String(item.title || '').trim(),
             startAt: item.startAt ? String(item.startAt) : '',
+            endAt: item.endAt ? String(item.endAt) : '',
+            category: item.category ? String(item.category) : '',
+            location: String(item.location || ''),
+            outfit: String(item.outfit || ''),
             remindAt: item.remindAt ? String(item.remindAt) : '',
             note: String(item.note || ''),
             done: Boolean(item.done),
@@ -1720,6 +2073,100 @@ function getWeekRange(now) {
     const end = new Date(start);
     end.setDate(start.getDate() + 7);
     return { start, end };
+}
+
+function parseDayKey(dayKey) {
+    const parts = String(dayKey || '').split('-').map(n => Number(n));
+    if (parts.length !== 3) return null;
+    const [y, m, d] = parts;
+    if (!y || !m || !d) return null;
+    const date = new Date(y, m - 1, d);
+    date.setHours(0, 0, 0, 0);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getWeekStartMonday(date) {
+    const base = new Date(date);
+    base.setHours(0, 0, 0, 0);
+    const day = base.getDay();
+    const diffToMonday = (day + 6) % 7;
+    base.setDate(base.getDate() - diffToMonday);
+    return base;
+}
+
+function formatMonthTitle(date, locale) {
+    const isZh = String(locale || '').toLowerCase().startsWith('zh');
+    if (isZh) return `${date.getMonth() + 1}月`;
+    try {
+        return date.toLocaleDateString(locale, { month: 'long' });
+    } catch (_) {
+        return String(date.getMonth() + 1);
+    }
+}
+
+function renderPlannerCalendarStrip() {
+    const root = document.getElementById('calendar-strip');
+    if (!root) return;
+
+    const locale = getActiveLocale();
+    const selectedKey = plannerState.selectedDayKey || toLocalDayKey(new Date());
+    const selectedDate = parseDayKey(selectedKey) || new Date();
+    const weekStart = getWeekStartMonday(selectedDate);
+    const selectedIndex = Math.max(0, Math.min(6, Math.floor((selectedDate.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000))));
+
+    const yearEl = document.getElementById('schedule-year');
+    const monthEl = document.getElementById('schedule-month');
+    if (yearEl) yearEl.textContent = String(selectedDate.getFullYear());
+    if (monthEl) monthEl.textContent = formatMonthTitle(selectedDate, locale);
+
+    const weekdayEl = document.getElementById('calendar-weekdays');
+    if (weekdayEl) {
+        const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+        weekdayEl.innerHTML = labels.map((label, idx) => `
+            <div class="calendar-weekday ${idx === selectedIndex ? 'is-selected' : ''}">
+                <span class="calendar-weekday-label">${label}</span>
+                <span class="calendar-weekday-indicator"></span>
+            </div>
+        `).join('');
+    }
+
+    const daysEl = document.getElementById('calendar-days');
+    if (!daysEl) return;
+
+    const todayKey = toLocalDayKey(new Date());
+    const hasByDay = new Set(
+        plannerState.schedule
+            .filter(s => s && s.startAt)
+            .map(s => toLocalDayKey(s.startAt))
+            .filter(Boolean)
+    );
+
+    const daysHtml = [];
+    for (let i = 0; i < 7; i += 1) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        const key = toLocalDayKey(d);
+        const isSelected = key === selectedKey;
+        const isToday = key === todayKey;
+        const has = hasByDay.has(key);
+        daysHtml.push(`
+            <button class="calendar-day ${isSelected ? 'is-selected' : ''} ${isToday ? 'is-today' : ''}" type="button" data-day-key="${key}">
+                <span class="calendar-day-num">${d.getDate()}</span>
+                ${has ? `<span class="calendar-day-dot"></span>` : `<span class="calendar-day-dot is-empty"></span>`}
+            </button>
+        `);
+    }
+    daysEl.innerHTML = daysHtml.join('');
+
+    daysEl.querySelectorAll('button[data-day-key]').forEach(btn => {
+        if (btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', () => {
+            const key = btn.getAttribute('data-day-key') || '';
+            plannerState.selectedDayKey = key;
+            renderPlanner();
+        });
+    });
 }
 
 function getActiveLocale() {
@@ -1819,6 +2266,9 @@ function updateWeeklyProgress() {
 function initPlannerPage() {
     plannerState.tab = 'schedule';
     loadPlannerData();
+    if (!plannerState.selectedDayKey) {
+        plannerState.selectedDayKey = toLocalDayKey(new Date());
+    }
 
     const tabs = document.getElementById('planner-tabs');
     if (tabs && tabs.dataset.plannerBound !== '1') {
@@ -1840,6 +2290,15 @@ function initPlannerPage() {
         addBtn.dataset.plannerBound = '1';
         addBtn.addEventListener('click', () => {
             openScheduleModal();
+        });
+    }
+
+    const todayBtn = document.getElementById('schedule-today-btn');
+    if (todayBtn && todayBtn.dataset.bound !== '1') {
+        todayBtn.dataset.bound = '1';
+        todayBtn.addEventListener('click', () => {
+            plannerState.selectedDayKey = toLocalDayKey(new Date());
+            renderPlanner();
         });
     }
 
@@ -1889,6 +2348,7 @@ function applyPlannerTabVisibility() {
 
 function renderPlanner() {
     if (!document.getElementById('planner-root')) return;
+    renderPlannerCalendarStrip();
     renderScheduleList();
     renderPlanList();
     updateWeeklyProgress();
@@ -1898,45 +2358,59 @@ function renderScheduleList() {
     const container = document.getElementById('schedule-container');
     if (!container) return;
 
+    const locale = getActiveLocale();
+    const selectedKey = plannerState.selectedDayKey || toLocalDayKey(new Date());
     const items = plannerState.schedule
         .slice()
-        .sort((a, b) => {
-            const ta = new Date(a.startAt || 0).getTime() || 0;
-            const tb = new Date(b.startAt || 0).getTime() || 0;
-            return ta - tb;
-        });
+        .filter(item => item && item.startAt && toLocalDayKey(item.startAt) === selectedKey)
+        .sort((a, b) => (new Date(a.startAt || 0).getTime() || 0) - (new Date(b.startAt || 0).getTime() || 0));
 
     if (!items.length) {
         container.innerHTML = `<div class="planner-empty">${tText('schedule.empty')}</div>`;
         return;
     }
 
+    const toLabel = String(locale || '').toLowerCase().startsWith('zh') ? '至' : 'to';
+    const outfitLabel = tText('schedule.field.outfit.label', 'Outfit');
+
     container.innerHTML = `
-        <div class="planner-list">
-            ${items.map(item => {
-                const startText = formatDateTimeDisplay(item.startAt);
-                const remindText = item.remindAt ? formatDateTimeDisplay(item.remindAt) : '';
-                const note = String(item.note || '').trim();
-                return `
-                    <div class="planner-item ${item.done ? 'is-done' : ''}" id="schedule-${item.id}">
-                        <div class="planner-item-row">
-                            <input class="planner-done-toggle" type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleScheduleDone('${item.id}')">
-                            <div class="planner-item-main" onclick="openScheduleModal('${item.id}')">
-                                <div class="planner-item-title">${escapeHtml(item.title)}</div>
-                                <div class="planner-item-meta">
-                                    ${startText ? `<span class="planner-item-time">${escapeHtml(startText)}</span>` : ''}
-                                    ${remindText ? `<span class="planner-item-remind">${escapeHtml(remindText)}</span>` : ''}
-                                </div>
-                                ${note ? `<div class="planner-item-note">${escapeHtml(note)}</div>` : ''}
+        <div class="agenda-min">
+            <div class="agenda-min-header">
+                <div class="agenda-min-count">${escapeHtml(tText('schedule.count', '', { count: items.length }) || `${items.length}`)}</div>
+            </div>
+            <div class="agenda-min-list">
+                ${items.map(item => {
+                    const startText = formatTimeHM(item.startAt, locale);
+                    const endText = item.endAt ? formatTimeHM(item.endAt, locale) : '';
+                    const categoryKey = item.category ? `schedule.category.${String(item.category)}` : '';
+                    const categoryLabel = categoryKey ? tText(categoryKey, '') : '';
+                    const location = String(item.location || '').trim();
+                    const outfit = String(item.outfit || '').trim();
+                    const note = String(item.note || '').trim();
+
+                    const metaParts = [];
+                    if (endText) metaParts.push(`${toLabel} ${endText}`);
+                    if (location) metaParts.push(location);
+                    if (categoryLabel) metaParts.push(categoryLabel);
+                    const meta = metaParts.join(' · ');
+
+                    const subLines = [];
+                    if (outfit) subLines.push(`${outfitLabel} · ${outfit}`);
+                    if (!outfit && note) subLines.push(note);
+
+                    return `
+                        <div class="agenda-min-item" id="schedule-${item.id}" onclick="openScheduleModal('${item.id}')">
+                            <div class="agenda-min-time">${escapeHtml(startText)}</div>
+                            <div class="agenda-min-dot-col"><span class="agenda-min-dot"></span></div>
+                            <div class="agenda-min-main">
+                                <div class="agenda-min-title">${escapeHtml(item.title)}</div>
+                                ${meta ? `<div class="agenda-min-meta">${escapeHtml(meta)}</div>` : ''}
+                                ${subLines.map(line => `<div class="agenda-min-sub">${escapeHtml(line)}</div>`).join('')}
                             </div>
                         </div>
-                        <div class="planner-item-actions">
-                            <button class="btn btn-secondary btn-sm" onclick="openScheduleModal('${item.id}')" data-i18n="schedule.action.edit">${tText('schedule.action.edit')}</button>
-                            <button class="btn btn-secondary btn-sm" onclick="deleteScheduleItem('${item.id}')" data-i18n="schedule.action.delete">${tText('schedule.action.delete')}</button>
-                        </div>
-                    </div>
-                `;
-            }).join('')}
+                    `;
+                }).join('')}
+            </div>
         </div>
     `;
 }
@@ -2029,31 +2503,98 @@ function openScheduleModal(id) {
     }
 
     const titleInput = document.getElementById('schedule-title');
-    const startInput = document.getElementById('schedule-start-at');
-    const remindInput = document.getElementById('schedule-remind-at');
+    const startInput = document.getElementById('schedule-start-time');
+    const endInput = document.getElementById('schedule-end-time');
+    const categoryInput = document.getElementById('schedule-category');
+    const locationInput = document.getElementById('schedule-location');
+    const outfitInput = document.getElementById('schedule-outfit');
     const noteInput = document.getElementById('schedule-note');
 
+    let dayKey = plannerState.selectedDayKey || toLocalDayKey(new Date());
+    if (item && item.startAt) {
+        dayKey = toLocalDayKey(item.startAt) || dayKey;
+        plannerState.selectedDayKey = dayKey;
+        renderPlannerCalendarStrip();
+    }
+
+    const modal = document.getElementById('schedule-modal');
+    if (modal) modal.dataset.dayKey = dayKey;
+
     if (titleInput) titleInput.value = item ? item.title : '';
-    if (startInput) startInput.value = item && item.startAt ? toDatetimeLocalValue(item.startAt) : '';
-    if (remindInput) remindInput.value = item && item.remindAt ? toDatetimeLocalValue(item.remindAt) : '';
-    if (noteInput) noteInput.value = item ? item.note : '';
+    if (startInput) startInput.value = item && item.startAt ? toTimeValue(item.startAt) : '';
+    if (endInput) endInput.value = item && item.endAt ? toTimeValue(item.endAt) : '';
+    if (!item && startInput && !startInput.value) {
+        const { startTime, endTime } = getDefaultScheduleTimeRange(dayKey);
+        startInput.value = startTime;
+        if (endInput) endInput.value = endTime;
+    }
+    if (item && startInput && endInput && !endInput.value && startInput.value) {
+        const tmpStartIso = buildIsoFromDayKeyAndTime(dayKey, startInput.value);
+        if (tmpStartIso) {
+            const d = new Date(tmpStartIso);
+            d.setHours(d.getHours() + 1);
+            endInput.value = toTimeValue(d);
+        }
+    }
+    if (categoryInput) categoryInput.value = item ? String(item.category || '') : '';
+    if (locationInput) locationInput.value = item ? String(item.location || '') : '';
+    if (outfitInput) outfitInput.value = item ? String(item.outfit || '') : '';
+    if (noteInput) noteInput.value = item ? String(item.note || '') : '';
+
+    const categoryGroup = document.getElementById('schedule-category-group');
+    if (categoryGroup && categoryGroup.dataset.bound !== '1') {
+        categoryGroup.dataset.bound = '1';
+        categoryGroup.addEventListener('click', (e) => {
+            const btn = e.target && e.target.closest ? e.target.closest('button[data-value]') : null;
+            if (!btn) return;
+            const next = String(btn.getAttribute('data-value') || '');
+            const current = String(document.getElementById('schedule-category')?.value || '');
+            const value = current === next ? '' : next;
+            const hidden = document.getElementById('schedule-category');
+            if (hidden) hidden.value = value;
+            categoryGroup.querySelectorAll('button[data-value]').forEach(el => {
+                el.classList.toggle('active', String(el.getAttribute('data-value') || '') === value);
+            });
+        });
+    }
+    if (categoryGroup) {
+        const current = String(document.getElementById('schedule-category')?.value || '');
+        categoryGroup.querySelectorAll('button[data-value]').forEach(el => {
+            el.classList.toggle('active', String(el.getAttribute('data-value') || '') === current);
+        });
+    }
 
     openModal('schedule-modal');
 }
 
 function saveScheduleModal() {
     const title = (document.getElementById('schedule-title')?.value || '').trim();
-    const startAtLocal = document.getElementById('schedule-start-at')?.value || '';
-    const remindAtLocal = document.getElementById('schedule-remind-at')?.value || '';
-    const note = document.getElementById('schedule-note')?.value || '';
+    const startTime = String(document.getElementById('schedule-start-time')?.value || '').trim();
+    const endTime = String(document.getElementById('schedule-end-time')?.value || '').trim();
+    const category = String(document.getElementById('schedule-category')?.value || '').trim();
+    const location = String(document.getElementById('schedule-location')?.value || '').trim();
+    const outfit = String(document.getElementById('schedule-outfit')?.value || '').trim();
+    const note = String(document.getElementById('schedule-note')?.value || '');
 
-    if (!title || !startAtLocal) {
+    const modal = document.getElementById('schedule-modal');
+    const dayKey = (modal && modal.dataset.dayKey) ? String(modal.dataset.dayKey || '') : (plannerState.selectedDayKey || toLocalDayKey(new Date()));
+
+    if (!title || !startTime) {
         showToast(tText('error.fill_fields'));
         return;
     }
 
-    const startAtIso = fromDatetimeLocalValue(startAtLocal);
-    const remindAtIso = remindAtLocal ? fromDatetimeLocalValue(remindAtLocal) : '';
+    const startAtIso = buildIsoFromDayKeyAndTime(dayKey, startTime);
+    let endAtIso = endTime ? buildIsoFromDayKeyAndTime(dayKey, endTime) : '';
+    if (endAtIso) {
+        const startMs = new Date(startAtIso).getTime();
+        const endMs = new Date(endAtIso).getTime();
+        if (!Number.isNaN(startMs) && !Number.isNaN(endMs) && endMs <= startMs) {
+            const endD = new Date(endAtIso);
+            endD.setDate(endD.getDate() + 1);
+            endAtIso = endD.toISOString();
+        }
+    }
 
     const now = Date.now();
     const existingId = plannerState.editingScheduleId;
@@ -2065,17 +2606,24 @@ function saveScheduleModal() {
             ...prev,
             title,
             startAt: startAtIso,
-            remindAt: remindAtIso,
+            endAt: endAtIso,
+            category,
+            location,
+            outfit,
             note,
             updatedAt: now,
-            remindedAt: remindAtIso !== prev.remindAt ? 0 : prev.remindedAt
+            remindedAt: prev.remindedAt
         };
     } else {
         plannerState.schedule.unshift({
             id: makeLocalId('sch'),
             title,
             startAt: startAtIso,
-            remindAt: remindAtIso,
+            endAt: endAtIso,
+            category,
+            location,
+            outfit,
+            remindAt: '',
             note,
             done: false,
             remindedAt: 0,
@@ -2088,7 +2636,6 @@ function saveScheduleModal() {
     closeModal('schedule-modal');
     plannerState.editingScheduleId = null;
     renderPlanner();
-    maybeRequestNotificationPermission(remindAtIso);
 }
 
 function deleteScheduleItem(id) {
@@ -2421,7 +2968,12 @@ function openImageModal(src) {
     const modalImg = document.getElementById('modal-image-content');
     if (modal && modalImg) {
         modalImg.src = src;
-        activateOverlay(modal, modal);
+        const sheet = modal.querySelector('.image-modal-sheet');
+        if (sheet && sheet.dataset.bound !== '1') {
+            sheet.dataset.bound = '1';
+            sheet.addEventListener('click', (e) => e.stopPropagation());
+        }
+        activateOverlay(modal, sheet || modal);
     }
 }
 

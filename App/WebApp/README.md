@@ -1,6 +1,6 @@
 # SmartWardrobe Web Application
 
-The core logic and UI of the SmartWardrobe application, built with standard web technologies.
+SmartWardrobe 的 Web 端核心 UI 与前端逻辑（纯静态页面 + JavaScript）。
 
 ## 🛠 Prerequisites
 
@@ -23,7 +23,7 @@ The core logic and UI of the SmartWardrobe application, built with standard web 
 3. **Launch Development Server**
    You can use any static file server. For example with Python:
    ```bash
-   python3 -m http.server 8000
+   python3 -m http.server 8001
    ```
    Or using `http-server` (npm):
    ```bash
@@ -31,17 +31,17 @@ The core logic and UI of the SmartWardrobe application, built with standard web 
    ```
 
 4. **Access the App**
-   Open your browser and navigate to `http://localhost:8000/index.html`.
+   Open your browser and navigate to `http://localhost:8001/index.html`.
 
 ## 📦 Project Structure
 
 ### 📂 Directories
 
-- **`css/`**: Stylesheets using CSS/Sass for application styling.
-- **`docs/`**: Additional documentation files.
-- **`images/`**: Static image assets used within the web application.
-- **`js/`**: JavaScript source code files containing application logic.
-- **`tests/`**: Unit and integration tests for the web application.
+- **`css/`**: 样式文件（主题变量、页面布局、组件样式）。
+- **`docs/`**: 设计规范与检查清单。
+- **`images/`**: 静态图片资源（包含默认头像 SVG 等）。
+- **`js/`**: 应用逻辑（i18n / theme / 页面交互）。
+- **`tests/`**: 单测与 QA 产物（i18n、主题、定位等）。
 
 ### 📄 Files
 
@@ -51,11 +51,22 @@ The core logic and UI of the SmartWardrobe application, built with standard web 
 - **`en-US.json`**: English language translation file for internationalization.
 - **`index.html`**: The main landing page of the application.
 - **`login.html`**: User authentication and login interface.
+- **`favorites.html`**: 收藏页（Outfits / Picks 收藏列表）。
 - **`profile.html`**: User profile management page.
 - **`README.md`**: Documentation specific to the Web Application module.
 - **`register.html`**: New user registration interface.
+- **`schedule.html`**: 日程页（极简日程 + 日历条）。
+- **`settings.html`**: 设置页（语言/主题/衣橱显示方式等）。
 - **`wardrobe.html`**: The core wardrobe management interface.
 - **`zh-CN.json`**: Chinese (Simplified) language translation file.
+
+## ✅ Tests
+
+From repository root:
+
+```bash
+npm test
+```
 
 ## 🔧 Debugging
 
@@ -75,6 +86,6 @@ See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for details on data structures.
 - Ensure all text is internationalized using `data-i18n` attributes.
 
 ---
-**Version**: 1.2.0
-**Last Updated**: 2026-03-12
+**Version**: 1.4.0
+**Last Updated**: 2026-03-14
 **Maintainer**: SmartWardrobe Web Team

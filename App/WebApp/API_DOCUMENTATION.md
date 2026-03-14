@@ -33,6 +33,69 @@ Returns a JSON object whose keys are i18n keys and values are localized strings.
 - The API response is sourced from MySQL.
 - On successful fetch, the server also overwrites `App/WebApp/en-US.json` or `App/WebApp/zh-CN.json` to mirror the latest DB content.
 
+### 0.2 Favorites (Implemented in `server.py`)
+This project currently supports persisting "Favorites" (收藏) to MySQL via a lightweight API.
+
+**Headers**
+- `X-Client-Id` (required): A stable client identifier (generated and stored by the frontend). This API currently identifies users by `X-Client-Id` rather than JWT.
+
+**MySQL schema:**
+- Table: `user_favorites(client_id, entity_type, entity_id, created_at)`
+
+#### 0.2.1 Get Favorites
+- **Endpoint**: `/api/favorites`
+- **Method**: `GET`
+- **Base URL (local dev)**: `http://localhost:8080`
+- **Headers**: `X-Client-Id: <client_id>`
+
+**Response (200 OK):**
+```json
+{
+  "favorites": {
+    "outfit": ["1", "4"],
+    "pick": ["cur_1"]
+  }
+}
+```
+
+**Errors:**
+- `400` `{ "error": "invalid_client" }`
+- `500` `{ "error": "db_error" }`
+
+#### 0.2.2 Update Favorite (Toggle/Add/Remove)
+- **Endpoint**: `/api/favorites`
+- **Method**: `POST`
+- **Base URL (local dev)**: `http://localhost:8080`
+- **Headers**: `X-Client-Id: <client_id>`
+- **Content-Type**: `application/json`
+
+**Request Body:**
+```json
+{
+  "type": "outfit",
+  "id": "1",
+  "action": "toggle"
+}
+```
+
+**Notes:**
+- `type` supports: `outfit`, `pick`
+- `action` supports: `toggle` (default), `add`, `remove`
+
+**Response (200 OK):**
+```json
+{
+  "isFavorited": true
+}
+```
+
+**Errors:**
+- `400` `{ "error": "invalid_client" }`
+- `400` `{ "error": "invalid_favorite" }`
+- `400` `{ "error": "invalid_action" }`
+- `413` `{ "error": "payload_too_large" }`
+- `500` `{ "error": "db_error" }`
+
 ## Base URL
 All API requests should be prefixed with:
 `http://localhost:3000/api/v1`
@@ -408,3 +471,185 @@ Retrieve weather data for the user's location.
   "icon": "☀️"
 }
 ```
+
+---
+
+## 7. Schedule (Planner)
+
+This section defines the APIs for the "Schedule" feature (日程). Schedule items are created/edited on the client and must be persisted to the backend for multi-device sync and recovery.
+
+### Schedule Object
+All timestamps are ISO 8601 strings (RFC 3339). Unless otherwise specified, times are in UTC (`Z`) and should be stored and returned unchanged.
+
+```json
+{
+  "id": "sch_0f7b1b8a-3b0a-4d63-9c7b-9f5d1b2b0d3c",
+  "title": "Team Standup",
+  "startAt": "2026-03-14T01:00:00.000Z",
+  "endAt": "2026-03-14T01:30:00.000Z",
+  "category": "meeting",
+  "location": "Meeting Room A",
+  "outfit": "Grey hoodie + beige trousers",
+  "remindAt": "2026-03-14T00:50:00.000Z",
+  "note": "Bring notes",
+  "done": false,
+  "remindedAt": 0,
+  "createdAt": 1773465600000,
+  "updatedAt": 1773465600000
+}
+```
+
+**Fields**
+- `id` (string): Schedule id. Client-generated ids are allowed and recommended (e.g. `sch_<uuid>`).
+- `title` (string, required): Title of the schedule.
+- `startAt` (string, required): ISO 8601 datetime.
+- `endAt` (string, optional): ISO 8601 datetime. May be on the next day (cross-day schedules).
+- `category` (string, optional): One of: `work`, `meeting`, `social`, `sports`, `personal`, `travel`.
+- `location` (string, optional): Free text.
+- `outfit` (string, optional): Free text.
+- `remindAt` (string, optional): ISO 8601 datetime. If set, backend should store it for reminder/notification support.
+- `note` (string, optional): Free text.
+- `done` (boolean, required): Whether the schedule is completed.
+- `remindedAt` (number, required): Epoch milliseconds when reminder was triggered (0 means not triggered yet).
+- `createdAt` (number, required): Epoch milliseconds.
+- `updatedAt` (number, required): Epoch milliseconds.
+
+### 7.1 List Schedules (by time range)
+Retrieve schedules within a given time range (based on `startAt`).
+
+- **Endpoint**: `/schedules`
+- **Method**: `GET`
+- **Headers**: `Authorization: Bearer <token>`
+- **Query Parameters**:
+  - `from` (required): ISO 8601 datetime (inclusive)
+  - `to` (required): ISO 8601 datetime (exclusive)
+
+**Example:**
+`GET /schedules?from=2026-03-14T00:00:00.000Z&to=2026-03-15T00:00:00.000Z`
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": "sch_0f7b1b8a-3b0a-4d63-9c7b-9f5d1b2b0d3c",
+    "title": "Team Standup",
+    "startAt": "2026-03-14T01:00:00.000Z",
+    "endAt": "2026-03-14T01:30:00.000Z",
+    "category": "meeting",
+    "location": "Meeting Room A",
+    "outfit": "Grey hoodie + beige trousers",
+    "remindAt": "2026-03-14T00:50:00.000Z",
+    "note": "Bring notes",
+    "done": false,
+    "remindedAt": 0,
+    "createdAt": 1773465600000,
+    "updatedAt": 1773465600000
+  }
+]
+```
+
+**Errors:**
+- `400` `{ "error": "invalid_time_range" }`
+- `401` `{ "error": "unauthorized" }`
+
+### 7.2 Create Schedule
+Create a new schedule item.
+
+- **Endpoint**: `/schedules`
+- **Method**: `POST`
+- **Headers**: `Authorization: Bearer <token>`
+- **Content-Type**: `application/json`
+
+**Request Body:**
+```json
+{
+  "id": "sch_0f7b1b8a-3b0a-4d63-9c7b-9f5d1b2b0d3c",
+  "title": "Team Standup",
+  "startAt": "2026-03-14T01:00:00.000Z",
+  "endAt": "2026-03-14T01:30:00.000Z",
+  "category": "meeting",
+  "location": "Meeting Room A",
+  "outfit": "Grey hoodie + beige trousers",
+  "remindAt": "2026-03-14T00:50:00.000Z",
+  "note": "Bring notes",
+  "done": false,
+  "remindedAt": 0,
+  "createdAt": 1773465600000,
+  "updatedAt": 1773465600000
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "sch_0f7b1b8a-3b0a-4d63-9c7b-9f5d1b2b0d3c",
+  "title": "Team Standup",
+  "startAt": "2026-03-14T01:00:00.000Z",
+  "endAt": "2026-03-14T01:30:00.000Z",
+  "category": "meeting",
+  "location": "Meeting Room A",
+  "outfit": "Grey hoodie + beige trousers",
+  "remindAt": "2026-03-14T00:50:00.000Z",
+  "note": "Bring notes",
+  "done": false,
+  "remindedAt": 0,
+  "createdAt": 1773465600000,
+  "updatedAt": 1773465600000
+}
+```
+
+**Errors:**
+- `400` `{ "error": "invalid_payload" }`
+- `401` `{ "error": "unauthorized" }`
+- `409` `{ "error": "schedule_already_exists" }`
+
+### 7.3 Update Schedule
+Update an existing schedule item by id.
+
+- **Endpoint**: `/schedules/{id}`
+- **Method**: `PUT`
+- **Headers**: `Authorization: Bearer <token>`
+- **Content-Type**: `application/json`
+
+**Request Body:**
+```json
+{
+  "title": "Team Standup (Updated)",
+  "startAt": "2026-03-14T01:00:00.000Z",
+  "endAt": "2026-03-14T01:40:00.000Z",
+  "category": "meeting",
+  "location": "Meeting Room A",
+  "outfit": "Grey hoodie + beige trousers",
+  "remindAt": "2026-03-14T00:55:00.000Z",
+  "note": "Bring notes",
+  "done": false,
+  "remindedAt": 0,
+  "updatedAt": 1773469200000
+}
+```
+
+**Response (200 OK):**
+Returns the updated Schedule Object.
+
+**Errors:**
+- `400` `{ "error": "invalid_payload" }`
+- `401` `{ "error": "unauthorized" }`
+- `404` `{ "error": "schedule_not_found" }`
+
+### 7.4 Delete Schedule
+Delete a schedule item by id.
+
+- **Endpoint**: `/schedules/{id}`
+- **Method**: `DELETE`
+- **Headers**: `Authorization: Bearer <token>`
+
+**Response (200 OK):**
+```json
+{
+  "message": "Schedule deleted successfully"
+}
+```
+
+**Errors:**
+- `401` `{ "error": "unauthorized" }`
+- `404` `{ "error": "schedule_not_found" }`

@@ -209,11 +209,26 @@ def _try_start_mysql_via_brew():
     return False
 
 def _try_start_mysql_via_mysql_server():
-    if shutil.which("mysql.server") is None:
+    script = shutil.which("mysql.server")
+    if script is None:
+        candidates = [
+            "/usr/local/mysql/support-files/mysql.server",
+            "/opt/homebrew/opt/mysql/support-files/mysql.server",
+            "/opt/homebrew/opt/mysql@8.0/support-files/mysql.server",
+            "/opt/homebrew/opt/mysql@5.7/support-files/mysql.server",
+            "/usr/local/opt/mysql/support-files/mysql.server",
+            "/usr/local/opt/mysql@8.0/support-files/mysql.server",
+            "/usr/local/opt/mysql@5.7/support-files/mysql.server",
+        ]
+        for path in candidates:
+            if os.path.isfile(path) and os.access(path, os.X_OK):
+                script = path
+                break
+    if script is None:
         return False
     try:
         result = subprocess.run(
-            ["mysql.server", "start"],
+            [script, "start"],
             capture_output=True,
             text=True,
             timeout=15,

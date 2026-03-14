@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title data-i18n="page.title.settings"></title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="settings-page">
+
+    <header class="favorites-topbar">
+        <button class="favorites-back-btn" type="button" onclick="(history.length > 1 ? history.back() : (window.location.href='profile.html'))" data-i18n-aria-label="common.back">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5"></path>
+                <path d="M12 19l-7-7 7-7"></path>
+            </svg>
+        </button>
+        <div class="favorites-topbar-title" data-i18n="settings.title"></div>
+    </header>
+
+    <main class="settings-container" id="settings-page-root">
+        <section class="settings-section">
+            <div class="settings-section-label" data-i18n="settings.section.preferences"></div>
+            <div class="settings-list">
+                <div class="settings-item" id="settings-notifications-item" role="button" tabindex="0">
+                    <div class="settings-item-left" data-i18n="settings.item.notifications"></div>
+                    <div class="settings-item-right">
+                        <span class="settings-chevron">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="settings-item" id="settings-language-item" role="button" tabindex="0">
+                    <div class="settings-item-left" data-i18n="settings.item.language"></div>
+                    <div class="settings-item-right">
+                        <span class="settings-item-value" id="settings-language-value"></span>
+                        <span class="settings-chevron">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="settings-item" id="settings-theme-item" role="button" tabindex="0">
+                    <div class="settings-item-left" data-i18n="settings.item.dark_mode"></div>
+                    <div class="settings-item-right">
+                        <span class="settings-item-value" id="settings-theme-value"></span>
+                        <span class="settings-chevron">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="settings-item" id="settings-wardrobe-display-item" role="button" tabindex="0">
+                    <div class="settings-item-left" data-i18n="settings.item.wardrobe_display"></div>
+                    <div class="settings-item-right">
+                        <span class="settings-item-value" id="settings-wardrobe-display-value"></span>
+                        <span class="settings-chevron">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-section">
+            <div class="settings-section-label" data-i18n="settings.section.account"></div>
+            <div class="settings-list">
+                <div class="settings-item" id="settings-privacy-item" role="button" tabindex="0">
+                    <div class="settings-item-left" data-i18n="settings.item.privacy_policy"></div>
+                    <div class="settings-item-right">
+                        <span class="settings-chevron">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </span>
+                    </div>
+                </div>
+                <div class="settings-item" id="settings-terms-item" role="button" tabindex="0">
+                    <div class="settings-item-left" data-i18n="settings.item.terms"></div>
+                    <div class="settings-item-right">
+                        <span class="settings-chevron">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="settings-logout">
+            <button class="settings-logout-btn" type="button" onclick="logout()" data-i18n="auth.sign_out"></button>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="settings-language-modal">
+        <div class="modal-content modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title" data-i18n="settings.item.language"></div>
+                <button class="close-btn" type="button" onclick="closeModal('settings-language-modal')">×</button>
+            </div>
+            <div class="form-group">
+                <div class="theme-selector">
+                    <label class="theme-option">
+                        <input type="radio" name="language" value="en-US">
+                        <span class="theme-label" data-i18n="language.english"></span>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="language" value="zh-CN">
+                        <span class="theme-label" data-i18n="language.chinese"></span>
+                    </label>
+                    <div class="theme-slider"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" type="button" onclick="closeModal('settings-language-modal')" data-i18n="common.close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settings-theme-modal">
+        <div class="modal-content modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title" data-i18n="settings.item.dark_mode"></div>
+                <button class="close-btn" type="button" onclick="closeModal('settings-theme-modal')">×</button>
+            </div>
+            <div class="form-group">
+                <div class="theme-selector">
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="light">
+                        <span class="theme-label" data-i18n="theme.light"></span>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="dark">
+                        <span class="theme-label" data-i18n="theme.dark"></span>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="system">
+                        <span class="theme-label" data-i18n="theme.system"></span>
+                    </label>
+                    <div class="theme-slider"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" type="button" onclick="closeModal('settings-theme-modal')" data-i18n="common.close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settings-wardrobe-display-modal">
+        <div class="modal-content modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title" data-i18n="settings.item.wardrobe_display"></div>
+                <button class="close-btn" type="button" onclick="closeModal('settings-wardrobe-display-modal')">×</button>
+            </div>
+            <div class="form-group">
+                <div class="theme-selector">
+                    <label class="theme-option">
+                        <input type="radio" name="wardrobeDisplay" value="list">
+                        <span class="theme-label" data-i18n="wardrobe.display.list"></span>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="wardrobeDisplay" value="card">
+                        <span class="theme-label" data-i18n="wardrobe.display.card"></span>
+                    </label>
+                    <div class="theme-slider"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" type="button" onclick="closeModal('settings-wardrobe-display-modal')" data-i18n="common.close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settings-info-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="settings-info-title"></div>
+                <button class="close-btn" type="button" onclick="closeModal('settings-info-modal')">×</button>
+            </div>
+            <div class="locked-subtext" id="settings-info-body"></div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" type="button" onclick="closeModal('settings-info-modal')" data-i18n="common.close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
