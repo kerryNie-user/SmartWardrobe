@@ -316,8 +316,12 @@
                 }
                 const user = getCurrentUser();
                 user.regionKey = key;
+                user.regionSource = 'manual';
                 setCurrentUser(user);
-                if (window.autoLocationService) window.autoLocationService.clearCache();
+                if (window.autoLocationService) {
+                    window.autoLocationService.clearCache();
+                    window.autoLocationService.updateStatusUI('success', window.t(key), key);
+                }
                 closeModal('region-modal');
             };
 
@@ -346,7 +350,7 @@
                 if (btn) btn.classList.add('auto-location-loading');
                 if (window.autoLocationService) {
                     window.autoLocationService.clearCache();
-                    await window.autoLocationService.initAutoLocation();
+                    await window.autoLocationService.initAutoLocation({ force: true });
                 }
                 if (btn) btn.classList.remove('auto-location-loading');
             };

@@ -35,6 +35,7 @@ const FAVORITES_DB_BACKOFF_MS = 2 * 60 * 1000;
 const PLANNER_TAB_KEY = 'sw_planner_tab';
 const SCHEDULE_STORAGE_KEY = 'sw_schedule_v1';
 const PLAN_STORAGE_KEY = 'sw_plan_v1';
+const TEMPERATURE_UNIT_KEY = 'temperature_unit';
 
 let favoritesStoreMode = 'local';
 let favoritesReady = false;
@@ -71,6 +72,36 @@ function setupWardrobeDisplaySwitcher() {
         });
     });
     updateWardrobeDisplaySwitcherState();
+}
+
+function getTemperatureUnit() {
+    const unit = localStorage.getItem(TEMPERATURE_UNIT_KEY);
+    return unit === 'fahrenheit' ? 'fahrenheit' : 'celsius';
+}
+
+function setTemperatureUnit(unit) {
+    const nextUnit = unit === 'fahrenheit' ? 'fahrenheit' : 'celsius';
+    localStorage.setItem(TEMPERATURE_UNIT_KEY, nextUnit);
+    window.dispatchEvent(new CustomEvent('temperatureUnitChanged', { detail: { unit: nextUnit } }));
+}
+
+function updateTemperatureUnitSwitcherState() {
+    const unit = getTemperatureUnit();
+    const radios = document.querySelectorAll('input[name="temperatureUnit"]');
+    radios.forEach(radio => {
+        radio.checked = radio.value === unit;
+    });
+}
+
+function setupTemperatureUnitSwitcher() {
+    const radios = document.querySelectorAll('input[name="temperatureUnit"]');
+    if (!radios.length) return;
+    radios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.checked) setTemperatureUnit(e.target.value);
+        });
+    });
+    updateTemperatureUnitSwitcherState();
 }
 
 // Helper to find items by IDs
@@ -584,6 +615,7 @@ function attachCardEvents(element, clickHandler) {
     if (!element) return;
     
     let startX, startY, startTime;
+    let lastTouchEndTime = 0;
     const TAP_THRESHOLD = 10; // pixels
     const TIME_THRESHOLD = 200; // ms
 
@@ -620,6 +652,7 @@ function attachCardEvents(element, clickHandler) {
     }, { passive: true });
 
     element.addEventListener('touchend', (e) => {
+        lastTouchEndTime = Date.now();
         // Short delay to ensure visual feedback is seen on quick taps
         setTimeout(removeFeedback, 100);
         
@@ -630,6 +663,7 @@ function attachCardEvents(element, clickHandler) {
         const duration = Date.now() - startTime;
 
         if (diffX < TAP_THRESHOLD && diffY < TAP_THRESHOLD && duration < TIME_THRESHOLD) {
+            window.__swLastTap = { time: Date.now(), x: endX, y: endY };
             // Valid Tap
             clickHandler(e);
         }
@@ -639,6 +673,11 @@ function attachCardEvents(element, clickHandler) {
     
     // Mouse fallback
     element.addEventListener('click', (e) => {
+        if (Date.now() - lastTouchEndTime < 1000) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
         clickHandler(e);
     });
 
@@ -647,6 +686,32 @@ function attachCardEvents(element, clickHandler) {
     element.addEventListener('mouseup', removeFeedback);
     element.addEventListener('mouseleave', removeFeedback);
 }
+
+(() => {
+    if (!/Android/i.test(navigator.userAgent || '')) return;
+    if (window.__swGhostClickBlockerBound) return;
+    window.__swGhostClickBlockerBound = true;
+
+    document.addEventListener('click', (e) => {
+        const lastTap = window.__swLastTap;
+        if (!lastTap) return;
+        if (Date.now() - lastTap.time > 1000) return;
+
+        const x = typeof e.clientX === 'number' ? e.clientX : 0;
+        const y = typeof e.clientY === 'number' ? e.clientY : 0;
+        const isNear =
+            Math.abs(x - lastTap.x) <= 25 &&
+            Math.abs(y - lastTap.y) <= 25;
+        if (!isNear) return;
+
+        window.__swLastTap = null;
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') {
+            e.stopImmediatePropagation();
+        }
+    }, true);
+})();
 
 // Tab Switching
 function switchTab(tabName) {
@@ -712,6 +777,7 @@ function renderOutfits(data) {
 
 function buildHomeOutfitTileHTML(outfit) {
     const items = getItemsByIds(outfit.itemIds);
+    const display = getOutfitDisplay(outfit);
     const firstWithImage = items.find(i => i && i.image);
     const cover = firstWithImage
         ? `<img src="${firstWithImage.image}" alt="${escapeHtml(getItemName(firstWithImage))}" class="home-outfit-img">`
@@ -720,10 +786,14 @@ function buildHomeOutfitTileHTML(outfit) {
         `).join('')}</div>`;
 
     return `
-        <div class="home-outfit-tile" id="home-outfit-${outfit.id}">
-            <div class="home-outfit-media">
-                ${buildFavoriteButtonHTML('outfit', outfit.id)}
+        <div class="pick-card home-outfit-tile" id="home-outfit-${outfit.id}">
+            ${buildFavoriteButtonHTML('outfit', outfit.id)}
+            <div class="pick-image">
                 ${cover}
+            </div>
+            <div class="pick-info">
+                <div class="pick-title">${escapeHtml(display.title)}</div>
+                <div class="pick-desc">${escapeHtml(display.description)}</div>
             </div>
         </div>
     `;
@@ -1361,6 +1431,7 @@ function initSettingsPage() {
     const languageValue = document.getElementById('settings-language-value');
     const themeValue = document.getElementById('settings-theme-value');
     const wardrobeValue = document.getElementById('settings-wardrobe-display-value');
+    const temperatureValue = document.getElementById('settings-temperature-unit-value');
 
     const updateSummary = () => {
         const locale = (window.i18n && window.i18n.locale) ? String(window.i18n.locale || '') : String(localStorage.getItem('app_locale') || '');
@@ -1373,6 +1444,9 @@ function initSettingsPage() {
 
         const mode = getWardrobeDisplayMode();
         if (wardrobeValue) wardrobeValue.textContent = tText(mode === 'list' ? 'wardrobe.display.list' : 'wardrobe.display.card');
+
+        const unit = getTemperatureUnit();
+        if (temperatureValue) temperatureValue.textContent = tText(unit === 'fahrenheit' ? 'temperature.unit.fahrenheit' : 'temperature.unit.celsius');
     };
 
     const openSheet = (id) => {
@@ -1405,6 +1479,7 @@ function initSettingsPage() {
     bindItem('settings-language-item', () => openSheet('settings-language-modal'));
     bindItem('settings-theme-item', () => openSheet('settings-theme-modal'));
     bindItem('settings-wardrobe-display-item', () => openSheet('settings-wardrobe-display-modal'));
+    bindItem('settings-temperature-unit-item', () => openSheet('settings-temperature-unit-modal'));
     bindItem('settings-notifications-item', () => showInfo('settings.item.notifications'));
     bindItem('settings-privacy-item', () => showInfo('settings.item.privacy_policy'));
     bindItem('settings-terms-item', () => showInfo('settings.item.terms'));
@@ -1413,6 +1488,7 @@ function initSettingsPage() {
     window.addEventListener('languageChanged', updateSummary);
     window.addEventListener('themeChanged', updateSummary);
     window.addEventListener('wardrobeDisplayChanged', updateSummary);
+    window.addEventListener('temperatureUnitChanged', updateSummary);
 }
 
 // Close modal when clicking outside
@@ -1433,11 +1509,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateScrollbarVisibility();
     window.addEventListener('resize', updateScrollbarVisibility);
     setupWardrobeDisplaySwitcher();
+    setupTemperatureUnitSwitcher();
     await initFavorites();
 
     // Global Auto Location Init (Singleton)
-    if (window.autoLocationService) {
-        window.autoLocationService.initAutoLocation();
+    if (window.autoLocationService && document.getElementById('auto-location-status')) {
+        window.autoLocationService.initAutoLocation({ force: false });
     }
 
     // Check which page we are on
@@ -1541,6 +1618,10 @@ window.addEventListener('favoritesChanged', () => {
     if (document.getElementById('favorites-container')) {
         renderFavoritesPage();
     }
+});
+
+window.addEventListener('temperatureUnitChanged', () => {
+    updateWeather();
 });
 
 // --- Auth Logic ---
@@ -2914,36 +2995,92 @@ function updateWeather() {
     const widget = document.querySelector('.weather-widget');
     if (!widget) return;
 
-    // Simple simulation based on time/random for demo
-    const hour = new Date().getHours();
-    let icon = '☀️';
-    let tempLow = 22;
-    let tempHigh = 28;
+    widget.style.display = 'none';
 
-    // Randomize slightly
-    const rand = Math.random();
-    if (rand > 0.7) {
-        icon = '☁️';
-        tempLow = 20;
-        tempHigh = 26;
-    } else if (rand > 0.9) {
-        icon = '🌧️';
-        tempLow = 18;
-        tempHigh = 23;
-    }
-    
-    // Night time adjustment
-    if (hour < 6 || hour > 19) {
-        if (icon === '☀️') icon = '🌙';
-        else if (icon === '☁️') icon = '☁️'; 
-        tempLow -= 4;
-        tempHigh -= 4;
+    const renderUnavailable = (reason = '') => {
+        window.__swWeatherDebug = {
+            source: 'unavailable',
+            reason,
+            at: Date.now()
+        };
+        widget.innerHTML = '';
+        widget.style.display = 'none';
+    };
+
+    const mapWeatherCodeToIcon = (code, isNight) => {
+        if (code === 0) return isNight ? '🌙' : '☀️';
+        if ([1, 2].includes(code)) return '⛅️';
+        if (code === 3) return '☁️';
+        if ([45, 48].includes(code)) return '🌫️';
+        if ([51, 53, 55, 56, 57].includes(code)) return '🌦️';
+        if ([61, 63, 65, 66, 67].includes(code)) return '🌧️';
+        if ([71, 73, 75, 77].includes(code)) return '🌨️';
+        if ([80, 81, 82].includes(code)) return '🌧️';
+        if ([85, 86].includes(code)) return '🌨️';
+        if ([95, 96, 99].includes(code)) return '⛈️';
+        return isNight ? '🌙' : '☀️';
+    };
+
+    let cached = null;
+    try {
+        cached = JSON.parse(localStorage.getItem('autoLocation_SmartWardrobe') || 'null');
+    } catch (_) {
+        cached = null;
     }
 
-    widget.innerHTML = `
-        <span class="weather-icon">${icon}</span>
-        <span class="weather-temp">${tempLow}° - ${tempHigh}°</span>
-    `;
+    const rawLat = cached?.data?.latitude;
+    const rawLon = cached?.data?.longitude;
+    const lat = typeof rawLat === 'number' ? rawLat : Number(rawLat);
+    const lon = typeof rawLon === 'number' ? rawLon : Number(rawLon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        renderUnavailable('missing_latlon');
+        return;
+    }
+
+    const unit = getTemperatureUnit();
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&current=temperature_2m,weather_code&daily=temperature_2m_min,temperature_2m_max&timezone=auto&temperature_unit=${encodeURIComponent(unit)}`;
+    window.__swWeatherDebug = {
+        source: 'open-meteo',
+        lat,
+        lon,
+        url,
+        at: Date.now()
+    };
+    fetch(url)
+        .then(r => (r.ok ? r.json() : Promise.reject(new Error('WEATHER_FETCH_FAILED'))))
+        .then(data => {
+            const hour = new Date().getHours();
+            const isNight = hour < 6 || hour > 19;
+            const code = Number(data?.current?.weather_code);
+            const icon = mapWeatherCodeToIcon(code, isNight);
+
+            const tempNow = Math.round(Number(data?.current?.temperature_2m ?? NaN));
+            const tempLow = Math.round(Number(data?.daily?.temperature_2m_min?.[0] ?? NaN));
+            const tempHigh = Math.round(Number(data?.daily?.temperature_2m_max?.[0] ?? NaN));
+            if (!Number.isFinite(tempLow) || !Number.isFinite(tempHigh)) {
+                renderUnavailable('invalid_daily_range');
+                return;
+            }
+
+            window.__swWeatherDebug = {
+                ...window.__swWeatherDebug,
+                timezone: data?.timezone,
+                unit,
+                current: data?.current,
+                daily: {
+                    temperature_2m_min: data?.daily?.temperature_2m_min?.[0],
+                    temperature_2m_max: data?.daily?.temperature_2m_max?.[0]
+                }
+            };
+
+            const unitSuffix = unit === 'fahrenheit' ? '°F' : '°C';
+            widget.innerHTML = `
+                <span class="weather-icon">${icon}</span>
+                <span class="weather-temp">${Number.isFinite(tempNow) ? `${tempNow}${unitSuffix} · ` : ''}${tempLow}${unitSuffix} - ${tempHigh}${unitSuffix}</span>
+            `;
+            widget.style.display = '';
+        })
+        .catch((e) => renderUnavailable(e?.message || 'fetch_failed'));
 }
 
 // --- Filter Logic ---

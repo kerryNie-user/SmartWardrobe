@@ -71,7 +71,7 @@
   "home.section.todays_picks": "今日精选",
   "home.section.today_schedule": "今日日程",
   "home.section.recommended": "为你推荐",
-  "home.weather.placeholder": "18° - 24°",
+  "home.weather.placeholder": "—",
   "home.locked.title": "登录查看推荐",
   "home.locked.description": "基于你的衣橱获取每日穿搭建议",
 
@@ -237,6 +237,7 @@
   "settings.item.language": "语言",
   "settings.item.dark_mode": "深色模式",
   "settings.item.wardrobe_display": "衣橱显示方式",
+  "settings.item.temperature_unit": "温度单位",
   "settings.item.privacy_policy": "隐私政策",
   "settings.item.terms": "服务条款",
 
@@ -246,6 +247,8 @@
   "theme.light": "浅色",
   "theme.dark": "深色",
   "theme.system": "跟随系统",
+  "temperature.unit.celsius": "摄氏度 (°C)",
+  "temperature.unit.fahrenheit": "华氏度 (°F)",
 
   "region.modal.title": "选择地区",
   "region.search.placeholder": "搜索地区...",

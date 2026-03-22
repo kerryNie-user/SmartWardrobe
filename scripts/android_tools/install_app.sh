@@ -6,10 +6,17 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-PROJECT_ROOT="../../App/AndroidApp"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+PROJECT_ROOT="$SCRIPT_DIR/../../App/AndroidApp"
 GRADLEW="./gradlew"
 APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
 PACKAGE_NAME="com.example.smartwardrobe"
+
+GRADLE_ARGS=()
+if [ -n "${SMARTWARDROBE_SERVER_URL:-}" ]; then
+    GRADLE_ARGS+=("-PSMARTWARDROBE_SERVER_URL=$SMARTWARDROBE_SERVER_URL")
+fi
 
 echo -e "${YELLOW}Starting SmartWardrobe App Installation Process...${NC}"
 
@@ -32,7 +39,7 @@ cd "$PROJECT_ROOT" || { echo -e "${RED}Error: Cannot find Android project direct
 
 # Build the APK
 echo -e "${YELLOW}Building Debug APK...${NC}"
-if $GRADLEW assembleDebug; then
+if $GRADLEW "${GRADLE_ARGS[@]}" assembleDebug; then
     echo -e "${GREEN}Build Successful!${NC}"
 else
     echo -e "${RED}Build Failed! Check the errors above.${NC}"

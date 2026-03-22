@@ -26,11 +26,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var webView: WebView
     private val LOCATION_PERMISSION_REQUEST_CODE = 1001
-    // TODO: Change this IP to your computer's IP address.
-    // Use "10.0.2.2" for Android Emulator to access host localhost.
-    // Use actual IP (e.g., "192.168.x.x") for real devices.
-    // Serving directory: App/WebApp
-    private val serverUrl = "http://10.23.126.78:8080/index.html"
+    private val serverUrl = BuildConfig.SERVER_URL
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {

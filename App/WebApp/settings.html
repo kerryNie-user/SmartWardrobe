@@ -63,6 +63,16 @@
                         </span>
                     </div>
                 </div>
+
+                <div class="settings-item" id="settings-temperature-unit-item" role="button" tabindex="0">
+                    <div class="settings-item-left" data-i18n="settings.item.temperature_unit"></div>
+                    <div class="settings-item-right">
+                        <span class="settings-item-value" id="settings-temperature-unit-value"></span>
+                        <span class="settings-chevron">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </span>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -168,6 +178,31 @@
             </div>
             <div class="modal-actions">
                 <button class="btn btn-cancel" type="button" onclick="closeModal('settings-wardrobe-display-modal')" data-i18n="common.close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settings-temperature-unit-modal">
+        <div class="modal-content modal-sheet">
+            <div class="modal-header">
+                <div class="modal-title" data-i18n="settings.item.temperature_unit"></div>
+                <button class="close-btn" type="button" onclick="closeModal('settings-temperature-unit-modal')">×</button>
+            </div>
+            <div class="form-group">
+                <div class="theme-selector">
+                    <label class="theme-option">
+                        <input type="radio" name="temperatureUnit" value="celsius">
+                        <span class="theme-label" data-i18n="temperature.unit.celsius"></span>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="temperatureUnit" value="fahrenheit">
+                        <span class="theme-label" data-i18n="temperature.unit.fahrenheit"></span>
+                    </label>
+                    <div class="theme-slider"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" type="button" onclick="closeModal('settings-temperature-unit-modal')" data-i18n="common.close"></button>
             </div>
         </div>
     </div>

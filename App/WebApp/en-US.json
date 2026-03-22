@@ -71,7 +71,7 @@
   "home.section.todays_picks": "Today's Picks",
   "home.section.today_schedule": "Today's Schedule",
   "home.section.recommended": "Recommended for You",
-  "home.weather.placeholder": "18° - 24°",
+  "home.weather.placeholder": "—",
   "home.locked.title": "Sign in for recommendations",
   "home.locked.description": "Get personalized daily outfit suggestions based on your wardrobe",
 
@@ -237,6 +237,7 @@
   "settings.item.language": "Language",
   "settings.item.dark_mode": "Dark Mode",
   "settings.item.wardrobe_display": "Wardrobe Display",
+  "settings.item.temperature_unit": "Temperature Unit",
   "settings.item.privacy_policy": "Privacy Policy",
   "settings.item.terms": "Terms of Service",
 
@@ -246,6 +247,8 @@
   "theme.light": "Light",
   "theme.dark": "Dark",
   "theme.system": "System",
+  "temperature.unit.celsius": "Celsius (°C)",
+  "temperature.unit.fahrenheit": "Fahrenheit (°F)",
 
   "region.modal.title": "Select Region",
   "region.search.placeholder": "Search region...",

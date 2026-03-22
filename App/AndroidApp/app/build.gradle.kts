@@ -3,6 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val smartWardrobeServerUrl: String =
+    (project.findProperty("SMARTWARDROBE_SERVER_URL") as String?)
+        ?: "http://10.0.2.2:8080/index.html"
+
 android {
     namespace = "com.example.smartwardrobe"
     compileSdk = 34
@@ -14,6 +18,9 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        val escapedServerUrl = smartWardrobeServerUrl.replace("\"", "\\\"")
+        buildConfigField("String", "SERVER_URL", "\"$escapedServerUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -33,6 +40,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 

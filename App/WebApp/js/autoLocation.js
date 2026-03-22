@@ -25,6 +25,12 @@ class AutoLocationService {
      * Handles debounce, cache check, and DOM updates.
      */
     async initAutoLocation() {
+        let options = {};
+        if (arguments.length === 1 && typeof arguments[0] === 'object' && arguments[0] !== null) {
+            options = arguments[0];
+        }
+        const force = Boolean(options.force);
+
         // Debounce: Prevent multiple rapid calls
         if (this.debounceTimer) clearTimeout(this.debounceTimer);
         
@@ -33,6 +39,14 @@ class AutoLocationService {
             this.isDetecting = true;
             
             try {
+                const user = this.getCurrentUser();
+                if (!force && user.regionSource === 'manual' && user.regionKey && user.regionKey !== 'region.unknown') {
+                    const text = window.t ? window.t(user.regionKey) : user.regionKey;
+                    this.updateStatusUI('success', text, user.regionKey);
+                    this.isDetecting = false;
+                    return;
+                }
+
                 // Update UI to loading state if element exists
                 this.updateStatusUI('loading');
                 
@@ -40,7 +54,7 @@ class AutoLocationService {
                 const cached = this.getCachedLocation();
                 if (cached) {
                     console.log('[AutoLocation] Using cached location:', cached);
-                    this.updateGlobalLocationState(cached);
+                    this.updateGlobalLocationState(cached, { force });
                     // Background refresh translation
                     this.fetchAutoSelectTranslations(cached).catch(() => {});
                     this.isDetecting = false;
@@ -49,7 +63,7 @@ class AutoLocationService {
 
                 // 2. Perform Detection
                 const location = await this.detectLocation();
-                this.updateGlobalLocationState(location);
+                this.updateGlobalLocationState(location, { force });
                 
             } catch (error) {
                 console.warn('[AutoLocation] Global init failed:', error);
@@ -63,13 +77,25 @@ class AutoLocationService {
     /**
      * Centralized DOM updater for location display
      */
-    updateGlobalLocationState(location) {
+    updateGlobalLocationState(location, options = {}) {
+        const force = Boolean(options.force);
         // 1. Update LocalStorage
-        let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        let user = this.getCurrentUser();
         // Handle null/undefined location
         if (!location) {
             console.warn('[AutoLocation Log] Location data is empty or null');
             location = { regionKey: 'region.unknown' };
+        }
+
+        if (!force && user.regionSource === 'manual' && user.regionKey && user.regionKey !== 'region.unknown') {
+            const text = window.t ? window.t(user.regionKey) : user.regionKey;
+            const regionEl = document.getElementById('current-region');
+            if (regionEl) {
+                regionEl.textContent = text;
+                regionEl.setAttribute('data-i18n', user.regionKey);
+            }
+            this.updateStatusUI('success', text, user.regionKey);
+            return;
         }
 
         if (location.regionKey === 'region.unknown') {
@@ -78,7 +104,8 @@ class AutoLocationService {
 
         if (user.regionKey !== location.regionKey) {
             user.regionKey = location.regionKey;
-            localStorage.setItem('currentUser', JSON.stringify(user));
+            user.regionSource = 'auto';
+            this.setCurrentUser(user);
         }
 
         // 2. Update UI Elements (Right side info area)
@@ -150,8 +177,26 @@ class AutoLocationService {
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Geolocation Timeout')), this.TIMEOUT))
             ]);
             
-            // 3. Reverse Geocode
-            const locationData = await this.reverseGeocode(coords.latitude, coords.longitude);
+            // 3. Reverse Geocode (soft-fail to keep coords usable for weather)
+            let locationData = null;
+            try {
+                locationData = await this.reverseGeocode(coords.latitude, coords.longitude);
+            } catch (reverseError) {
+                window.__swAutoLocationDebug = {
+                    source: 'reverse_geocode_failed',
+                    error: String(reverseError?.message || reverseError),
+                    at: Date.now()
+                };
+                locationData = {
+                    regionKey: 'region.unknown',
+                    label: '',
+                    province: '',
+                    city: '',
+                    district: '',
+                    latitude: coords.latitude,
+                    longitude: coords.longitude
+                };
+            }
             
             // 4. Cache Result
             this.cacheLocation(locationData);
@@ -161,6 +206,12 @@ class AutoLocationService {
             
             return locationData;
         } catch (error) {
+            window.__swAutoLocationDebug = {
+                source: 'geolocation_failed',
+                error: String(error?.message || error),
+                at: Date.now(),
+                retryCount
+            };
             // Retry Logic (Max 1 retry)
             if (retryCount < 1) {
                 return this.detectLocation(retryCount + 1);
@@ -173,6 +224,11 @@ class AutoLocationService {
                 await this.fetchAutoSelectTranslations(ipLocation);
                 return ipLocation;
             } catch (ipError) {
+                window.__swAutoLocationDebug = {
+                    source: 'ip_location_failed',
+                    error: String(ipError?.message || ipError),
+                    at: Date.now()
+                };
                 throw error; 
             }
         }
@@ -183,43 +239,55 @@ class AutoLocationService {
       */
      async getIPLocation() {
          try {
-             // Use a free IP Geolocation API (e.g., ipapi.co)
-             // Added timeout to prevent hanging
-             const controller = new AbortController();
-             const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+            const requestJson = async (url, timeoutMs) => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+                try {
+                    const response = await fetch(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } });
+                    if (!response.ok) throw new Error(`HTTP_${response.status}`);
+                    return await response.json();
+                } finally {
+                    clearTimeout(timeoutId);
+                }
+            };
 
-             const response = await fetch('https://ipapi.co/json/', { signal: controller.signal });
-             clearTimeout(timeoutId);
+            let data = null;
+            let provider = '';
 
-             if (!response.ok) {
-                 throw new Error('IP Geolocation failed');
-             }
-             const data = await response.json();
-             
-             // Validate data
-             if (!data.city && !data.region) {
-                 throw new Error('Incomplete IP location data');
-             }
-             
-             // Try to find a matching region key from known regions (naive matching)
-            // In a real app, you'd have a mapping table or use geocoding API that returns standard codes
+            try {
+                provider = 'ipapi.co';
+                data = await requestJson('https://ipapi.co/json/', 3500);
+            } catch (_) {
+                provider = 'ipwho.is';
+                data = await requestJson('https://ipwho.is/', 3500);
+            }
+
+            const city = data?.city || '';
+            const province = data?.region || data?.region_name || data?.state || '';
+            const label = city || province || '';
+            const latitude = Number(data?.latitude ?? data?.lat ?? NaN);
+            const longitude = Number(data?.longitude ?? data?.lon ?? NaN);
+
+            if (!label) throw new Error('Incomplete IP location data');
+
             let regionKey = 'region.unknown';
-            
-            // Try to match city name to a region key
-            if (data.city) {
-                const potentialKey = `region.preset.${data.city.toLowerCase().replace(/\s+/g, '_')}`;
+            if (city) {
+                const potentialKey = `region.preset.${city.toLowerCase().replace(/\s+/g, '_')}`;
                 if (window.i18n && window.i18n.translations && window.i18n.translations['en-US'] && window.i18n.translations['en-US'][potentialKey]) {
                     regionKey = potentialKey;
                 }
             }
-            
+
             return {
-                regionKey: regionKey,
-                 label: data.city || data.region,
-                 province: data.region || '',
-                 city: data.city || '',
-                 district: ''
-             };
+                regionKey,
+                label,
+                province,
+                city,
+                district: '',
+                latitude: Number.isFinite(latitude) ? latitude : undefined,
+                longitude: Number.isFinite(longitude) ? longitude : undefined,
+                ipProvider: provider
+            };
          } catch (error) {
              console.warn('[AutoLocation] IP Location API failed, falling back to mock:', error);
              
@@ -229,6 +297,18 @@ class AutoLocationService {
              throw error; 
          }
      }
+
+    getCurrentUser() {
+        try {
+            return JSON.parse(localStorage.getItem('currentUser') || '{}') || {};
+        } catch (_) {
+            return {};
+        }
+    }
+
+    setCurrentUser(user) {
+        localStorage.setItem('currentUser', JSON.stringify(user || {}));
+    }
 
     /**
      * Get current coordinates using Geolocation API
@@ -267,49 +347,91 @@ class AutoLocationService {
      * In a real app, this would call Google Maps/Amaps/Baidu Maps API
      */
     async reverseGeocode(lat, lon) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4500);
 
-        // Mock Logic based on simple coordinate ranges or random for demo
-        // This is where you'd call: fetch(`/api/v1/weather/geocode?lat=${lat}&lon=${lon}`)
-        
-        // For demonstration, we'll return a fixed location or random based on inputs
-        // to show the UI update.
-        
-        // Simulate a successful lookup for "Shanghai" if coordinates are roughly in China/East
-        // Otherwise default to New York or similar.
-        
-        // Simple heuristic: 
-        // Lat > 30 && Lat < 32 && Lon > 120 && Lon < 122 -> Shanghai
-        
-        let result = {
-            regionKey: 'region.preset.new_york',
-            label: '',
-            province: 'new york',
-            city: 'new york',
-            district: ''
-        };
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`;
+            const response = await fetch(url, {
+                signal: controller.signal,
+                headers: { 'Accept': 'application/json' }
+            });
+            clearTimeout(timeoutId);
 
-        // If we are actually in the browser and not mocking coords, this might vary.
-        // For the purpose of the user request, we return a structured object.
-        
-        // Note: The user requested "Province - City - District".
-        
-        // Let's verify if we can fetch from the mock backend endpoint we defined in API docs
-        // Since there is no real backend, we will simulate the response structure here.
-        
-        // Mock response for Shanghai (approx coords)
-        if ((lat > 30 && lat < 32 && lon > 120 && lon < 122) || (lat === undefined)) {
-             result = {
-                regionKey: 'region_shanghai',
-                label: 'Shanghai',
-                province: 'Shanghai',
-                city: 'Shanghai',
-                district: 'Huangpu'
+            if (!response.ok) throw new Error('Reverse geocoding failed');
+            const data = await response.json();
+            const address = data?.address || {};
+
+            const city =
+                address.city ||
+                address.town ||
+                address.village ||
+                address.municipality ||
+                address.county ||
+                '';
+
+            const province =
+                address.state ||
+                address.region ||
+                address.province ||
+                '';
+
+            const district =
+                address.suburb ||
+                address.neighbourhood ||
+                address.city_district ||
+                address.borough ||
+                address.district ||
+                '';
+
+            let regionKey = 'region.unknown';
+            if (city) {
+                const potentialKey = `region.preset.${String(city).toLowerCase().replace(/\s+/g, '_')}`;
+                if (window.i18n && window.i18n.translations && window.i18n.translations['en-US'] && window.i18n.translations['en-US'][potentialKey]) {
+                    regionKey = potentialKey;
+                }
+            }
+
+            const labelParts = [district, city, province].filter(Boolean);
+            const label = labelParts.length ? labelParts.join('·') : (data?.display_name || '');
+
+            return {
+                regionKey,
+                label,
+                province,
+                city,
+                district,
+                latitude: lat,
+                longitude: lon
             };
-        }
+        } catch (error) {
+            clearTimeout(timeoutId);
+            await new Promise(resolve => setTimeout(resolve, 800));
 
-        return result;
+            let result = {
+                regionKey: 'region.preset.new_york',
+                label: '',
+                province: 'new york',
+                city: 'new york',
+                district: '',
+                latitude: lat,
+                longitude: lon
+            };
+
+            if ((lat > 30 && lat < 32 && lon > 120 && lon < 122) || (lat === undefined)) {
+                result = {
+                    regionKey: 'region_shanghai',
+                    label: 'Shanghai',
+                    province: 'Shanghai',
+                    city: 'Shanghai',
+                    district: 'Huangpu',
+                    latitude: lat,
+                    longitude: lon
+                };
+            }
+
+            return result;
+        }
     }
 
     /**
@@ -351,6 +473,7 @@ class AutoLocationService {
         // 2. Translate components
         let city = locationData.city;
         let province = locationData.province;
+        const district = locationData.district;
         
         // Get API Cache
         const cache = this.getTranslationCache();
@@ -382,12 +505,13 @@ class AutoLocationService {
         city = mapTerm(city, 'city');
         province = mapTerm(province, 'province');
         
-        // If we have both city and province
-        if (city && province) {
-             if (city === province) return city;
-             return `${city}·${province}`;
-        }
-        
+        const parts = [];
+        if (district) parts.push(district);
+        if (city) parts.push(city);
+        if (province && province !== city) parts.push(province);
+
+        if (parts.length) return parts.join('·');
+
         return city || province || locationData.label || '';
     }
 
