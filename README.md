@@ -1,6 +1,6 @@
 # SmartWardrobe
 
-SmartWardrobe is a comprehensive personal wardrobe management solution that helps users organize their clothing, plan outfits, and receive daily recommendations. The project consists of a cross-platform architecture with a Web Application and an Android Application.
+SmartWardrobe is a comprehensive personal wardrobe management solution that helps users organize clothing, plan outfits, and iterate on cross-platform experiences. The repository currently keeps the new web app, the legacy web app, Android, and two backend variants side by side during a transition period.
 
 ## 🏗 Project Architecture
 
@@ -17,33 +17,33 @@ graph TD
 
 ### 📂 Directories
 
-- **`App/`**: Contains the source code for the Web and Android applications.
-- **`backend/`**: Local backend service (Python) and shared utilities (MySQL, validation, handlers).
-- **`images/`**: Stores general project assets and images.
-- **`node_modules/`**: Dependencies installed via npm.
-- **`scripts/`**: Utility scripts, including the automated Android installer.
-
-### 📄 Files
-
-- **`.gitignore`**: Specifies files and directories to be ignored by Git.
-- **`AppLogo.jpg`**: The official logo of the SmartWardrobe application.
-- **`package-lock.json`**: Auto-generated file that locks the versions of npm dependencies.
-- **`package.json`**: Defines project metadata, scripts, and dependencies.
-- **`README.md`**: The main entry point for project documentation.
-- **`SERVER_SETUP.md`**: Comprehensive guide for setting up the backend server environment.
-- **`server.py`**: Local dev server entrypoint (serves WebApp static files + backend APIs).
-- **`SmartWardrobe.apk`**: The compiled Android application package file.
-- **`USER_GUIDE.md`**: Instructions and manual for end-users of the application.
+- **`apps/web-new/`**: Current main web app under active development.
+- **`apps/web-legacy/`**: Legacy web app kept for comparison and fallback.
+- **`apps/android/`**: Android client.
+- **`services/backend_lite/`**: Lightweight JSON-backed backend for frontend-first development.
+- **`services/backend_legacy/`**: Existing Python/MySQL backend.
+- **`docs/product/`**: Product-facing documentation.
+- **`docs/superpowers/`**: Planning and spec documents.
+- **`scripts/dev/`**: Start scripts for local development.
+- **`scripts/android/`**: Android tooling scripts.
+- **`scripts/data/`**: Data/bootstrap scripts.
+- **`assets/`**: Branding assets, APKs, and archived placeholders.
 
 ## 🧩 Local Backend
 
-Run the integrated local server (static WebApp + APIs):
+Run the lightweight integrated server for the new web app (static frontend + APIs):
 
 ```bash
-python3 server.py
+zsh ./scripts/dev/start_lite_backend.sh
 ```
 
-Default port is `8080` (set `PORT` to change). The server also supports MySQL-backed APIs (i18n/favorites/schedules) and will auto-create required tables when MySQL is reachable.
+Default port is `8140` (set `LITE_BACKEND_PORT` to change).
+
+Run the legacy integrated server for the previous stack:
+
+```bash
+zsh ./scripts/dev/start_new_server.sh
+```
 
 ## 🛠 Tech Stack
 
@@ -60,19 +60,21 @@ Default port is `8080` (set `PORT` to change). The server also supports MySQL-ba
 
 ## 🚀 Quick Navigation
 
-- [Web Application Documentation](App/WebApp/README.md)
-- [Android Application Documentation](App/AndroidApp/README.md)
-- [User Guide](USER_GUIDE.md)
+- [New Web App](apps/web-new/)
+- [Legacy Web App Documentation](apps/web-legacy/README.md)
+- [Android Application Documentation](apps/android/README.md)
+- [User Guide](docs/product/USER_GUIDE.md)
+- [Server Setup](docs/product/SERVER_SETUP.md)
 
 ## 💻 Developer Guide
 
 ### Web Development
-For web development tasks, including UI updates and logic changes:
-[Go to Web Development Guide](App/WebApp/README.md)
+For legacy web development tasks, including UI updates and logic changes:
+[Go to Web Development Guide](apps/web-legacy/README.md)
 
 ### Android Development
 For native feature implementation and APK building:
-[Go to Android Development Guide](App/AndroidApp/README.md)
+[Go to Android Development Guide](apps/android/README.md)
 
 ---
 **Version**: 1.2.0

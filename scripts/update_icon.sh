@@ -14,18 +14,18 @@ if [ ! -f "$SOURCE_IMG" ]; then
 fi
 
 # Define project root (assuming script is run from project root or scripts dir)
-# We'll try to find the root by looking for 'App' directory
-if [ -d "App" ]; then
+# We'll try to find the root by looking for 'apps' directory
+if [ -d "apps" ]; then
     PROJECT_ROOT="."
-elif [ -d "../App" ]; then
+elif [ -d "../apps" ]; then
     PROJECT_ROOT=".."
 else
     echo "Error: Could not find project root. Please run from project root or scripts directory."
     exit 1
 fi
 
-RES_DIR="$PROJECT_ROOT/App/AndroidApp/app/src/main/res"
-WEB_DIR="$PROJECT_ROOT/App/AndroidApp/app/src/main"
+RES_DIR="$PROJECT_ROOT/apps/android/app/src/main/res"
+WEB_DIR="$PROJECT_ROOT/apps/android/app/src/main"
 
 # Check if sips is installed (macOS default)
 if ! command -v sips &> /dev/null; then

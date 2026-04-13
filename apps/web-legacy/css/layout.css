@@ -1,0 +1,19 @@
+body.closettwin-shell {
+    margin: 0;
+    background: var(--ct-color-background);
+    color: var(--ct-color-text);
+    font-family: var(--ct-font-body);
+}
+
+.ct-shell {
+    width: min(100%, var(--ct-shell-max-width));
+    margin: 0 auto;
+    min-height: 100vh;
+    padding: 0 var(--ct-space-4) calc(88px + var(--ct-space-5));
+    box-sizing: border-box;
+}
+
+.ct-shell-section {
+    padding-block: var(--ct-space-5);
+    border-bottom: 1px solid var(--ct-color-border);
+}

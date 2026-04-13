@@ -1,0 +1,19 @@
+:root {
+    --ct-color-background: #f6f3ee;
+    --ct-color-surface: #ffffff;
+    --ct-color-surface-muted: #ece7df;
+    --ct-color-text: #121212;
+    --ct-color-text-muted: #6d685f;
+    --ct-color-border: #d7d1c7;
+    --ct-color-accent: #121212;
+    --ct-font-display: "Manrope", "Inter", sans-serif;
+    --ct-font-body: "Inter", "Helvetica Neue", sans-serif;
+    --ct-space-1: 4px;
+    --ct-space-2: 8px;
+    --ct-space-3: 12px;
+    --ct-space-4: 16px;
+    --ct-space-5: 24px;
+    --ct-space-6: 32px;
+    --ct-space-7: 48px;
+    --ct-shell-max-width: 960px;
+}

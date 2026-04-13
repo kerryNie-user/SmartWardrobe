@@ -51,8 +51,8 @@ def scan_file(filepath):
 
 def main():
     target_dirs = [
-        'App/WebApp',
-        'App/WebApp/js'
+        'apps/web-legacy',
+        'apps/web-legacy/js'
     ]
     
     extensions = ['*.html', '*.js', '*.json']
