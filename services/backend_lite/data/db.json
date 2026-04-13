@@ -1,0 +1,32 @@
+{
+  "users": [
+    {
+      "id": "user-096fb511f3ff",
+      "name": "API Nova",
+      "emailOrMobile": "api-nova@example.com",
+      "password": "password123",
+      "avatar": "./images/profile/elara-vance.jpg",
+      "bio": "Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies."
+    }
+  ],
+  "profiles": {
+    "user-096fb511f3ff": {
+      "name": "API Nova",
+      "bio": "Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies.",
+      "avatar": "./images/profile/elara-vance.jpg"
+    }
+  },
+  "settings": {
+    "user-096fb511f3ff": {
+      "language": "en-US",
+      "display-mode": "dark",
+      "wardrobe-layout": "grid",
+      "temperature-unit": "celsius",
+      "public-profile": true,
+      "outfit-reminders": true
+    }
+  },
+  "schedules": {},
+  "favorites": {},
+  "wardrobe": {}
+}
