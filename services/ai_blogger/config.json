@@ -1,0 +1,5 @@
+{
+    "llm_provider": "mock",
+    "image_provider": "unsplash_source",
+    "rss_feeds": ["mock_feed"]
+}

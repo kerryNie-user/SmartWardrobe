@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartWardrobe - Editorial Magazine</title>
+    <style>
+        :root {
+            --bg-color: #f9f9f7;
+            --text-color: #222222;
+            --accent-color: #555555;
+            --gray-text: #777777;
+            --font-main: "Georgia", "Times New Roman", "Songti SC", "SimSun", serif;
+            --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+        }
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 2;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 40px;
+            background-color: #ffffff;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+        }
+        /* Header Styling */
+        .header {
+            text-align: center;
+            padding-bottom: 40px;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 60px;
+            font-family: var(--font-sans);
+        }
+        .header h1 {
+            font-size: 36px;
+            letter-spacing: 4px;
+            font-weight: 300;
+            margin: 0 0 10px 0;
+        }
+        .header p {
+            color: var(--gray-text);
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        /* Post Styling */
+        .post {
+            margin-bottom: 100px;
+        }
+        .post-title {
+            font-size: 38px;
+            font-weight: normal;
+            text-align: center;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+        .post-meta {
+            text-align: center;
+            font-family: var(--font-sans);
+            font-size: 13px;
+            color: var(--gray-text);
+            margin-bottom: 50px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        /* Magazine Layout Classes */
+        .paragraph-block {
+            margin-bottom: 50px;
+        }
+        .text-content {
+            font-size: 17px;
+            text-align: justify;
+            color: #333;
+        }
+        .text-content strong {
+            font-family: var(--font-sans);
+            font-weight: 600;
+            color: #000;
+        }
+        
+        /* Hero Image Layout (Full Width) */
+        .layout-hero {
+            margin: 0 0 40px 0;
+            text-align: center;
+            clear: both;
+        }
+        .layout-hero img {
+            width: 100%;
+            height: auto;
+            max-height: 550px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        /* Float Right Layout */
+        .layout-float-right {
+            float: right;
+            width: 45%;
+            margin: 10px 0 30px 40px;
+            text-align: center;
+        }
+        .layout-float-right img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        /* Float Left Layout */
+        .layout-float-left {
+            float: left;
+            width: 45%;
+            margin: 10px 40px 30px 0;
+            text-align: center;
+        }
+        .layout-float-left img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .image-caption {
+            margin-top: 12px;
+            font-family: var(--font-sans);
+            font-size: 12px;
+            color: var(--gray-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Clearfix to prevent layout breaking */
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+        
+        .divider {
+            text-align: center;
+            margin: 80px 0;
+            color: #ccc;
+            font-size: 24px;
+            letter-spacing: 20px;
+            clear: both;
+        }
+        
+        /* Drop cap for the first letter of paragraphs */
+        .drop-cap::first-letter {
+            font-size: 3.5em;
+            float: left;
+            line-height: 0.8;
+            margin-right: 8px;
+            margin-top: 5px;
+            color: #000;
+        }
+
+        @media print {
+            body { background-color: white; }
+            .container { box-shadow: none; max-width: 100%; padding: 0; }
+            .post { page-break-after: always; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SMARTWARDROBE EDITORIAL</h1>
+            <p>Curated Fashion Analysis & Insights</p>
+        </div>
+        
+        
+        <div class="post clearfix">
+            <h2 class="post-title">The Editorial: 90年代极简复古风的文化溯源与终极穿搭指南</h2>
+            <div class="post-meta">By AI Editor | April 11, 2026</div>
+        <div class="paragraph-block clearfix">
+                    <div class="layout-hero">
+                        <img src="images/ed_1_img_1.jpg" alt="重返90年代的街头极简主义">
+                        <div class="image-caption">重返90年代的街头极简主义</div>
+                    </div>
+                    <div class="text-content drop-cap"><strong>导语</strong> — 在当今快节奏的时尚圈里，90年代极简复古风正在以一种无可抵挡的姿态席卷街头。这不仅仅是一场简单的怀旧，更是对过去那种纯粹、极简美学的致敬。当我们厌倦了过度消费与Logo堆砌，那些经过时间洗礼的单品，往往能带给穿搭更深层次的质感。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_1_img_2.jpg" alt="90年代风格偶像的极简街拍">
+                        <div class="image-caption">90年代风格偶像的极简街拍</div>
+                    </div>
+                    <div class="text-content "><strong>文化溯源</strong> — 要理解这一趋势的成因，我们需要把时钟拨回上世纪90年代初。在经历了80年代的经济泡沫与极度奢靡（如夸张的垫肩、繁复的亮片）之后，人们的审美迎来了报复性的反弹。以 Calvin Klein、Jil Sander 为代表的设计师，开始提倡 'Less is More'。同时，像 Carolyn Bessette-Kennedy 这样的风格偶像，用最基础的白衬衫和直筒裙，定义了什么叫做毫不费力的高级感（Effortless Chic）。如今的复兴，正是后疫情时代人们寻求内心宁静与胶囊衣橱（Capsule Wardrobe）的现实投射。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-left">
+                        <img src="images/ed_1_img_3.jpg" alt="真丝材质的垂坠感与克制美学">
+                        <div class="image-caption">真丝材质的垂坠感与克制美学</div>
+                    </div>
+                    <div class="text-content "><strong>美学解析</strong> — 这种美学的核心在于“克制”。色彩上，抛弃高饱和度的荧光色，转而投入黑、白、灰、海军蓝以及大地色系（Earth Tones）的怀抱。面料上，极简不代表廉价，相反，它对材质的要求更为苛刻——重磅的真丝吊带裙（Slip Dress）、挺括的生单宁（Raw Denim）、以及细腻的羊绒，这些面料自身的垂坠感和光泽度，构成了造型的全部底气。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_1_img_4.jpg" alt="直筒牛仔与廓形西装的经典碰撞">
+                        <div class="image-caption">直筒牛仔与廓形西装的经典碰撞</div>
+                    </div>
+                    <div class="text-content "><strong>穿搭实操与单品</strong> — 本季最值得投资的单品无疑是一条水洗做旧的高腰直筒牛仔裤，以及一件剪裁利落的Oversize西装。在日常实操中，你可以用一件纯白色的高领针织衫作为内搭，外面套上一件有着自然磨损痕迹的复古皮夹克。关键在于版型的选择——不要过分紧身，保留衣服与身体之间的空间感，才能穿出那种漫不经心的时髦。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-left">
+                        <img src="images/ed_1_img_5.jpg" alt="做减法：配饰点到为止">
+                        <div class="image-caption">做减法：配饰点到为止</div>
+                    </div>
+                    <div class="text-content "><strong>避坑指南</strong> — 很多人在尝试复古风时容易陷入一个误区：把所有的复古元素（波点、流苏、做旧金属）都堆砌在身上，这会让你看起来像是在参加主题变装派对。真正的搭配智慧在于‘做减法’。一件有历史感的单品，搭配两件现代感的基础款，才是最高级的玩法。在配饰上，一条细巧的银质锁骨链或是一对复古方框墨镜足矣。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-hero">
+                        <img src="images/ed_1_img_6.jpg" alt="态度决定你的最终风格">
+                        <div class="image-caption">态度决定你的最终风格</div>
+                    </div>
+                    <div class="text-content "><strong>结语</strong> — 总结来说，90年代极简复古风不仅仅是模仿过去的款式，更是吸收那个年代的穿衣态度。自信、从容、不被潮流裹挟，知道自己适合什么，比盲目追逐当季爆款更重要。赶快翻翻衣橱，或者去古着店淘一淘，开启你的复古极简穿搭之旅吧！</div></div></div><div class="divider">✦ ✦ ✦</div>
+        <div class="post clearfix">
+            <h2 class="post-title">深度特稿：解码 Cyberpunk 机能风 的流行密码</h2>
+            <div class="post-meta">By AI Editor | April 11, 2026</div>
+        <div class="paragraph-block clearfix"><div class="text-content drop-cap"><strong>现象洞察</strong> — 近期，Cyberpunk 机能风成为了整个时尚圈不可忽视的焦点。无论是在巴黎的时装周外场，还是在东京的原宿街头，我们都能捕捉到这一趋势的强烈信号。它不仅改变了我们的衣橱结构，更代表了一种全新的生活态度和身份认同。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_2_img_2.jpg" alt="社会情绪在着装上的投射">
+                        <div class="image-caption">社会情绪在着装上的投射</div>
+                    </div>
+                    <div class="text-content "><strong>文化与成因分析</strong> — 为什么它会在此时爆发？这与当前社会的宏观情绪密不可分。在经历了长期的居家办公与生活方式的重塑后，人们对服装的诉求发生了根本性的转变：一方面渴望极致的舒适感与功能性，另一方面又极度渴望通过着装来表达个性。传统的紧身束缚被抛弃，取而代之的是更加注重剪裁、面料质感和多场景无缝切换的单品。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-left">
+                        <img src="images/ed_2_img_3.jpg" alt="面料肌理与轮廓的重塑">
+                        <div class="image-caption">面料肌理与轮廓的重塑</div>
+                    </div>
+                    <div class="text-content "><strong>核心美学与视觉特征</strong> — 这一风格在视觉上呈现出强烈的辨识度。它打破了传统的性别界限（Genderless），强调轮廓的重塑与层次的堆叠。色彩运用上往往具有极强的冲击力，或是极致的同色系（Monochrome），或是大胆的撞色。通过面料肌理的对比——例如哑光与亮面、柔软与硬挺的碰撞，创造出极其丰富的视觉落差。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_2_img_4.jpg" alt="高级的叠穿艺术实操">
+                        <div class="image-caption">高级的叠穿艺术实操</div>
+                    </div>
+                    <div class="text-content "><strong>穿搭实操指南</strong> — 在日常实操中，我们强烈建议采用‘三明治叠穿法’。内层选择亲肤柔软的贴身衣物，中层用有一定厚度或色彩对比的单品进行过渡，外层则披上一件质感极佳的廓形外套。这种穿法不仅能轻松应对早晚温差，还能极大丰富搭配的细节。新手可以先从配饰入手，逐步过渡到大件单品。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-hero">
+                        <img src="images/ed_2_img_5.jpg" alt="时尚是一场自我表达">
+                        <div class="image-caption">时尚是一场自我表达</div>
+                    </div>
+                    <div class="text-content "><strong>结语与展望</strong> — 时尚是一个轮回，但每一次轮回都会注入新的灵魂。掌握 {topic_title} 的精髓，不仅能让你在这个季节走在潮流尖端，更能帮你建立起一套经得起推敲的个人风格体系。不要害怕试错，时尚本就是一场自我表达的游戏。</div></div></div><div class="divider">✦ ✦ ✦</div>
+        <div class="post clearfix">
+            <h2 class="post-title">深度特稿：解码 法式慵懒 Chic 的流行密码</h2>
+            <div class="post-meta">By AI Editor | April 11, 2026</div>
+        <div class="paragraph-block clearfix">
+                    <div class="layout-hero">
+                        <img src="images/ed_3_img_1.jpg" alt="秀场外的街头风向标">
+                        <div class="image-caption">秀场外的街头风向标</div>
+                    </div>
+                    <div class="text-content drop-cap"><strong>现象洞察</strong> — 近期，法式慵懒 Chic成为了整个时尚圈不可忽视的焦点。无论是在巴黎的时装周外场，还是在东京的原宿街头，我们都能捕捉到这一趋势的强烈信号。它不仅改变了我们的衣橱结构，更代表了一种全新的生活态度和身份认同。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_3_img_2.jpg" alt="社会情绪在着装上的投射">
+                        <div class="image-caption">社会情绪在着装上的投射</div>
+                    </div>
+                    <div class="text-content "><strong>文化与成因分析</strong> — 为什么它会在此时爆发？这与当前社会的宏观情绪密不可分。在经历了长期的居家办公与生活方式的重塑后，人们对服装的诉求发生了根本性的转变：一方面渴望极致的舒适感与功能性，另一方面又极度渴望通过着装来表达个性。传统的紧身束缚被抛弃，取而代之的是更加注重剪裁、面料质感和多场景无缝切换的单品。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-left">
+                        <img src="images/ed_3_img_3.jpg" alt="面料肌理与轮廓的重塑">
+                        <div class="image-caption">面料肌理与轮廓的重塑</div>
+                    </div>
+                    <div class="text-content "><strong>核心美学与视觉特征</strong> — 这一风格在视觉上呈现出强烈的辨识度。它打破了传统的性别界限（Genderless），强调轮廓的重塑与层次的堆叠。色彩运用上往往具有极强的冲击力，或是极致的同色系（Monochrome），或是大胆的撞色。通过面料肌理的对比——例如哑光与亮面、柔软与硬挺的碰撞，创造出极其丰富的视觉落差。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_3_img_4.jpg" alt="高级的叠穿艺术实操">
+                        <div class="image-caption">高级的叠穿艺术实操</div>
+                    </div>
+                    <div class="text-content "><strong>穿搭实操指南</strong> — 在日常实操中，我们强烈建议采用‘三明治叠穿法’。内层选择亲肤柔软的贴身衣物，中层用有一定厚度或色彩对比的单品进行过渡，外层则披上一件质感极佳的廓形外套。这种穿法不仅能轻松应对早晚温差，还能极大丰富搭配的细节。新手可以先从配饰入手，逐步过渡到大件单品。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-hero">
+                        <img src="images/ed_3_img_5.jpg" alt="时尚是一场自我表达">
+                        <div class="image-caption">时尚是一场自我表达</div>
+                    </div>
+                    <div class="text-content "><strong>结语与展望</strong> — 时尚是一个轮回，但每一次轮回都会注入新的灵魂。掌握 {topic_title} 的精髓，不仅能让你在这个季节走在潮流尖端，更能帮你建立起一套经得起推敲的个人风格体系。不要害怕试错，时尚本就是一场自我表达的游戏。</div></div></div><div class="divider">✦ ✦ ✦</div>
+        <div class="post clearfix">
+            <h2 class="post-title">The Editorial: 美式复古学院风 (Preppy)的文化溯源与终极穿搭指南</h2>
+            <div class="post-meta">By AI Editor | April 11, 2026</div>
+        <div class="paragraph-block clearfix">
+                    <div class="layout-hero">
+                        <img src="images/ed_4_img_1.jpg" alt="重返90年代的街头极简主义">
+                        <div class="image-caption">重返90年代的街头极简主义</div>
+                    </div>
+                    <div class="text-content drop-cap"><strong>导语</strong> — 在当今快节奏的时尚圈里，美式复古学院风 (Preppy)正在以一种无可抵挡的姿态席卷街头。这不仅仅是一场简单的怀旧，更是对过去那种纯粹、极简美学的致敬。当我们厌倦了过度消费与Logo堆砌，那些经过时间洗礼的单品，往往能带给穿搭更深层次的质感。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_4_img_2.jpg" alt="90年代风格偶像的极简街拍">
+                        <div class="image-caption">90年代风格偶像的极简街拍</div>
+                    </div>
+                    <div class="text-content "><strong>文化溯源</strong> — 要理解这一趋势的成因，我们需要把时钟拨回上世纪90年代初。在经历了80年代的经济泡沫与极度奢靡（如夸张的垫肩、繁复的亮片）之后，人们的审美迎来了报复性的反弹。以 Calvin Klein、Jil Sander 为代表的设计师，开始提倡 'Less is More'。同时，像 Carolyn Bessette-Kennedy 这样的风格偶像，用最基础的白衬衫和直筒裙，定义了什么叫做毫不费力的高级感（Effortless Chic）。如今的复兴，正是后疫情时代人们寻求内心宁静与胶囊衣橱（Capsule Wardrobe）的现实投射。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-left">
+                        <img src="images/ed_4_img_3.jpg" alt="真丝材质的垂坠感与克制美学">
+                        <div class="image-caption">真丝材质的垂坠感与克制美学</div>
+                    </div>
+                    <div class="text-content "><strong>美学解析</strong> — 这种美学的核心在于“克制”。色彩上，抛弃高饱和度的荧光色，转而投入黑、白、灰、海军蓝以及大地色系（Earth Tones）的怀抱。面料上，极简不代表廉价，相反，它对材质的要求更为苛刻——重磅的真丝吊带裙（Slip Dress）、挺括的生单宁（Raw Denim）、以及细腻的羊绒，这些面料自身的垂坠感和光泽度，构成了造型的全部底气。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_4_img_4.jpg" alt="直筒牛仔与廓形西装的经典碰撞">
+                        <div class="image-caption">直筒牛仔与廓形西装的经典碰撞</div>
+                    </div>
+                    <div class="text-content "><strong>穿搭实操与单品</strong> — 本季最值得投资的单品无疑是一条水洗做旧的高腰直筒牛仔裤，以及一件剪裁利落的Oversize西装。在日常实操中，你可以用一件纯白色的高领针织衫作为内搭，外面套上一件有着自然磨损痕迹的复古皮夹克。关键在于版型的选择——不要过分紧身，保留衣服与身体之间的空间感，才能穿出那种漫不经心的时髦。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-left">
+                        <img src="images/ed_4_img_5.jpg" alt="做减法：配饰点到为止">
+                        <div class="image-caption">做减法：配饰点到为止</div>
+                    </div>
+                    <div class="text-content "><strong>避坑指南</strong> — 很多人在尝试复古风时容易陷入一个误区：把所有的复古元素（波点、流苏、做旧金属）都堆砌在身上，这会让你看起来像是在参加主题变装派对。真正的搭配智慧在于‘做减法’。一件有历史感的单品，搭配两件现代感的基础款，才是最高级的玩法。在配饰上，一条细巧的银质锁骨链或是一对复古方框墨镜足矣。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-hero">
+                        <img src="images/ed_4_img_6.jpg" alt="态度决定你的最终风格">
+                        <div class="image-caption">态度决定你的最终风格</div>
+                    </div>
+                    <div class="text-content "><strong>结语</strong> — 总结来说，美式复古学院风 (Preppy)不仅仅是模仿过去的款式，更是吸收那个年代的穿衣态度。自信、从容、不被潮流裹挟，知道自己适合什么，比盲目追逐当季爆款更重要。赶快翻翻衣橱，或者去古着店淘一淘，开启你的复古极简穿搭之旅吧！</div></div></div><div class="divider">✦ ✦ ✦</div>
+        <div class="post clearfix">
+            <h2 class="post-title">深度特稿：解码 无性别 Oversize 剪裁 的流行密码</h2>
+            <div class="post-meta">By AI Editor | April 11, 2026</div>
+        <div class="paragraph-block clearfix">
+                    <div class="layout-hero">
+                        <img src="images/ed_5_img_1.jpg" alt="秀场外的街头风向标">
+                        <div class="image-caption">秀场外的街头风向标</div>
+                    </div>
+                    <div class="text-content drop-cap"><strong>现象洞察</strong> — 近期，无性别 Oversize 剪裁成为了整个时尚圈不可忽视的焦点。无论是在巴黎的时装周外场，还是在东京的原宿街头，我们都能捕捉到这一趋势的强烈信号。它不仅改变了我们的衣橱结构，更代表了一种全新的生活态度和身份认同。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_5_img_2.jpg" alt="社会情绪在着装上的投射">
+                        <div class="image-caption">社会情绪在着装上的投射</div>
+                    </div>
+                    <div class="text-content "><strong>文化与成因分析</strong> — 为什么它会在此时爆发？这与当前社会的宏观情绪密不可分。在经历了长期的居家办公与生活方式的重塑后，人们对服装的诉求发生了根本性的转变：一方面渴望极致的舒适感与功能性，另一方面又极度渴望通过着装来表达个性。传统的紧身束缚被抛弃，取而代之的是更加注重剪裁、面料质感和多场景无缝切换的单品。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-left">
+                        <img src="images/ed_5_img_3.jpg" alt="面料肌理与轮廓的重塑">
+                        <div class="image-caption">面料肌理与轮廓的重塑</div>
+                    </div>
+                    <div class="text-content "><strong>核心美学与视觉特征</strong> — 这一风格在视觉上呈现出强烈的辨识度。它打破了传统的性别界限（Genderless），强调轮廓的重塑与层次的堆叠。色彩运用上往往具有极强的冲击力，或是极致的同色系（Monochrome），或是大胆的撞色。通过面料肌理的对比——例如哑光与亮面、柔软与硬挺的碰撞，创造出极其丰富的视觉落差。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-float-right">
+                        <img src="images/ed_5_img_4.jpg" alt="高级的叠穿艺术实操">
+                        <div class="image-caption">高级的叠穿艺术实操</div>
+                    </div>
+                    <div class="text-content "><strong>穿搭实操指南</strong> — 在日常实操中，我们强烈建议采用‘三明治叠穿法’。内层选择亲肤柔软的贴身衣物，中层用有一定厚度或色彩对比的单品进行过渡，外层则披上一件质感极佳的廓形外套。这种穿法不仅能轻松应对早晚温差，还能极大丰富搭配的细节。新手可以先从配饰入手，逐步过渡到大件单品。</div></div><div class="paragraph-block clearfix">
+                    <div class="layout-hero">
+                        <img src="images/ed_5_img_5.jpg" alt="时尚是一场自我表达">
+                        <div class="image-caption">时尚是一场自我表达</div>
+                    </div>
+                    <div class="text-content "><strong>结语与展望</strong> — 时尚是一个轮回，但每一次轮回都会注入新的灵魂。掌握 {topic_title} 的精髓，不仅能让你在这个季节走在潮流尖端，更能帮你建立起一套经得起推敲的个人风格体系。不要害怕试错，时尚本就是一场自我表达的游戏。</div></div></div>
+        
+    </div>
+</body>
+</html>
