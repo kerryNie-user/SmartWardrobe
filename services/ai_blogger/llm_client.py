@@ -11,8 +11,18 @@ class UniversalLLMClient:
     Uses urllib.request to avoid needing pip install openai in restricted environments.
     """
     def __init__(self, api_key: str = None, base_url: str = None, model: str = None):
+        # First try to load from the new agent-specific .env if it exists
+        agent_env_path = os.path.join(os.path.dirname(__file__), "agents", ".env")
+        if os.path.exists(agent_env_path):
+            with open(agent_env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ[k.strip()] = v.strip()
+
         self.api_key = api_key or os.getenv("LLM_API_KEY")
-        self.base_url = base_url or os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1")
+        self.base_url = base_url or os.getenv("LLM_BASE_URL", "https://api.deepseek.com")
         self.model = model or os.getenv("LLM_MODEL_NAME", "deepseek-chat")
         self.history = []
         
@@ -28,7 +38,7 @@ class UniversalLLMClient:
         Sends a request to the LLM and strictly expects a JSON object back.
         If use_memory is True, the system will append to self.history and send the full history.
         """
-        url = f"{self.base_url.rstrip('/')}/chat/completions"
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
         
         headers = {
             "Content-Type": "application/json",
@@ -66,7 +76,12 @@ class UniversalLLMClient:
         for attempt in range(max_retries):
             try:
                 with urllib.request.urlopen(req, timeout=120) as response:
-                    result = json.loads(response.read().decode('utf-8'))
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
                     content = result['choices'][0]['message']['content']
                     
                     if use_memory:

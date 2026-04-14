@@ -19,7 +19,7 @@ def _load_html_template() -> str:
 
 def run_batch(config: dict) -> dict:
     count = int(config.get("count", 10))
-    llm_provider = str(config.get("llm_provider", "mock"))
+    llm_provider = str(config.get("llm_provider", "real"))
     download_images = bool(config.get("download_images", True))
     output_dir = str(config.get("output_dir", "services/ai_blogger/output"))
     rng_seed = config.get("rng_seed", None)
@@ -57,7 +57,7 @@ def run_batch(config: dict) -> dict:
     image_config = {}
 
     # Generate topics autonomously if LLM is enabled
-    llm_client = UniversalLLMClient() if llm_provider != "mock" else None
+    llm_client = UniversalLLMClient() if llm_provider != "none" else None
     
     generated_titles = []
     if llm_client:
@@ -327,11 +327,11 @@ def run_batch(config: dict) -> dict:
 def run():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--count", type=int, default=10)
-    parser.add_argument("--llm", type=str, default="mock")
+    parser.add_argument("--count", type=int, default=1, help="Number of articles to generate")
+    parser.add_argument("--llm", type=str, default="real", help="LLM Provider ('real' or 'none' to skip LLM)")
     args = parser.parse_args()
 
-    print("Initializing Prompt Chain Runner (Mock Experience Upgrade)...")
+    print("Initializing Prompt Chain Runner (Agentic Pipeline)...")
     result = run_batch({
         "count": args.count,
         "llm_provider": args.llm,

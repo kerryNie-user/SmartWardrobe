@@ -31,7 +31,7 @@ class PromptChainRunner:
                 logging.warning(f"Agent prompt file not found: {path}")
         return prompts
         
-    def run_chain(self, raw_topic: str, llm_provider: str = "mock") -> Dict:
+    def run_chain(self, raw_topic: str, llm_provider: str = "real") -> Dict:
         """
         Executes the 3-step prompt chain based on the blogger_experience docs.
         """

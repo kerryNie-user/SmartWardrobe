@@ -8,8 +8,8 @@ def get_latest_trends(config):
     feeds = config.get("rss_feeds", [])
     
     for feed_url in feeds:
-        if feed_url == "mock_feed":
-            # Return predictable mock data for tests and offline mode
+        if feed_url == "test_feed":
+            # Return predictable data for tests and offline mode
             trends.append({
                 "title": "The Return of 90s Minimalist Denim",
                 "summary": "Why everyone is wearing straight leg jeans and white tees this spring.",

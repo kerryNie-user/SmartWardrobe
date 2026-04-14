@@ -4,10 +4,10 @@ import json
 def load_config(config_path="services/ai_blogger/config.json"):
     """
     Loads configuration from a JSON file.
-    Falls back to default mock/development settings if the file doesn't exist.
+    Falls back to default settings if the file doesn't exist.
     """
     default_config = {
-        "llm_provider": "mock",
+        "llm_provider": "real",
         "image_provider": "unsplash_source",
         "output_dir": "services/ai_blogger/output",
         "rss_feeds": [
