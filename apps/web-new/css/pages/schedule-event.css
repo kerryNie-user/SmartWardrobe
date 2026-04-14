@@ -1,0 +1,11 @@
+.ct-schedule-event-shell {
+    width: min(calc(100% - 32px), var(--ct-max-width));
+    margin: 0 auto;
+}
+
+.ct-schedule-form__actions .ct-schedule-form__cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}

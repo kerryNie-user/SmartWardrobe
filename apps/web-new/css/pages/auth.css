@@ -1,0 +1,95 @@
+.ct-auth-stage {
+    width: min(calc(100% - 32px), var(--ct-max-width));
+    min-height: 100vh;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+}
+
+.ct-auth-shell,
+.ct-auth-form {
+    border: 1px solid var(--ct-border);
+    border-radius: 34px;
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: var(--ct-shadow);
+}
+
+.ct-auth-shell {
+    width: 100%;
+    display: grid;
+    gap: 22px;
+    padding: 24px;
+}
+
+.ct-auth-shell__intro,
+.ct-auth-form {
+    display: grid;
+    gap: 14px;
+}
+
+.ct-auth-shell__title {
+    margin: 0;
+    font-size: 44px;
+    line-height: 0.94;
+    letter-spacing: -0.08em;
+    text-transform: uppercase;
+}
+
+.ct-auth-shell__note,
+.ct-auth-form__status {
+    margin: 0;
+    color: var(--ct-text-soft);
+    line-height: 1.7;
+}
+
+.ct-auth-form {
+    padding: 22px;
+}
+
+.ct-auth-form__field {
+    display: grid;
+    gap: 8px;
+    color: var(--ct-text-soft);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.ct-auth-form__field input {
+    width: 100%;
+    border: 1px solid rgba(247, 243, 236, 0.16);
+    border-radius: 18px;
+    padding: 14px 16px;
+    color: var(--ct-text);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.ct-auth-form__actions {
+    display: grid;
+    gap: 10px;
+}
+
+.ct-auth-form__submit,
+.ct-auth-form__switch {
+    border: 1px solid var(--ct-border);
+    border-radius: 999px;
+    padding: 13px 18px;
+    box-shadow: var(--ct-shadow);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-align: center;
+    text-decoration: none;
+}
+
+.ct-auth-form__submit {
+    background: linear-gradient(180deg, rgba(245, 239, 230, 0.98), rgba(231, 225, 214, 0.94));
+    color: var(--ct-text-dark);
+}
+
+.ct-auth-form__switch {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--ct-text);
+}

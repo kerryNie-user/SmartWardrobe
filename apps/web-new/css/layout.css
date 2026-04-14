@@ -1,0 +1,53 @@
+html {
+    background: var(--ct-page-bg);
+}
+
+body.ct-body {
+    min-height: 100dvh;
+    background-color: var(--ct-page-bg);
+    background: var(--ct-body-background);
+    color: var(--ct-text);
+    font-family: var(--ct-font-display);
+}
+
+.ct-app {
+    min-height: 100dvh;
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+}
+
+.ct-shell {
+    width: min(calc(100% - 32px), var(--ct-max-width));
+    margin: 0 auto;
+}
+
+.ct-shell-section {
+    margin-bottom: var(--ct-space-5);
+}
+
+.ct-topbar-shell {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(20px);
+    background: var(--ct-topbar-background);
+}
+
+.ct-bottom-shell {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+    background-color: var(--ct-bottom-shell-background);
+    backdrop-filter: blur(24px);
+    overflow: hidden;
+}
+
+.ct-bottom-shell::before {
+    content: '';
+    position: absolute;
+    inset: -40px 0 0;
+    z-index: -1;
+    background: var(--ct-bottom-shell-overlay);
+}
