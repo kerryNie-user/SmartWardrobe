@@ -17,11 +17,11 @@
 </skills>
 
 <output_format>
-必须返回以下 JSON 格式：
+必须返回以下 JSON 格式。请用你实际思考的、与用户给定主题相关的内容来替换下面的占位符。不要原样照抄示例：
 {
-    "angle_title": "通勤白衬衫的第二层肌肤：挺括棉与落肩剪裁",
-    "core_thesis": "当白衬衫不再是职场制服，而是用挺括的肌理与落肩的留白，为身体制造呼吸空间，它是都市里最轻盈的铠甲。",
-    "emotional_hook": "克制与呼吸感",
-    "style_en": "minimalist white shirt street style"
+    "angle_title": "你为该主题起的具有编辑质感的文章标题",
+    "core_thesis": "一句话阐述该风格与当代情绪的深层联系",
+    "emotional_hook": "3-5个字的情绪内核",
+    "style_en": "3-4 words english style keywords"
 }
 </output_format>

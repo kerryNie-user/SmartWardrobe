@@ -22,21 +22,20 @@
 </skills>
 
 <output_format>
-必须返回以下 JSON 格式：
+必须返回以下 JSON 格式。以下仅为数据结构示范，请根据实际大纲输入生成你的内容：
 {
     "paragraphs": [
         {
-            "section_name": "导语",
+            "section_name": "你负责编写的段落模块名",
             "text": "（至少 200 字的优美长文段落内容，开头不需要带模块标签）...",
-            "layout_name": "hero_full_bleed",
+            "layout_name": "大纲里指定的模板名称",
             "image_queries": [
                 {
-                    "search_keyword": "beige trench coat",
-                    "image_caption": "woman wearing minimalist beige trench coat walking down paris street, full body shot"
+                    "search_keyword": "short english keywords",
+                    "image_caption": "detailed english scene description"
                 }
             ]
-        },
-        ... // 一共 10 个段落，严格对齐输入里的 paragraphs
-    ]
+        }
+    ] // 严格对齐输入里 paragraphs 的长度与内容
 }
 </output_format>

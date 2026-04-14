@@ -29,15 +29,15 @@
 </skills>
 
 <output_format>
-必须返回以下 JSON 格式：
+必须返回以下 JSON 格式。以下内容仅为结构示例，请用你真实规划的内容替换：
 {
     "paragraphs": [
         {
             "section_name": "导语",
-            "summary_intent": "抛出现象与个人感受，把读者带进这股风潮的情绪密度里。",
+            "summary_intent": "说明这段的意图...",
             "layout_name": "hero_full_bleed"
         },
-        ... // 一共 10 个
+        ... // 确保一共输出 10 个对象
     ]
 }
 </output_format>
