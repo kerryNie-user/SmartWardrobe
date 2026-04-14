@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${PROJECT_ROOT}"
 
 export LITE_BACKEND_HOST="${LITE_BACKEND_HOST:-127.0.0.1}"
 export LITE_BACKEND_PORT="${LITE_BACKEND_PORT:-8140}"
