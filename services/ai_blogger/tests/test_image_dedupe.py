@@ -1,6 +1,12 @@
 from services.ai_blogger.metrics.image_dedupe import ImageDedupe
 
 
+def test_metrics_package_exports_image_dedupe():
+    from services.ai_blogger.metrics import ImageDedupe as ExportedImageDedupe
+
+    assert ExportedImageDedupe is ImageDedupe
+
+
 def test_image_dedupe_hash_detects_duplicates():
     dedupe = ImageDedupe()
 
@@ -11,4 +17,3 @@ def test_image_dedupe_hash_detects_duplicates():
     assert dedupe.register(b1) is True
     assert dedupe.register(b2) is False
     assert dedupe.register(b3) is True
-

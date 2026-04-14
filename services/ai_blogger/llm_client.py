@@ -3,6 +3,7 @@ import json
 import urllib.request
 import urllib.error
 import logging
+import time
 
 class UniversalLLMClient:
     """
@@ -61,28 +62,37 @@ class UniversalLLMClient:
         data = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data, headers=headers, method="POST")
         
-        try:
-            with urllib.request.urlopen(req, timeout=120) as response:
-                result = json.loads(response.read().decode('utf-8'))
-                content = result['choices'][0]['message']['content']
-                
-                if use_memory:
-                    self.history.append({"role": "assistant", "content": content})
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    result = json.loads(response.read().decode('utf-8'))
+                    content = result['choices'][0]['message']['content']
                     
-                # Try to parse the content as JSON
-                try:
-                    return json.loads(content)
-                except json.JSONDecodeError:
-                    # Sometime the model wraps JSON in markdown block ```json ... ```
-                    if "```json" in content:
-                        clean_content = content.split("```json")[1].split("```")[0].strip()
-                        return json.loads(clean_content)
-                    raise ValueError(f"Failed to parse JSON from LLM response: {content}")
-                    
-        except urllib.error.HTTPError as e:
-            error_body = e.read().decode('utf-8')
-            logging.error(f"LLM API HTTPError {e.code}: {error_body}")
-            raise RuntimeError(f"LLM API Error: {e.code} - {error_body}")
-        except Exception as e:
-            logging.error(f"LLM request failed: {e}")
-            raise
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+                        
+                    # Try to parse the content as JSON
+                    try:
+                        return json.loads(content)
+                    except json.JSONDecodeError:
+                        # Sometime the model wraps JSON in markdown block ```json ... ```
+                        if "```json" in content:
+                            clean_content = content.split("```json")[1].split("```")[0].strip()
+                            return json.loads(clean_content)
+                        raise ValueError(f"Failed to parse JSON from LLM response: {content}")
+                        
+            except urllib.error.HTTPError as e:
+                error_body = e.read().decode('utf-8')
+                logging.error(f"LLM API HTTPError {e.code}: {error_body}")
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"LLM API Error: {e.code} - {error_body}")
+            except Exception as e:
+                logging.error(f"LLM request failed (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"LLM request completely failed after {max_retries} attempts: {e}")
+            
+            # Exponential backoff
+            time.sleep(2 ** attempt)
+            
+        raise RuntimeError("Unexpected end of generate_json")

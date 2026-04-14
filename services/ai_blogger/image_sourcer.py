@@ -55,9 +55,9 @@ def get_pexels_candidates(query: str, per_page: int = 5) -> list[str]:
         logging.warning(f"Pexels Scrape Failed for '{query}': {e}")
     return []
 
-def get_image_candidates(query: str, config: dict, per_page: int = 5) -> list[str]:
+def get_image_candidates(query: str, config: dict, per_page: int = 5) -> list[dict]:
     """
-    Returns a prioritized list of image URLs.
+    Returns a prioritized list of image dictionary objects.
     Priority 1: The Met (if vintage/art/history)
     Priority 2: Pexels Real Images
     Priority 3: Trae AI Text-to-Image Generation (Fallback)
@@ -69,11 +69,12 @@ def get_image_candidates(query: str, config: dict, per_page: int = 5) -> list[st
     if any(kw in q.lower() for kw in ["vintage", "history", "art", "retro"]):
         met_url = get_image_from_met(q)
         if met_url:
-            candidates.append(met_url)
+            candidates.append({"source_type": "met", "original_url": met_url, "search_query": q})
 
     # 2. Pexels (Real high-quality photography)
     pexels_urls = get_pexels_candidates(q, per_page=per_page)
-    candidates.extend(pexels_urls)
+    for url in pexels_urls:
+        candidates.append({"source_type": "pexels", "original_url": url, "search_query": q})
     
     # 3. Trae AI Fallbacks (Guaranteed to return an image, but generated)
     image_size = config.get("image_size", "portrait_4_3")
@@ -83,6 +84,6 @@ def get_image_candidates(query: str, config: dict, per_page: int = 5) -> list[st
         variation = f" variation {random.randint(1, 99999)}" if i > 0 else ""
         final_q = urllib.parse.quote(q + variation)
         trae_api_url = f"https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt={final_q}&image_size={image_size}"
-        candidates.append(trae_api_url)
+        candidates.append({"source_type": "trae_ai", "original_url": trae_api_url, "search_query": urllib.parse.unquote(final_q)})
         
     return candidates
