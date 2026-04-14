@@ -1,0 +1,20 @@
+{
+  "article_count": 1,
+  "articles": [
+    {
+      "topic_id": "auto_0",
+      "title": "Y2K 迷彩回潮：叛逆不靠荧光色，而靠材质粗粝",
+      "paragraph_count": 10,
+      "unique_layouts": 8
+    }
+  ],
+  "images": {
+    "download_enabled": true,
+    "max_images_total": 10,
+    "attempted": 10,
+    "downloaded": 10,
+    "failed": 0,
+    "duplicate_hashes": 0,
+    "skipped_used_url": 5
+  }
+}

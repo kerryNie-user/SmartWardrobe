@@ -1,0 +1,20 @@
+{
+  "article_count": 1,
+  "articles": [
+    {
+      "topic_id": "t39",
+      "title": "新中式鞋履：绣面与方头把传统变成当代",
+      "paragraph_count": 10,
+      "unique_layouts": 10
+    }
+  ],
+  "images": {
+    "download_enabled": true,
+    "max_images_total": 10,
+    "attempted": 10,
+    "downloaded": 0,
+    "failed": 1,
+    "duplicate_hashes": 0,
+    "skipped_used_url": 0
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "article_count": 1,
+  "articles": [
+    {
+      "topic_id": "auto_0",
+      "title": "法式慵懒的新算法：真丝吊带与羊毛西装的对冲",
+      "paragraph_count": 10,
+      "unique_layouts": 8
+    }
+  ],
+  "images": {
+    "download_enabled": true,
+    "max_images_total": 50,
+    "attempted": 13,
+    "downloaded": 13,
+    "failed": 0,
+    "duplicate_hashes": 0,
+    "skipped_used_url": 13
+  }
+}

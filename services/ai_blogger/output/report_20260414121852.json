@@ -1,0 +1,20 @@
+{
+  "article_count": 1,
+  "articles": [
+    {
+      "topic_id": "auto_0",
+      "title": "甜酷腰封：收紧不是束缚，是重新分配力量",
+      "paragraph_count": 10,
+      "unique_layouts": 8
+    }
+  ],
+  "images": {
+    "download_enabled": true,
+    "max_images_total": 10,
+    "attempted": 57,
+    "downloaded": 2,
+    "failed": 11,
+    "duplicate_hashes": 0,
+    "skipped_used_url": 0
+  }
+}

@@ -1,0 +1,543 @@
+[
+  {
+    "topic_id": "t01",
+    "title_zh": "通勤静奢：羊绒大衣与生单宁的克制权力",
+    "seed_queries_en": [
+      "woman oversized camel cashmere coat street style full body",
+      "raw denim shirt minimal outfit street style"
+    ],
+    "axes": { "style": "静奢", "item": "羊绒大衣", "scene": "通勤", "season": "秋冬", "culture": "阶层符号" }
+  },
+  {
+    "topic_id": "t02",
+    "title_zh": "雨天城市机能：哑光尼龙与防水廓形的都市生存感",
+    "seed_queries_en": [
+      "matte black nylon trench coat street style rainy day",
+      "waterproof technical jacket urban outfit full body"
+    ],
+    "axes": { "style": "机能", "item": "风衣", "scene": "雨天城市", "season": "秋冬", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t03",
+    "title_zh": "新中式的结构野心：立领、盘扣与剪裁的当代语法",
+    "seed_queries_en": [
+      "modern chinese style mandarin collar jacket street style woman",
+      "minimal qipao inspired dress contemporary tailoring"
+    ],
+    "axes": { "style": "新中式", "item": "立领外套", "scene": "博物馆", "season": "春秋", "culture": "文化认同" }
+  },
+  {
+    "topic_id": "t04",
+    "title_zh": "复古学院的去油腻：粗花呢与球鞋的高低混搭",
+    "seed_queries_en": [
+      "woman tweed blazer with sneakers street style full body",
+      "preppy pleated skirt varsity jacket street style"
+    ],
+    "axes": { "style": "学院", "item": "粗花呢西装", "scene": "校园", "season": "秋冬", "culture": "阶层符号" }
+  },
+  {
+    "topic_id": "t05",
+    "title_zh": "约会甜酷：皮革短外套与缎面裙的温差博弈",
+    "seed_queries_en": [
+      "woman cropped leather jacket satin slip skirt street style",
+      "black leather jacket outfit date night street style"
+    ],
+    "axes": { "style": "甜酷", "item": "皮革外套", "scene": "约会", "season": "春秋", "culture": "身体政治" }
+  },
+  {
+    "topic_id": "t06",
+    "title_zh": "度假极简：亚麻衬衫与阔腿裤的呼吸感",
+    "seed_queries_en": [
+      "woman white linen shirt wide leg pants resort outfit",
+      "minimal resort outfit neutral tones street style"
+    ],
+    "axes": { "style": "极简", "item": "亚麻衬衫", "scene": "度假", "season": "夏", "culture": "反消费" }
+  },
+  {
+    "topic_id": "t07",
+    "title_zh": "运动正装化：西装外套与球鞋重新定义精英松弛",
+    "seed_queries_en": [
+      "woman oversized blazer with sneakers street style",
+      "tailored suit jacket casual sneakers outfit"
+    ],
+    "axes": { "style": "运动正装化", "item": "西装外套", "scene": "通勤", "season": "春秋", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t08",
+    "title_zh": "音乐节机能甜酷：多口袋工装与金属配饰的攻击性",
+    "seed_queries_en": [
+      "woman cargo pants multiple pockets festival street style",
+      "metallic accessories with utility outfit close up"
+    ],
+    "axes": { "style": "机能", "item": "工装裤", "scene": "音乐节", "season": "夏", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t09",
+    "title_zh": "无性别廓形：Boxy Blazer 与拖地西裤的智性美",
+    "seed_queries_en": [
+      "genderless oversized boxy blazer wide trousers street style",
+      "woman wearing oversized suit intellectual chic full body"
+    ],
+    "axes": { "style": "无性别", "item": "Boxy 西装", "scene": "通勤", "season": "春秋", "culture": "性别凝视" }
+  },
+  {
+    "topic_id": "t10",
+    "title_zh": "Y2K 废土回潮：低腰与做旧丹宁的末日浪漫",
+    "seed_queries_en": [
+      "woman low rise distressed denim y2k street style full body",
+      "cyberpunk y2k outfit parachute pants street style"
+    ],
+    "axes": { "style": "Y2K", "item": "低腰丹宁", "scene": "夜生活", "season": "四季", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t11",
+    "title_zh": "黑白极简的“破绽”：银质几何项链如何打破沉闷",
+    "seed_queries_en": [
+      "geometric silver necklace on black turtleneck close up",
+      "minimal black and white outfit street style woman full body"
+    ],
+    "axes": { "style": "极简", "item": "银饰", "scene": "通勤", "season": "秋冬", "culture": "反消费" }
+  },
+  {
+    "topic_id": "t12",
+    "title_zh": "法式慵懒的新算法：真丝吊带与羊毛西装的对冲",
+    "seed_queries_en": [
+      "woman silk slip dress under oversized wool blazer street style",
+      "parisian chic outfit kitten heels street style"
+    ],
+    "axes": { "style": "法式", "item": "真丝吊带裙", "scene": "咖啡馆", "season": "春秋", "culture": "身体政治" }
+  },
+  {
+    "topic_id": "t13",
+    "title_zh": "复古牛仔的再叙事：水洗灰与直筒线条的时间痕迹",
+    "seed_queries_en": [
+      "woman washed grey straight jeans vintage street style",
+      "close up washed denim texture fading"
+    ],
+    "axes": { "style": "复古", "item": "直筒牛仔", "scene": "街头", "season": "四季", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t14",
+    "title_zh": "晚宴的克制性感：露背与重磅真丝的光泽策略",
+    "seed_queries_en": [
+      "woman backless heavy silk dress evening look",
+      "close up heavy silk fabric sheen evening dress"
+    ],
+    "axes": { "style": "静奢", "item": "真丝礼服", "scene": "晚宴", "season": "四季", "culture": "身体政治" }
+  },
+  {
+    "topic_id": "t15",
+    "title_zh": "马甲叠穿的结构快感：V 领比例与肩线的精确裁决",
+    "seed_queries_en": [
+      "woman sweater vest layered shirt street style",
+      "close up knit vest layered oxford shirt outfit"
+    ],
+    "axes": { "style": "学院", "item": "针织马甲", "scene": "通勤", "season": "春秋", "culture": "阶层符号" }
+  },
+  {
+    "topic_id": "t16",
+    "title_zh": "棕调复古：麂皮夹克与灯芯绒的肌理叙事",
+    "seed_queries_en": [
+      "woman suede jacket corduroy pants street style",
+      "close up corduroy fabric texture vintage outfit"
+    ],
+    "axes": { "style": "复古", "item": "麂皮夹克", "scene": "周末", "season": "秋冬", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t17",
+    "title_zh": "通勤白衬衫的第二层肌肤：挺括棉与落肩剪裁",
+    "seed_queries_en": [
+      "woman crisp white cotton shirt drop shoulder street style",
+      "close up crisp cotton shirt texture minimal outfit"
+    ],
+    "axes": { "style": "极简", "item": "白衬衫", "scene": "通勤", "season": "四季", "culture": "反消费" }
+  },
+  {
+    "topic_id": "t18",
+    "title_zh": "甜酷短上衣的身体政治：露腹不是讨好，是掌控",
+    "seed_queries_en": [
+      "woman cropped top leather pants street style night",
+      "close up strap detail crop top fashion"
+    ],
+    "axes": { "style": "甜酷", "item": "短上衣", "scene": "夜生活", "season": "夏", "culture": "身体政治" }
+  },
+  {
+    "topic_id": "t19",
+    "title_zh": "机能背心的城市盔甲：多口袋与扣具的秩序感",
+    "seed_queries_en": [
+      "woman utility vest multiple pockets street style",
+      "close up buckle strap utility vest fashion detail"
+    ],
+    "axes": { "style": "机能", "item": "机能背心", "scene": "街头", "season": "春夏", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t20",
+    "title_zh": "新中式半裙：高腰褶裥与垂坠感如何显得更“轻”",
+    "seed_queries_en": [
+      "woman modern chinese style pleated skirt street style",
+      "close up pleats drape fabric texture skirt"
+    ],
+    "axes": { "style": "新中式", "item": "半裙", "scene": "展览", "season": "春夏", "culture": "文化认同" }
+  },
+  {
+    "topic_id": "t21",
+    "title_zh": "运动风的克制升级：灰色卫衣与羊毛大衣的对撞",
+    "seed_queries_en": [
+      "woman grey hoodie under wool coat street style",
+      "close up wool coat texture with hoodie layering"
+    ],
+    "axes": { "style": "运动正装化", "item": "卫衣", "scene": "通勤", "season": "秋冬", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t22",
+    "title_zh": "法式条纹衫的误区：过度“精致”会杀死慵懒",
+    "seed_queries_en": [
+      "woman striped shirt parisian outfit street style",
+      "messy hair updo red lips minimal makeup close up"
+    ],
+    "axes": { "style": "法式", "item": "条纹衫", "scene": "咖啡馆", "season": "春夏", "culture": "性别凝视" }
+  },
+  {
+    "topic_id": "t23",
+    "title_zh": "无性别针织：宽肩与直筒线条的包容力量",
+    "seed_queries_en": [
+      "genderless oversized knit sweater street style full body",
+      "close up thick knit texture neutral tone"
+    ],
+    "axes": { "style": "无性别", "item": "针织衫", "scene": "周末", "season": "秋冬", "culture": "性别凝视" }
+  },
+  {
+    "topic_id": "t24",
+    "title_zh": "Y2K 金属配饰：赛博紫的 20% 破局法则",
+    "seed_queries_en": [
+      "y2k wraparound sunglasses metallic jewelry close up",
+      "woman y2k outfit metallic bag street style"
+    ],
+    "axes": { "style": "Y2K", "item": "金属配饰", "scene": "街头", "season": "四季", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t25",
+    "title_zh": "复古皮鞋的底盘哲学：方头乐福稳住气场重心",
+    "seed_queries_en": [
+      "square toe loafers leather shoes close up",
+      "woman wide trousers with loafers street style"
+    ],
+    "axes": { "style": "复古", "item": "乐福鞋", "scene": "通勤", "season": "秋冬", "culture": "阶层符号" }
+  },
+  {
+    "topic_id": "t26",
+    "title_zh": "静奢的色彩温差：燕麦色与墨黑如何制造空间感",
+    "seed_queries_en": [
+      "woman oatmeal sweater black trousers minimalist outfit street style",
+      "close up oatmeal cashmere texture neutral palette"
+    ],
+    "axes": { "style": "静奢", "item": "针织衫", "scene": "通勤", "season": "秋冬", "culture": "反消费" }
+  },
+  {
+    "topic_id": "t27",
+    "title_zh": "甜酷皮裤的危险边界：亮面过度会显得廉价",
+    "seed_queries_en": [
+      "woman matte leather pants street style full body",
+      "close up matte leather texture pants"
+    ],
+    "axes": { "style": "甜酷", "item": "皮裤", "scene": "夜生活", "season": "秋冬", "culture": "身体政治" }
+  },
+  {
+    "topic_id": "t28",
+    "title_zh": "机能雨靴的实用美学：泥点与反光条的秩序",
+    "seed_queries_en": [
+      "woman rain boots reflective stripe jacket rainy street style",
+      "close up rubber rain boots texture muddy"
+    ],
+    "axes": { "style": "机能", "item": "雨靴", "scene": "雨天城市", "season": "秋冬", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t29",
+    "title_zh": "新中式外套的廓形：直线条如何更显高级智性",
+    "seed_queries_en": [
+      "woman modern chinese jacket straight silhouette street style",
+      "mandarin collar coat minimal tailoring close up"
+    ],
+    "axes": { "style": "新中式", "item": "外套", "scene": "通勤", "season": "秋冬", "culture": "文化认同" }
+  },
+  {
+    "topic_id": "t30",
+    "title_zh": "学院百褶裙的现代解法：搭配工装外套制造冲突",
+    "seed_queries_en": [
+      "woman pleated skirt with utility jacket street style",
+      "preppy pleated skirt with combat boots street style"
+    ],
+    "axes": { "style": "学院", "item": "百褶裙", "scene": "周末", "season": "春秋", "culture": "阶层符号" }
+  },
+  {
+    "topic_id": "t31",
+    "title_zh": "度假白裙的“轻盈”来自哪里：棉布与镂空的呼吸",
+    "seed_queries_en": [
+      "woman white cotton dress cutout resort outfit",
+      "close up cotton lace texture white dress"
+    ],
+    "axes": { "style": "极简", "item": "白裙", "scene": "度假", "season": "夏", "culture": "反消费" }
+  },
+  {
+    "topic_id": "t32",
+    "title_zh": "运动短裙的通勤化：网球裙与西装外套的对冲",
+    "seed_queries_en": [
+      "woman tennis skirt with blazer street style",
+      "white tennis skirt sneakers blazer outfit full body"
+    ],
+    "axes": { "style": "运动正装化", "item": "网球裙", "scene": "通勤", "season": "春夏", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t33",
+    "title_zh": "无性别衬衫裙：去曲线化并不等于失去性感",
+    "seed_queries_en": [
+      "genderless oversized shirt dress street style full body",
+      "close up shirting fabric texture oversized dress"
+    ],
+    "axes": { "style": "无性别", "item": "衬衫裙", "scene": "街头", "season": "春夏", "culture": "性别凝视" }
+  },
+  {
+    "topic_id": "t34",
+    "title_zh": "Y2K 低饱和末日色：军绿与水洗灰才是高级废土",
+    "seed_queries_en": [
+      "woman y2k outfit olive green washed grey street style",
+      "y2k cargo skirt washed grey sneakers street style"
+    ],
+    "axes": { "style": "Y2K", "item": "工装裙", "scene": "街头", "season": "四季", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t35",
+    "title_zh": "复古围巾的情绪价值：格纹如何制造“记忆感”",
+    "seed_queries_en": [
+      "woman plaid scarf vintage coat street style",
+      "close up plaid scarf wool texture"
+    ],
+    "axes": { "style": "复古", "item": "围巾", "scene": "通勤", "season": "秋冬", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t36",
+    "title_zh": "静奢手袋的减法：没有五金也能拥有重量",
+    "seed_queries_en": [
+      "minimal leather shoulder bag no hardware close up",
+      "woman carrying minimalist bag neutral outfit street style"
+    ],
+    "axes": { "style": "静奢", "item": "腋下包", "scene": "通勤", "season": "四季", "culture": "阶层符号" }
+  },
+  {
+    "topic_id": "t37",
+    "title_zh": "甜酷黑色小礼服：不对称剪裁比露肤更有攻击性",
+    "seed_queries_en": [
+      "woman black asymmetrical dress street style night",
+      "close up asymmetrical cut dress detail"
+    ],
+    "axes": { "style": "甜酷", "item": "小礼服", "scene": "晚宴", "season": "四季", "culture": "身体政治" }
+  },
+  {
+    "topic_id": "t38",
+    "title_zh": "机能斜挎包：扣具与尼龙如何形成“可携带的秩序”",
+    "seed_queries_en": [
+      "black nylon crossbody bag buckle detail close up",
+      "woman utility crossbody bag street style"
+    ],
+    "axes": { "style": "机能", "item": "斜挎包", "scene": "街头", "season": "四季", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t39",
+    "title_zh": "新中式鞋履：绣面与方头把传统变成当代",
+    "seed_queries_en": [
+      "modern chinese embroidered flats square toe close up",
+      "woman modern chinese outfit with embroidered shoes street style"
+    ],
+    "axes": { "style": "新中式", "item": "鞋履", "scene": "展览", "season": "春秋", "culture": "文化认同" }
+  },
+  {
+    "topic_id": "t40",
+    "title_zh": "学院风的边界感：领带不是必须，质地才是关键",
+    "seed_queries_en": [
+      "woman oxford shirt knit vest preppy street style",
+      "close up oxford shirt collar texture preppy"
+    ],
+    "axes": { "style": "学院", "item": "牛津衬衫", "scene": "通勤", "season": "春秋", "culture": "阶层符号" }
+  },
+  {
+    "topic_id": "t41",
+    "title_zh": "度假草编帽的现实主义：遮阳与造型的平衡",
+    "seed_queries_en": [
+      "woman straw hat linen dress resort outfit",
+      "close up straw hat weave texture summer"
+    ],
+    "axes": { "style": "极简", "item": "草编帽", "scene": "度假", "season": "夏", "culture": "反消费" }
+  },
+  {
+    "topic_id": "t42",
+    "title_zh": "运动鞋的“干净感”：白色皮面如何不显廉价",
+    "seed_queries_en": [
+      "white leather sneakers close up clean minimal",
+      "woman minimal outfit white sneakers street style"
+    ],
+    "axes": { "style": "运动正装化", "item": "球鞋", "scene": "通勤", "season": "四季", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t43",
+    "title_zh": "无性别大衣：垫肩与直筒线条制造“不可接近”",
+    "seed_queries_en": [
+      "genderless oversized coat sharp shoulders street style full body",
+      "close up shoulder pad tailoring detail coat"
+    ],
+    "axes": { "style": "无性别", "item": "大衣", "scene": "雨天城市", "season": "秋冬", "culture": "性别凝视" }
+  },
+  {
+    "topic_id": "t44",
+    "title_zh": "Y2K 机能靴：厚底不只是增高，是末日叙事",
+    "seed_queries_en": [
+      "chunky platform boots y2k close up",
+      "woman y2k outfit with chunky boots street style"
+    ],
+    "axes": { "style": "Y2K", "item": "机能靴", "scene": "音乐节", "season": "四季", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t45",
+    "title_zh": "复古西装的“旧”很重要：面料起毛与时间温度",
+    "seed_queries_en": [
+      "vintage wool blazer texture close up",
+      "woman vintage blazer street style full body"
+    ],
+    "axes": { "style": "复古", "item": "西装", "scene": "通勤", "season": "秋冬", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t46",
+    "title_zh": "静奢衬衫裙：一条腰带决定你是“松弛”还是“疲惫”",
+    "seed_queries_en": [
+      "woman minimalist shirt dress with thin belt street style",
+      "close up thin leather belt on shirt dress"
+    ],
+    "axes": { "style": "静奢", "item": "衬衫裙", "scene": "通勤", "season": "春秋", "culture": "反消费" }
+  },
+  {
+    "topic_id": "t47",
+    "title_zh": "甜酷妆发的减法：红唇与微乱发才是情绪锚点",
+    "seed_queries_en": [
+      "red lipstick minimal makeup close up",
+      "messy hair updo street style beauty close up"
+    ],
+    "axes": { "style": "甜酷", "item": "妆发", "scene": "约会", "season": "四季", "culture": "身体政治" }
+  },
+  {
+    "topic_id": "t48",
+    "title_zh": "机能手套的细节政治：皮革与尼龙拼接的控制感",
+    "seed_queries_en": [
+      "black leather nylon gloves close up detail",
+      "woman wearing utility gloves street style"
+    ],
+    "axes": { "style": "机能", "item": "手套", "scene": "雨天城市", "season": "秋冬", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t49",
+    "title_zh": "新中式披肩：一块布料如何制造廓形的流动",
+    "seed_queries_en": [
+      "modern chinese shawl draped silhouette street style",
+      "close up draped fabric shawl texture"
+    ],
+    "axes": { "style": "新中式", "item": "披肩", "scene": "博物馆", "season": "秋冬", "culture": "文化认同" }
+  },
+  {
+    "topic_id": "t50",
+    "title_zh": "学院针织开衫：从乖到坏只差一条破洞牛仔",
+    "seed_queries_en": [
+      "woman preppy cardigan with ripped jeans street style",
+      "close up knit cardigan texture preppy"
+    ],
+    "axes": { "style": "学院", "item": "针织开衫", "scene": "周末", "season": "春秋", "culture": "阶层符号" }
+  },
+  {
+    "topic_id": "t51",
+    "title_zh": "度假泳衣外穿：罩衫的垂坠感是关键",
+    "seed_queries_en": [
+      "woman swimsuit with sheer cover up resort outfit",
+      "close up sheer fabric cover up drape"
+    ],
+    "axes": { "style": "极简", "item": "罩衫", "scene": "度假", "season": "夏", "culture": "身体政治" }
+  },
+  {
+    "topic_id": "t52",
+    "title_zh": "运动帽衫的高级化：版型与肩线比 logo 更重要",
+    "seed_queries_en": [
+      "woman minimal hoodie clean fit street style full body",
+      "close up hoodie seam shoulder line detail"
+    ],
+    "axes": { "style": "运动正装化", "item": "帽衫", "scene": "街头", "season": "秋冬", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t53",
+    "title_zh": "无性别马丁靴：厚底与直筒裤制造冷感秩序",
+    "seed_queries_en": [
+      "chunky boots with wide trousers genderless street style",
+      "close up chunky boots leather texture"
+    ],
+    "axes": { "style": "无性别", "item": "靴子", "scene": "街头", "season": "秋冬", "culture": "性别凝视" }
+  },
+  {
+    "topic_id": "t54",
+    "title_zh": "Y2K 迷彩回潮：叛逆不靠荧光色，而靠材质粗粝",
+    "seed_queries_en": [
+      "woman camo cargo pants y2k street style",
+      "close up camo ripstop fabric texture"
+    ],
+    "axes": { "style": "Y2K", "item": "迷彩工装", "scene": "街头", "season": "四季", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t55",
+    "title_zh": "复古邮差包：磨损皮面带来的“可信度”",
+    "seed_queries_en": [
+      "vintage leather messenger bag worn texture close up",
+      "woman carrying messenger bag vintage street style"
+    ],
+    "axes": { "style": "复古", "item": "邮差包", "scene": "通勤", "season": "四季", "culture": "经济周期" }
+  },
+  {
+    "topic_id": "t56",
+    "title_zh": "静奢针织裙：重磅与贴合之间的分寸",
+    "seed_queries_en": [
+      "woman heavy knit dress minimalist street style",
+      "close up heavy knit fabric texture dress"
+    ],
+    "axes": { "style": "静奢", "item": "针织裙", "scene": "咖啡馆", "season": "秋冬", "culture": "反消费" }
+  },
+  {
+    "topic_id": "t57",
+    "title_zh": "甜酷腰封：收紧不是束缚，是重新分配力量",
+    "seed_queries_en": [
+      "woman wide belt corset belt over blazer street style",
+      "close up corset belt leather detail"
+    ],
+    "axes": { "style": "甜酷", "item": "腰封", "scene": "通勤", "season": "秋冬", "culture": "身体政治" }
+  },
+  {
+    "topic_id": "t58",
+    "title_zh": "机能外套的“静音”质感：哑光与无 logo 的高级",
+    "seed_queries_en": [
+      "minimal technical jacket matte fabric no logo street style",
+      "close up matte technical fabric texture jacket"
+    ],
+    "axes": { "style": "机能", "item": "外套", "scene": "通勤", "season": "春秋", "culture": "技术焦虑" }
+  },
+  {
+    "topic_id": "t59",
+    "title_zh": "新中式裤装：直筒与高腰如何把传统变得更现代",
+    "seed_queries_en": [
+      "woman modern chinese style high waist straight trousers street style",
+      "close up tailored straight trousers crease detail"
+    ],
+    "axes": { "style": "新中式", "item": "裤装", "scene": "通勤", "season": "春秋", "culture": "文化认同" }
+  },
+  {
+    "topic_id": "t60",
+    "title_zh": "学院棒球夹克：把“精英制服”做成街头的反叛",
+    "seed_queries_en": [
+      "woman varsity jacket with pleated skirt street style full body",
+      "close up varsity jacket patch detail"
+    ],
+    "axes": { "style": "学院", "item": "棒球夹克", "scene": "街头", "season": "春秋", "culture": "阶层符号" }
+  }
+]
+
