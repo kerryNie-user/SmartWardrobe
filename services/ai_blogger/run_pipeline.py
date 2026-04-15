@@ -25,7 +25,7 @@ def run_batch(config: dict) -> dict:
     rng_seed = config.get("rng_seed", None)
     max_images_total = int(config.get("max_images_total", 0 if not download_images else count * 50))
 
-    runner = PromptChainRunner(prompts_dir="services/ai_blogger/prompts")
+    runner = PromptChainRunner(prompts_dir="services/ai_blogger/agents")
     sourcer = TopicSourcer(rng_seed=rng_seed)
 
     os.makedirs(output_dir, exist_ok=True)
@@ -290,7 +290,7 @@ def run_batch(config: dict) -> dict:
         html_content += post_html
 
     html_template_str = _load_html_template()
-    final_html = html_template_str.format(content=html_content)
+    final_html = html_template_str.replace("{content}", html_content)
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(final_html)
 
