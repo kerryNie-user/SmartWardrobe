@@ -2,12 +2,111 @@ import os
 import json
 import logging
 import requests
-from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from services.ai_blogger.chain_runner import PromptChainRunner
 from services.ai_blogger.topic.topic_sourcer import TopicSourcer
 from services.ai_blogger.image_sourcer import get_image_candidates
 from services.ai_blogger.metrics.image_dedupe import ImageDedupe
 from services.ai_blogger.llm_client import UniversalLLMClient
+
+class ImageTracker:
+    def __init__(self, images_dir: str, max_images_total: int, download_images: bool):
+        self.images_dir = images_dir
+        self.max_images_total = max_images_total
+        self.download_images = download_images
+        
+        self.dedupe = ImageDedupe()
+        self.used_urls = set()
+        
+        self.downloaded_images = 0
+        self.attempted_images = 0
+        self.failed_images = 0
+        self.duplicate_hashes = 0
+        self.skipped_used_url = 0
+        self.image_details = []
+
+    def render_media_block(self, q: dict | str, idx: int, p_idx: int, layout_name: str, layout_type: str = "portrait_4_3") -> str:
+        if not q:
+            return ""
+        
+        if isinstance(q, dict):
+            search_q = q.get("search_keyword", "")
+            alt_text = q.get("image_caption", search_q)
+        else:
+            search_q = str(q)
+            alt_text = search_q
+            
+        if not search_q:
+            return ""
+        
+        if self.download_images and self.downloaded_images < self.max_images_total:
+            current_img_config = {"image_size": layout_type}
+                
+            candidates = get_image_candidates(search_q, current_img_config, per_page=3)
+            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+            local_img_filename = f"chain_{idx}_img_{p_idx + 1}_{abs(hash(search_q)) % 10000}.jpg"
+            local_img_path = os.path.join(self.images_dir, local_img_filename)
+            rel_img_path = f"images/{local_img_filename}"
+
+            for attempt, cand in enumerate(candidates):
+                url = cand["original_url"]
+                source_type = cand["source_type"]
+                cand_search_query = cand["search_query"]
+
+                if url in self.used_urls:
+                    self.skipped_used_url += 1
+                    continue
+                    
+                if "coresg-normal.trae.ai" in url or source_type == "trae_ai":
+                    self.attempted_images += 1
+                    self.downloaded_images += 1
+                    self.used_urls.add(url)
+                    self.image_details.append({
+                        "source_type": source_type,
+                        "original_url": url,
+                        "search_query": cand_search_query,
+                        "local_path": url,
+                        "layout_name": layout_name,
+                        "paragraph_index": p_idx
+                    })
+                    return f'<img src="{url}" alt="{alt_text}" loading="lazy">'
+                    
+                try:
+                    self.attempted_images += 1
+                    timeout_val = 15
+                    res = requests.get(url, headers=headers, timeout=timeout_val)
+                    
+                    if res.status_code == 200:
+                        content_type = res.headers.get("Content-Type", "")
+                        if not content_type.startswith("image/"):
+                            continue
+                            
+                        if not self.dedupe.register(res.content):
+                            self.duplicate_hashes += 1
+                            continue
+                            
+                        with open(local_img_path, "wb") as f:
+                            f.write(res.content)
+                        self.downloaded_images += 1
+                        self.used_urls.add(url)
+                        self.image_details.append({
+                            "source_type": source_type,
+                            "original_url": url,
+                            "search_query": cand_search_query,
+                            "local_path": rel_img_path,
+                            "layout_name": layout_name,
+                            "paragraph_index": p_idx
+                        })
+                        return f'<img src="{rel_img_path}" alt="{alt_text}" loading="lazy">'
+                except Exception as e:
+                    logging.warning(f"Failed to fetch real image {url}: {e}")
+                    continue
+                    
+            self.failed_images += 1
+            logging.error(f"All attempts failed to fetch an image for: {search_q}")
+        
+        return f'<div class="image-caption">{alt_text}</div>'
+
 
 def _load_html_template() -> str:
     template_path = os.path.join(os.path.dirname(__file__), "templates", "editorial_layout.html")
@@ -32,6 +131,8 @@ def run_batch(config: dict) -> dict:
     images_dir = os.path.join(output_dir, "images")
     os.makedirs(images_dir, exist_ok=True)
 
+    import time
+    from datetime import datetime
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     html_basename = f"chain_blogs_{ts}.html"
     report_json_basename = f"report_{ts}.json"
@@ -45,16 +146,8 @@ def run_batch(config: dict) -> dict:
 
     html_content = ""
     report_articles = []
-    used_urls: set[str] = set()
-    dedupe = ImageDedupe()
-    downloaded_images = 0
-    attempted_images = 0
-    failed_images = 0
-    duplicate_hashes = 0
-    skipped_used_url = 0
-    image_details = []
-
-    image_config = {}
+    
+    tracker = ImageTracker(images_dir=images_dir, max_images_total=max_images_total, download_images=download_images)
 
     # Generate topics autonomously if LLM is enabled
     llm_client = UniversalLLMClient() if llm_provider != "none" else None
@@ -76,16 +169,38 @@ def run_batch(config: dict) -> dict:
         topics = sourcer.get_topics(count=count)
         generated_titles = [t.title_zh for t in topics]
 
-    for idx, title in enumerate(generated_titles):
+    # Remove the outer redundant for loop that was mistakenly left around the executor logic
+    def _process_topic(idx, title):
         try:
             post = runner.run_chain(raw_topic=title, llm_provider=llm_provider)
+            return idx, title, post, None
         except Exception as e:
             logging.error(f"Failed to generate article for topic '{title}': {e}")
+            return idx, title, None, e
+
+    # Using ThreadPoolExecutor for concurrent execution
+    futures = []
+    # Create a thread pool with max 5 workers
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        for idx, title in enumerate(generated_titles):
+            futures.append(executor.submit(_process_topic, idx, title))
+
+        # Wait for all futures to complete and gather results
+        # To maintain order, we can sort by idx later or just process as completed
+        results = []
+        for future in as_completed(futures):
+            results.append(future.result())
+
+    # Sort results by original idx to maintain output order
+    results.sort(key=lambda x: x[0])
+
+    for idx, title, post, error in results:
+        if error is not None:
             report_articles.append({
                 "topic_id": f"auto_{idx}",
                 "title": title,
                 "status": "failed",
-                "error": str(e)
+                "error": str(error)
             })
             continue
 
@@ -126,102 +241,9 @@ def run_batch(config: dict) -> dict:
 
             post_html += f'<div class="paragraph-block clearfix" data-layout="{layout_name}">'
 
-            def render_media_block(q: dict | str, layout_type: str = "portrait_4_3") -> str:
-                nonlocal downloaded_images
-                nonlocal attempted_images
-                nonlocal failed_images
-                nonlocal duplicate_hashes
-                nonlocal skipped_used_url
-                nonlocal image_details
-                if not q:
-                    return ""
-                
-                # Handle dict or string
-                if isinstance(q, dict):
-                    search_q = q.get("search_keyword", "")
-                    alt_text = q.get("image_caption", search_q)
-                else:
-                    search_q = str(q)
-                    alt_text = search_q
-                    
-                if not search_q:
-                    return ""
-                
-                if download_images and downloaded_images < max_images_total:
-                    current_img_config = image_config.copy()
-                    current_img_config["image_size"] = layout_type
-                        
-                    candidates = get_image_candidates(search_q, current_img_config, per_page=3)
-                    
-                    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
-                    local_img_filename = f"chain_{idx}_img_{p_idx + 1}_{abs(hash(search_q)) % 10000}.jpg"
-                    local_img_path = os.path.join(images_dir, local_img_filename)
-                    rel_img_path = f"images/{local_img_filename}"
-
-                    for attempt, cand in enumerate(candidates):
-                        url = cand["original_url"]
-                        source_type = cand["source_type"]
-                        cand_search_query = cand["search_query"]
-
-                        if url in used_urls:
-                            skipped_used_url += 1
-                            continue
-                            
-                        # If it's a Trae AI URL, just embed it directly to save time
-                        if "coresg-normal.trae.ai" in url or source_type == "trae_ai":
-                            attempted_images += 1
-                            downloaded_images += 1
-                            used_urls.add(url)
-                            image_details.append({
-                                "source_type": source_type,
-                                "original_url": url,
-                                "search_query": cand_search_query,
-                                "local_path": url,
-                                "layout_name": layout_name,
-                                "paragraph_index": p_idx
-                            })
-                            return f'<img src="{url}" alt="{alt_text}" loading="lazy">'
-                            
-                        # Otherwise it's a real image library URL, try downloading it
-                        try:
-                            attempted_images += 1
-                            timeout_val = 15
-                            res = requests.get(url, headers=headers, timeout=timeout_val)
-                            
-                            if res.status_code == 200:
-                                content_type = res.headers.get("Content-Type", "")
-                                if not content_type.startswith("image/"):
-                                    continue
-                                    
-                                if not dedupe.register(res.content):
-                                    duplicate_hashes += 1
-                                    continue
-                                    
-                                with open(local_img_path, "wb") as f:
-                                    f.write(res.content)
-                                downloaded_images += 1
-                                used_urls.add(url)
-                                image_details.append({
-                                    "source_type": source_type,
-                                    "original_url": url,
-                                    "search_query": cand_search_query,
-                                    "local_path": rel_img_path,
-                                    "layout_name": layout_name,
-                                    "paragraph_index": p_idx
-                                })
-                                return f'<img src="{rel_img_path}" alt="{alt_text}" loading="lazy">'
-                        except Exception as e:
-                            logging.warning(f"Failed to fetch real image {url}: {e}")
-                            continue
-                            
-                    failed_images += 1
-                    logging.error(f"All attempts failed to fetch an image for: {search_q}")
-                
-                return f'<div class="image-caption">{alt_text}</div>'
-
             if layout_name == "split_image_text":
                 q = image_queries[0] if image_queries else ""
-                media = render_media_block(q, layout_type="portrait_4_3")
+                media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="portrait_4_3")
                 post_html += f"""
                 <div class="layout-split">
                     <div class="split-media">{media}</div>
@@ -233,7 +255,7 @@ def run_batch(config: dict) -> dict:
 
             if layout_name == "float_left_photo":
                 q = image_queries[0] if image_queries else ""
-                media = render_media_block(q, layout_type="portrait_4_3")
+                media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="portrait_4_3")
                 post_html += f'<div class="layout-float-left">{media}</div>'
                 post_html += f'<div class="text-content">{safe_text}</div>'
                 post_html += "</div>"
@@ -241,7 +263,7 @@ def run_batch(config: dict) -> dict:
 
             if layout_name == "float_right_photo":
                 q = image_queries[0] if image_queries else ""
-                media = render_media_block(q, layout_type="portrait_4_3")
+                media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="portrait_4_3")
                 post_html += f'<div class="layout-float-right">{media}</div>'
                 post_html += f'<div class="text-content">{safe_text}</div>'
                 post_html += "</div>"
@@ -251,7 +273,7 @@ def run_batch(config: dict) -> dict:
                 qs = (image_queries + ["", "", ""])[:3]
                 cards = []
                 for i, q in enumerate(qs):
-                    media = render_media_block(q, layout_type="portrait_4_3")
+                    media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="portrait_4_3")
                     cards.append(
                         f"""
                         <div class="look-card">
@@ -269,14 +291,14 @@ def run_batch(config: dict) -> dict:
                 qs = (image_queries + ["", "", ""])[:3]
                 items = []
                 for q in qs:
-                    items.append(f'<div class="mosaic-item">{render_media_block(q, layout_type="square")}</div>')
+                    items.append(f'<div class="mosaic-item">{tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="square")}</div>')
                 post_html += f'<div class="layout-mosaic">{"".join(items)}</div>'
                 post_html += f'<div class="text-content">{safe_text}</div>'
                 post_html += "</div>"
                 continue
 
             q = image_queries[0] if image_queries else ""
-            media = render_media_block(q, layout_type="landscape_16_9")
+            media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="landscape_16_9")
             if media:
                 post_html += f'<div class="layout-hero">{media}</div>'
 
@@ -300,12 +322,12 @@ def run_batch(config: dict) -> dict:
         "images": {
             "download_enabled": download_images,
             "max_images_total": max_images_total,
-            "attempted": attempted_images,
-            "downloaded": downloaded_images,
-            "failed": failed_images,
-            "duplicate_hashes": duplicate_hashes,
-            "skipped_used_url": skipped_used_url,
-            "details": image_details
+            "attempted": tracker.attempted_images,
+            "downloaded": tracker.downloaded_images,
+            "failed": tracker.failed_images,
+            "duplicate_hashes": tracker.duplicate_hashes,
+            "skipped_used_url": tracker.skipped_used_url,
+            "details": tracker.image_details
         }
     }
     with open(report_json_path, "w", encoding="utf-8") as f:

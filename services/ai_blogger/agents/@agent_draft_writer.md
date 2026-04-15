@@ -21,6 +21,11 @@
 - 擅长将复杂的视觉需求拆分为用于机器搜索的短词和用于人类阅读的长描述。
 </skills>
 
+<knowledge_base>
+services/ai_blogger/experience/03_language_style_toolkit.md
+services/ai_blogger/experience/07_images_and_visuals.md
+</knowledge_base>
+
 <output_format>
 必须返回以下 JSON 格式。以下仅为数据结构示范，请根据实际大纲输入生成你的内容：
 {

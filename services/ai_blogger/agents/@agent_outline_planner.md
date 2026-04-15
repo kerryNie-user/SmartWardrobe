@@ -28,6 +28,11 @@
 - 擅长将文字内容与视觉排版（Layout）进行匹配，让排版服务于内容表达。
 </skills>
 
+<knowledge_base>
+services/ai_blogger/experience/04_article_structures_templates.md
+services/ai_blogger/experience/06_typography_layout_checklist.md
+</knowledge_base>
+
 <output_format>
 必须返回以下 JSON 格式。以下内容仅为结构示例，请用你真实规划的内容替换：
 {

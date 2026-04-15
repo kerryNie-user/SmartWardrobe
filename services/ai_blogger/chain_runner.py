@@ -14,7 +14,8 @@ class PromptChainRunner:
         self._llm_client = None
         
     def _load_prompts(self) -> Dict[str, str]:
-        """Loads the prompt templates from the filesystem."""
+        """Loads the prompt templates and their knowledge base dependencies from the filesystem."""
+        import re
         prompts = {}
         # Map phase keys to the new agent markdown files
         phase_map = {
@@ -26,7 +27,45 @@ class PromptChainRunner:
             path = os.path.join(self.prompts_dir, filename)
             if os.path.exists(path):
                 with open(path, 'r', encoding='utf-8') as f:
-                    prompts[phase_key] = f.read()
+                    content = f.read()
+                
+                # Parse <knowledge_base> tags to inject external context (Vibe Coding style)
+                kb_match = re.search(r'<knowledge_base>(.*?)</knowledge_base>', content, re.DOTALL)
+                if kb_match:
+                    kb_text = kb_match.group(1)
+                    context_blocks = []
+                    # Extract file paths, ignoring empty lines or markdown list dashes
+                    for line in kb_text.split('\n'):
+                        line = line.strip().lstrip('-').strip()
+                        if not line:
+                            continue
+                        
+                        # Resolve path relative to project root or current dir
+                        # Assume paths in knowledge_base are like 'services/ai_blogger/experience/...'
+                        abs_path = line
+                        if not os.path.isabs(line):
+                            # Try to find it relative to the project root (assuming chain_runner.py is in services/ai_blogger)
+                            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+                            candidate = os.path.join(project_root, line)
+                            if os.path.exists(candidate):
+                                abs_path = candidate
+
+                        if os.path.exists(abs_path):
+                            try:
+                                with open(abs_path, 'r', encoding='utf-8') as kb_file:
+                                    kb_content = kb_file.read()
+                                    context_blocks.append(f"--- BEGIN CONTEXT: {line} ---\n{kb_content}\n--- END CONTEXT: {line} ---")
+                            except Exception as e:
+                                logging.warning(f"Failed to read knowledge base file {line}: {e}")
+                        else:
+                            logging.warning(f"Knowledge base file not found: {line}")
+                    
+                    if context_blocks:
+                        context_str = "\n\n<context>\n" + "\n\n".join(context_blocks) + "\n</context>\n"
+                        # Append context to the end of the prompt
+                        content += context_str
+
+                prompts[phase_key] = content
             else:
                 logging.warning(f"Agent prompt file not found: {path}")
         return prompts

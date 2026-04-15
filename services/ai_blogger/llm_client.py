@@ -95,14 +95,16 @@ class UniversalLLMClient:
                         if "```json" in content:
                             clean_content = content.split("```json")[1].split("```")[0].strip()
                             return json.loads(clean_content)
-                        # Fallback: extract anything between { and }
+                        # Fallback: extract anything between { and } or [ and ]
                         import re
-                        match = re.search(r'\{.*\}', content, re.DOTALL)
+                        match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
                         if match:
                             try:
                                 return json.loads(match.group(0))
                             except:
                                 pass
+                        
+                        # Sometimes LLM truncates the JSON. We could try a very basic recovery, but for now just fail.
                         raise ValueError(f"Failed to parse JSON from LLM response: {content}")
                         
             except urllib.error.HTTPError as e:
