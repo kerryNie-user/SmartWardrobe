@@ -4,7 +4,7 @@ export function renderProfileEditor(content, profile, status = '') {
             <form class="ct-profile-form" id="ct-profile-form-panel" data-ct-profile-form>
                 <div class="ct-profile-form__header">
                     <h2 class="ct-profile-form__heading">${content.form.heading}</h2>
-                    ${status ? `<p class="ct-profile-form__status">${status}</p>` : ''}
+                    <div class="ct-profile-form__status" data-ct-form-notice>${status || ''}</div>
                 </div>
                 <div class="ct-profile-form__field">
                     <label for="ct-profile-avatar">${content.form.labels.avatar}</label>

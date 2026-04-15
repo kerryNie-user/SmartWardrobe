@@ -84,6 +84,11 @@ async function main() {
   const storedProfile = stored.users?.guest || stored;
   assert.strictEqual(storedProfile.name, 'Astra Lin');
   assert.strictEqual(storedProfile.bio, '偏好结构化轮廓与冷色面料。');
+
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+  const leaveButton = dom.window.document.querySelector('[data-ct-form-notice-action="leave"]');
+  assert.ok(leaveButton, 'Missing leave action for profile form');
+  leaveButton.click();
   assert.strictEqual(dom.window.document.documentElement.getAttribute('data-ct-redirect'), 'profile.html');
   });
 

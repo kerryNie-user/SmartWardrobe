@@ -25,7 +25,7 @@ function createJsonResponse(payload, status = 200) {
 }
 
 runTest('profile repositories 应归一 remote 结果并读写 local snapshot', async () => {
-  const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost:8140/' });
   dom.window.localStorage.setItem('ct_auth_session', JSON.stringify({
     user: { id: 'user-1', name: 'Nova', bio: 'Session bio', avatar: './session.jpg' }
   }));

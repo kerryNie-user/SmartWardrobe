@@ -1,6 +1,12 @@
 import { renderTopbar } from '../components/topbar.js'
 import { renderOutfitDetailPanel } from '../components/outfitDetailPanel.js'
 import { getOutfitDetailContent } from '../data/outfitDetail.js'
+import { dispatchAction } from '../lib/actions/dispatchAction.js'
+import {
+    buildAddOutfitToScheduleAction,
+    buildShowAlternativesAction,
+    buildToggleSaveLookAction
+} from '../lib/actions/outfitDetailActions.js'
 import { applyLocaleDocument, getLocale } from '../lib/locale.js'
 import { buildHomeRecommendationInput } from '../lib/homeSelectors.js'
 import { getQueryParam } from '../lib/navigationAdapter.js'
@@ -8,12 +14,29 @@ import { bindPageStores } from '../lib/pageStoreBinding.js'
 import { getFavoriteIds, hydrateFavorites, isFavorite, subscribeFavoritesStore, toggleFavorite } from '../lib/favoritesStore.js'
 import { navigateTo } from '../lib/navigation.js'
 import { getScheduleSummary, hydrateSchedule, subscribeScheduleStore } from '../lib/scheduleStore.js'
-import { buildOutfitScheduleDraft, saveScheduleDraft } from '../lib/scheduleDraft.js'
+import { saveScheduleDraft } from '../lib/scheduleDraft.js'
 import { getSettingsState, hydrateSettings, subscribeSettingsStore } from '../lib/settingsStore.js'
 import { getRecentWardrobeItems, getWardrobeCount, hydrateWardrobe, subscribeWardrobeStore } from '../lib/wardrobeStore.js'
 
 function getLookId() {
     return getQueryParam('id')
+}
+
+function buildRecommendationInput(locale) {
+    return buildHomeRecommendationInput({
+        locale,
+        favorites: {
+            lookIds: getFavoriteIds('looks')
+        },
+        wardrobe: {
+            totalCount: getWardrobeCount(locale),
+            recentItems: getRecentWardrobeItems(3, locale)
+        },
+        schedule: {
+            nextEvent: getScheduleSummary(locale)
+        },
+        settings: getSettingsState()
+    })
 }
 
 export function renderOutfitDetailPage() {
@@ -23,20 +46,7 @@ export function renderOutfitDetailPage() {
 
     const paint = () => {
         const locale = getLocale()
-        const recommendationInput = buildHomeRecommendationInput({
-            locale,
-            favorites: {
-                lookIds: getFavoriteIds('looks')
-            },
-            wardrobe: {
-                totalCount: getWardrobeCount(locale),
-                recentItems: getRecentWardrobeItems(3, locale)
-            },
-            schedule: {
-                nextEvent: getScheduleSummary(locale)
-            },
-            settings: getSettingsState()
-        })
+        const recommendationInput = buildRecommendationInput(locale)
         const { activeLook, alternativeLooks } = getOutfitDetailContent(locale, getLookId(), recommendationInput)
         if (!detailRoot) return
         applyLocaleDocument('outfitDetail', locale)
@@ -78,49 +88,37 @@ export function renderOutfitDetailPage() {
     if (detailRoot) {
         detailRoot.addEventListener('click', (event) => {
             const locale = getLocale()
-            const recommendationInput = buildHomeRecommendationInput({
-                locale,
-                favorites: {
-                    lookIds: getFavoriteIds('looks')
-                },
-                wardrobe: {
-                    totalCount: getWardrobeCount(locale),
-                    recentItems: getRecentWardrobeItems(3, locale)
-                },
-                schedule: {
-                    nextEvent: getScheduleSummary(locale)
-                },
-                settings: getSettingsState()
-            })
+            const recommendationInput = buildRecommendationInput(locale)
             const saveButton = event.target.closest('[data-ct-outfit-save]')
             const addToScheduleButton = event.target.closest('[data-ct-outfit-add-to-schedule]')
             const alternativesButton = event.target.closest('[data-ct-outfit-see-alternatives]')
             const { activeLook } = getOutfitDetailContent(locale, getLookId(), recommendationInput)
+            const actionContext = {
+                toggleFavorite,
+                saveScheduleDraft,
+                navigateTo,
+                showAlternatives() {
+                    showAlternatives = true
+                    binding.paintNow()
+                }
+            }
 
             if (saveButton) {
-                toggleFavorite('looks', {
-                    id: activeLook.id,
-                    title: activeLook.title,
-                    subtitle: activeLook.description,
-                    image: activeLook.image,
-                    href: `outfit-detail.html?id=${activeLook.id}`
-                })
+                dispatchAction(buildToggleSaveLookAction(activeLook), actionContext)
                 binding.paintNow()
                 return
             }
 
             if (addToScheduleButton) {
-                saveScheduleDraft(buildOutfitScheduleDraft(activeLook, {
+                dispatchAction(buildAddOutfitToScheduleAction(activeLook, {
                     locale,
                     reminderEnabled: getSettingsState()['outfit-reminders']
-                }))
-                navigateTo('schedule-event.html')
+                }), actionContext)
                 return
             }
 
             if (!alternativesButton) return
-            showAlternatives = true
-            binding.paintNow()
+            dispatchAction(buildShowAlternativesAction(), actionContext)
         })
     }
 

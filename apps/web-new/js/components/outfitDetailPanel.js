@@ -1,4 +1,5 @@
 import { getLocale, getSharedCopy } from '../lib/locale.js'
+import { buildOutfitDetailHref } from '../lib/routes.js'
 
 export function renderOutfitDetailPanel(look, isSaved, alternatives = []) {
     const sharedCopy = getSharedCopy(getLocale())
@@ -37,7 +38,7 @@ export function renderOutfitDetailPanel(look, isSaved, alternatives = []) {
                         <h2 class="ct-outfit-detail__heading">${getLocale() === 'zh-CN' ? '替代搭配' : 'Alternative Pairings'}</h2>
                         <div class="ct-outfit-detail__alternative-grid">
                             ${alternatives.map((item) => `
-                                <a class="ct-outfit-detail__alternative-card" data-ct-outfit-alternative-card href="outfit-detail.html?id=${item.id}">
+                                <a class="ct-outfit-detail__alternative-card" data-ct-outfit-alternative-card href="${buildOutfitDetailHref(item.id)}">
                                     <img class="ct-outfit-detail__alternative-image" src="${item.image}" alt="${item.title}">
                                     <span class="ct-outfit-detail__alternative-title">${item.title}</span>
                                     <span class="ct-outfit-detail__alternative-note">${item.description}</span>

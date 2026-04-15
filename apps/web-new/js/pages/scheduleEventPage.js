@@ -1,9 +1,11 @@
 import { renderTopbar } from '../components/topbar.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
+import { bindFormNoticeActions, renderFormNotice } from '../components/formNotice.js';
 import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js';
 import { navigateTo } from '../lib/navigation.js';
 import { getQueryParam } from '../lib/navigationAdapter.js';
+import { getFormFeedbackCopy, focusFirstInvalidField, setFormSubmitting, validateRequired } from '../lib/formValidation.js';
 import { getScheduleContent } from '../data/schedule.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createScheduleEventPageContract } from '../lib/pageContracts.js';
@@ -71,6 +73,7 @@ function renderScheduleEventForm(content, locale, event) {
                     <a class="ct-schedule-form__cancel" href="schedule.html">${sharedCopy.actions.cancel}</a>
                     <button class="ct-schedule-form__submit" type="submit">${isEditing ? (content.form.actions?.update || (locale === 'zh-CN' ? '更新日程' : 'Update Event')) : (content.form.actions?.save || sharedCopy.actions.saveEvent)}</button>
                 </div>
+                <div data-ct-form-notice></div>
             </form>
         </section>
     `;
@@ -83,12 +86,32 @@ export function renderScheduleEventPage() {
     const syncFeedbackRoot = ensureSyncFeedbackRoot(topbarRoot, 'schedule-event');
     const eventId = getEventId();
     const listenerCleanups = [];
+    let formNotice = null;
+    let isInvalidEventId = false;
+    let noticeCleanup = () => {};
+    let syncCleanup = null;
+    let submissionActive = false;
     
     const paint = () => {
         const locale = getLocale();
         const content = getScheduleContent(locale);
         const scheduleDraft = eventId ? null : getScheduleDraft();
         const event = eventId ? getScheduleEventById(eventId, locale) : scheduleDraft;
+        isInvalidEventId = Boolean(eventId) && !event;
+        const copy = getFormFeedbackCopy(locale);
+        if (isInvalidEventId) {
+            formNotice = {
+                tone: 'error',
+                title: locale === 'zh-CN' ? '未找到日程' : 'Schedule event not found',
+                message: locale === 'zh-CN'
+                    ? '当前链接的日程不存在，无法继续编辑。'
+                    : 'This schedule event does not exist and cannot be edited.',
+                actions: [
+                    { key: 'continue-create', label: copy.actions.continueCreate },
+                    { key: 'leave', label: copy.actions.back, variant: 'secondary' }
+                ]
+            };
+        }
         const contract = createScheduleEventPageContract({
             locale,
             eventId,
@@ -114,6 +137,47 @@ export function renderScheduleEventPage() {
 
         if (shellRoot) shellRoot.innerHTML = renderScheduleEventForm(contract.derivedView.content, locale, contract.derivedView.event);
         if (bottomNavRoot) bottomNavRoot.innerHTML = renderBottomNav('me');
+
+        if (shellRoot) {
+            const noticeRoot = shellRoot.querySelector('[data-ct-form-notice]');
+            if (noticeRoot) {
+                noticeCleanup();
+                noticeRoot.innerHTML = renderFormNotice(formNotice);
+                noticeCleanup = bindFormNoticeActions(noticeRoot, {
+                    retry() {
+                        const nextLocale = getLocale();
+                        const copy = getFormFeedbackCopy(nextLocale);
+                        submissionActive = true;
+                        setFormSubmitting(shellRoot.querySelector('[data-ct-schedule-event-form]'), true);
+                        formNotice = {
+                            tone: 'info',
+                            title: copy.status.syncing,
+                            message: null,
+                            actions: [{ key: 'leave', label: copy.actions.leave, variant: 'secondary' }]
+                        };
+                        noticeRoot.innerHTML = renderFormNotice(formNotice);
+                        retryScheduleSync(nextLocale);
+                    },
+                    leave() {
+                        submissionActive = false;
+                        syncCleanup?.();
+                        syncCleanup = null;
+                        navigateTo('schedule.html');
+                    },
+                    'continue-create'() {
+                        submissionActive = false;
+                        syncCleanup?.();
+                        syncCleanup = null;
+                        navigateTo('schedule-event.html');
+                    }
+                });
+            }
+
+            const submitButton = shellRoot.querySelector('.ct-schedule-form__submit');
+            if (submitButton) {
+                submitButton.disabled = Boolean(isInvalidEventId);
+            }
+        }
     };
 
     const handleSubmit = (submitEvent) => {
@@ -123,9 +187,31 @@ export function renderScheduleEventPage() {
 
         const locale = getLocale();
         const content = getScheduleContent(locale);
+        const copy = getFormFeedbackCopy(locale);
+
+        if (isInvalidEventId) {
+            return;
+        }
+
         const formData = new window.FormData(form);
+        const validation = validateRequired(formData, [
+            { field: 'title', label: content.form.labels.title }
+        ], locale);
+
+        if (!validation.ok) {
+            formNotice = {
+                tone: 'error',
+                title: copy.status.validating,
+                message: validation.errors[0]?.message || copy.status.validating,
+                actions: []
+            };
+            const noticeRoot = form.querySelector('[data-ct-form-notice]');
+            if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(formNotice);
+            focusFirstInvalidField(form, validation.errors);
+            return;
+        }
+
         const title = String(formData.get('title') || '').trim();
-        if (!title) return;
 
         const payload = {
             tab: String(formData.get('tab') || 'upcoming'),
@@ -141,6 +227,17 @@ export function renderScheduleEventPage() {
             reminderEnabled: formData.get('reminderEnabled') === 'on'
         };
 
+        submissionActive = true;
+        setFormSubmitting(form, true);
+        formNotice = {
+            tone: 'info',
+            title: copy.status.saving,
+            message: copy.status.syncing,
+            actions: [{ key: 'leave', label: copy.actions.leave, variant: 'secondary' }]
+        };
+        const noticeRoot = form.querySelector('[data-ct-form-notice]');
+        if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(formNotice);
+
         const nextId = String(formData.get('eventId') || '').trim();
         if (nextId) {
             updateScheduleEvent(nextId, payload, locale);
@@ -149,7 +246,74 @@ export function renderScheduleEventPage() {
             clearScheduleDraft();
         }
 
-        navigateTo('schedule.html');
+        syncCleanup?.();
+        syncCleanup = subscribeScheduleSyncState((state) => {
+            if (!submissionActive) return;
+            const current = state?.status || 'idle';
+            const latestLocale = getLocale();
+            const copy = getFormFeedbackCopy(latestLocale);
+            const noticeRoot = form.querySelector('[data-ct-form-notice]');
+
+            if (current === 'synced') {
+                setFormSubmitting(form, false);
+                formNotice = {
+                    tone: 'success',
+                    title: copy.status.saved,
+                    message: null,
+                    actions: []
+                };
+                if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(formNotice);
+                submissionActive = false;
+                syncCleanup?.();
+                syncCleanup = null;
+                window.setTimeout(() => navigateTo('schedule.html'), 0);
+                return;
+            }
+
+            if (current === 'failed') {
+                setFormSubmitting(form, false);
+                formNotice = {
+                    tone: 'error',
+                    title: copy.status.failed,
+                    message: null,
+                    actions: [
+                        { key: 'retry', label: copy.actions.retry },
+                        { key: 'leave', label: copy.actions.leave, variant: 'secondary' }
+                    ]
+                };
+                if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(formNotice);
+                return;
+            }
+
+            if (current === 'conflict') {
+                setFormSubmitting(form, false);
+                formNotice = {
+                    tone: 'warning',
+                    title: copy.status.conflict,
+                    message: null,
+                    actions: [
+                        { key: 'retry', label: copy.actions.retry },
+                        { key: 'leave', label: copy.actions.leave, variant: 'secondary' }
+                    ]
+                };
+                if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(formNotice);
+                return;
+            }
+
+            if (current === 'stale') {
+                setFormSubmitting(form, false);
+                formNotice = {
+                    tone: 'warning',
+                    title: copy.status.stale,
+                    message: null,
+                    actions: [
+                        { key: 'retry', label: copy.actions.retry },
+                        { key: 'leave', label: copy.actions.leave, variant: 'secondary' }
+                    ]
+                };
+                if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(formNotice);
+            }
+        });
     };
     shellRoot?.addEventListener('submit', handleSubmit);
     if (shellRoot) {
@@ -184,6 +348,8 @@ export function renderScheduleEventPage() {
         teardown() {
             binding.teardown();
             listenerCleanups.forEach((cleanup) => cleanup());
+            noticeCleanup();
+            syncCleanup?.();
         }
     };
 }

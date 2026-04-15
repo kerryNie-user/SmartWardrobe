@@ -69,12 +69,16 @@ function createFetchStub(config = {}) {
   };
 
   const fetch = async (url, options = {}) => {
+    const rawUrl = typeof url === 'string' ? url : String(url);
+    const resolvedUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+      ? new URL(rawUrl).pathname
+      : rawUrl;
     const method = (options.method || 'GET').toUpperCase();
-    const failureKey = `${method} ${url}`;
+    const failureKey = `${method} ${resolvedUrl}`;
     const headers = options.headers || {};
     const userId = headers['X-User-Id'] || headers['x-user-id'] || 'guest';
     const body = options.body ? JSON.parse(options.body) : {};
-    requests.push({ url, method, headers, body });
+    requests.push({ url: resolvedUrl, rawUrl, method, headers, body });
 
     if (failureMap[failureKey]) {
       const failure = failureMap[failureKey];
@@ -84,61 +88,61 @@ function createFetchStub(config = {}) {
       return createJsonResponse(failure.body || { error: failure.error || 'FAILED' }, failure.status || 500);
     }
 
-    if (url === '/api/profile' && method === 'GET') {
+    if (resolvedUrl === '/api/profile' && method === 'GET') {
       return createJsonResponse({ profile: db.profile[userId] || { name: 'Closet Twin', bio: '', avatar: './images/profile/elara-vance.jpg' } });
     }
-    if (url === '/api/profile' && method === 'POST') {
+    if (resolvedUrl === '/api/profile' && method === 'POST') {
       db.profile[userId] = { ...body };
       return createJsonResponse({ profile: db.profile[userId] });
     }
-    if (url === '/api/settings' && method === 'GET') {
+    if (resolvedUrl === '/api/settings' && method === 'GET') {
       return createJsonResponse({ settings: db.settings[userId] || {} });
     }
-    if (url === '/api/settings' && method === 'POST') {
+    if (resolvedUrl === '/api/settings' && method === 'POST') {
       db.settings[userId] = { ...body };
       return createJsonResponse({ settings: db.settings[userId] });
     }
-    if (url === '/api/favorites' && method === 'GET') {
+    if (resolvedUrl === '/api/favorites' && method === 'GET') {
       return createJsonResponse({ favorites: db.favorites[userId] || { looks: [], posts: [] } });
     }
-    if (url === '/api/favorites' && method === 'POST') {
+    if (resolvedUrl === '/api/favorites' && method === 'POST') {
       const type = body.type === 'posts' ? 'posts' : 'looks';
       db.favorites[userId] = db.favorites[userId] || { looks: [], posts: [] };
       db.favorites[userId][type] = [body.item, ...db.favorites[userId][type].filter((item) => item.id !== body.item.id)];
       return createJsonResponse({ favorites: db.favorites[userId] });
     }
-    if (url.startsWith('/api/favorites/') && method === 'DELETE') {
-      const [, , , type, itemId] = url.split('/');
+    if (resolvedUrl.startsWith('/api/favorites/') && method === 'DELETE') {
+      const [, , , type, itemId] = resolvedUrl.split('/');
       db.favorites[userId][type] = db.favorites[userId][type].filter((item) => item.id !== itemId);
       return createJsonResponse({ favorites: db.favorites[userId] });
     }
-    if (url === '/api/wardrobe' && method === 'GET') {
+    if (resolvedUrl === '/api/wardrobe' && method === 'GET') {
       return createJsonResponse({ items: db.wardrobe[userId] || [] });
     }
-    if (url === '/api/wardrobe' && method === 'POST') {
+    if (resolvedUrl === '/api/wardrobe' && method === 'POST') {
       const item = { ...body.item };
       db.wardrobe[userId] = [item, ...(db.wardrobe[userId] || []).filter((entry) => entry.id !== item.id)];
       return createJsonResponse({ item });
     }
-    if (url.startsWith('/api/wardrobe/') && method === 'PUT') {
-      const itemId = url.split('/').pop();
+    if (resolvedUrl.startsWith('/api/wardrobe/') && method === 'PUT') {
+      const itemId = resolvedUrl.split('/').pop();
       db.wardrobe[userId] = (db.wardrobe[userId] || []).map((item) => item.id === itemId ? { ...item, ...body.item } : item);
       return createJsonResponse({ item: db.wardrobe[userId].find((item) => item.id === itemId) });
     }
-    if (url.startsWith('/api/wardrobe/') && method === 'DELETE') {
-      const itemId = url.split('/').pop();
+    if (resolvedUrl.startsWith('/api/wardrobe/') && method === 'DELETE') {
+      const itemId = resolvedUrl.split('/').pop();
       db.wardrobe[userId] = (db.wardrobe[userId] || []).filter((item) => item.id !== itemId);
       return createJsonResponse({ deleted: true });
     }
-    if (url === '/api/schedules' && method === 'GET') {
+    if (resolvedUrl === '/api/schedules' && method === 'GET') {
       return createJsonResponse({ items: db.schedules[userId] || [] });
     }
-    if (url === '/api/schedules' && method === 'POST') {
+    if (resolvedUrl === '/api/schedules' && method === 'POST') {
       db.schedules[userId] = [body, ...(db.schedules[userId] || []).filter((item) => item.id !== body.id)];
       return createJsonResponse({ item: body }, 201);
     }
-    if (url.startsWith('/api/schedules/') && method === 'PUT') {
-      const itemId = url.split('/').pop();
+    if (resolvedUrl.startsWith('/api/schedules/') && method === 'PUT') {
+      const itemId = resolvedUrl.split('/').pop();
       const current = (db.schedules[userId] || []).find((item) => item.id === itemId);
       if (current && body.version !== undefined && body.version !== current.version) {
         return createJsonResponse({ error: 'SCHEDULE_CONFLICT', item: current }, 409);
@@ -146,8 +150,8 @@ function createFetchStub(config = {}) {
       db.schedules[userId] = (db.schedules[userId] || []).map((item) => item.id === itemId ? { ...item, ...body } : item);
       return createJsonResponse({ item: db.schedules[userId].find((item) => item.id === itemId) });
     }
-    if (url.startsWith('/api/schedules/') && method === 'DELETE') {
-      const itemId = url.split('/').pop();
+    if (resolvedUrl.startsWith('/api/schedules/') && method === 'DELETE') {
+      const itemId = resolvedUrl.split('/').pop();
       db.schedules[userId] = (db.schedules[userId] || []).filter((item) => item.id !== itemId);
       return createJsonResponse({ deleted: true });
     }

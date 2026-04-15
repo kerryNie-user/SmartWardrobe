@@ -6,9 +6,11 @@ import { renderWardrobeHero } from '../components/wardrobeHero.js';
 import { renderWardrobeArchive } from '../components/wardrobeArchive.js';
 import { renderSearchBar } from '../components/searchBar.js';
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
+import { bindFormNoticeActions, renderFormNotice } from '../components/formNotice.js';
 import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createWardrobePageContract } from '../lib/pageContracts.js';
+import { getFormFeedbackCopy, focusFirstInvalidField, setFormSubmitting, validateRequired } from '../lib/formValidation.js';
 import { buildWardrobePageSelectorInput, buildWardrobeSavePayload } from '../lib/wardrobeSelectors.js';
 import { deleteWardrobeItem, getWardrobeItems, getWardrobeSyncState, hydrateWardrobe, retryWardrobeSync, saveWardrobeItem, subscribeWardrobeStore, subscribeWardrobeSyncState, toggleWardrobeFavorite } from '../lib/wardrobeStore.js';
 import { hydrateSettings, subscribeSettingsStore } from '../lib/settingsStore.js';
@@ -57,6 +59,7 @@ function renderWardrobeForm(isOpen, content, locale) {
                 <input name="favorite" type="checkbox" aria-label="${content.form.labels.favorite}">
                 ${content.form.labels.favorite}
             </label>
+            <div data-ct-form-notice></div>
             <div class="ct-wardrobe-form__actions">
                 <button class="ct-wardrobe-form__cancel" type="button" data-ct-cancel-wardrobe>${sharedCopy.actions.cancel}</button>
                 <button class="ct-wardrobe-form__submit" type="submit">${sharedCopy.actions.saveItem}</button>
@@ -77,6 +80,10 @@ export function renderWardrobePage() {
     let activeTab = 'all';
     let isFormOpen = false;
     let query = '';
+    let quickAddNotice = null;
+    let quickAddNoticeCleanup = () => {};
+    let quickAddSyncCleanup = null;
+    let quickAddSubmitting = false;
 
     const paint = () => {
         const locale = getLocale();
@@ -121,6 +128,42 @@ export function renderWardrobePage() {
             archiveRoot.setAttribute('aria-labelledby', activeTabState.tabId);
             archiveRoot.innerHTML = renderWardrobeArchive(contract.derivedView.archiveItems);
         }
+
+        if (heroRoot) {
+            const form = heroRoot.querySelector('[data-ct-wardrobe-form]');
+            const noticeRoot = form?.querySelector('[data-ct-form-notice]');
+            if (noticeRoot) {
+                quickAddNoticeCleanup();
+                noticeRoot.innerHTML = renderFormNotice(quickAddNotice);
+                quickAddNoticeCleanup = bindFormNoticeActions(noticeRoot, {
+                    retry() {
+                        const nextLocale = getLocale();
+                        const copy = getFormFeedbackCopy(nextLocale);
+                        quickAddSubmitting = true;
+                        setFormSubmitting(form, true);
+                        quickAddNotice = {
+                            tone: 'info',
+                            title: copy.status.syncing,
+                            message: null,
+                            actions: [{ key: 'leave', label: copy.actions.leave, variant: 'secondary' }]
+                        };
+                        noticeRoot.innerHTML = renderFormNotice(quickAddNotice);
+                        retryWardrobeSync(nextLocale);
+                    },
+                    leave() {
+                        quickAddSubmitting = false;
+                        quickAddSyncCleanup?.();
+                        quickAddSyncCleanup = null;
+                        quickAddNotice = null;
+                        isFormOpen = false;
+                        binding.paintNow();
+                    }
+                });
+            }
+
+            const submitButton = form?.querySelector('.ct-wardrobe-form__submit');
+            if (submitButton) submitButton.disabled = Boolean(quickAddSubmitting);
+        }
     };
 
     const binding = bindPageStores({
@@ -152,11 +195,16 @@ export function renderWardrobePage() {
         heroRoot.addEventListener('click', (event) => {
             if (event.target.closest('[data-ct-add-wardrobe]')) {
                 isFormOpen = true;
+                quickAddNotice = null;
                 binding.paintNow();
             }
 
             if (event.target.closest('[data-ct-cancel-wardrobe]')) {
                 isFormOpen = false;
+                quickAddNotice = null;
+                quickAddSubmitting = false;
+                quickAddSyncCleanup?.();
+                quickAddSyncCleanup = null;
                 binding.paintNow();
             }
         });
@@ -166,14 +214,29 @@ export function renderWardrobePage() {
             if (!form) return;
             event.preventDefault();
 
-            const formData = new window.FormData(form);
-            const title = formData.get('title')?.toString().trim();
-
-            if (!title) return;
-
-            const filter = formData.get('filter')?.toString() || 'essentials';
             const locale = getLocale();
             const content = getWardrobeContent(locale);
+            const copy = getFormFeedbackCopy(locale);
+            const formData = new window.FormData(form);
+            const validation = validateRequired(formData, [
+                { field: 'title', label: content.form.labels.title }
+            ], locale);
+
+            if (!validation.ok) {
+                quickAddNotice = {
+                    tone: 'error',
+                    title: copy.status.validating,
+                    message: validation.errors[0]?.message || copy.status.validating,
+                    actions: []
+                };
+                const noticeRoot = form.querySelector('[data-ct-form-notice]');
+                if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(quickAddNotice);
+                focusFirstInvalidField(form, validation.errors);
+                return;
+            }
+
+            const title = formData.get('title')?.toString().trim();
+            const filter = formData.get('filter')?.toString() || 'essentials';
 
             saveWardrobeItem(buildWardrobeSavePayload({
                 formValues: {
@@ -190,9 +253,74 @@ export function renderWardrobePage() {
                 defaultImage: DEFAULT_WARDROBE_IMAGE
             }), locale);
 
-            activeTab = filter;
-            isFormOpen = false;
-            binding.paintNow();
+            quickAddSubmitting = true;
+            setFormSubmitting(form, true);
+            quickAddNotice = {
+                tone: 'info',
+                title: copy.status.saving,
+                message: copy.status.syncing,
+                actions: [{ key: 'leave', label: copy.actions.leave, variant: 'secondary' }]
+            };
+            const noticeRoot = form.querySelector('[data-ct-form-notice]');
+            if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(quickAddNotice);
+
+            quickAddSyncCleanup?.();
+            quickAddSyncCleanup = subscribeWardrobeSyncState((state) => {
+                const status = state?.status || 'idle';
+                if (!quickAddSubmitting) return;
+                const locale = getLocale();
+                const copy = getFormFeedbackCopy(locale);
+                const noticeRoot = form.querySelector('[data-ct-form-notice]');
+
+                if (status === 'synced') {
+                    quickAddSubmitting = false;
+                    setFormSubmitting(form, false);
+                    quickAddNotice = {
+                        tone: 'success',
+                        title: copy.status.saved,
+                        message: null,
+                        actions: []
+                    };
+                    if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(quickAddNotice);
+                    activeTab = filter;
+                    isFormOpen = false;
+                    window.setTimeout(() => binding.paintNow(), 0);
+                    quickAddSyncCleanup?.();
+                    quickAddSyncCleanup = null;
+                    return;
+                }
+
+                if (status === 'failed') {
+                    quickAddSubmitting = false;
+                    setFormSubmitting(form, false);
+                    quickAddNotice = {
+                        tone: 'error',
+                        title: copy.status.failed,
+                        message: null,
+                        actions: [
+                            { key: 'retry', label: copy.actions.retry },
+                            { key: 'leave', label: copy.actions.leave, variant: 'secondary' }
+                        ]
+                    };
+                    if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(quickAddNotice);
+                    return;
+                }
+
+                if (status === 'stale') {
+                    quickAddSubmitting = false;
+                    setFormSubmitting(form, false);
+                    quickAddNotice = {
+                        tone: 'warning',
+                        title: copy.status.stale,
+                        message: null,
+                        actions: [
+                            { key: 'retry', label: copy.actions.retry },
+                            { key: 'leave', label: copy.actions.leave, variant: 'secondary' }
+                        ]
+                    };
+                    if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(quickAddNotice);
+                }
+            });
         });
     }
 
@@ -235,5 +363,12 @@ export function renderWardrobePage() {
         });
     }
 
-    return binding;
+    return {
+        ...binding,
+        teardown() {
+            binding.teardown();
+            quickAddNoticeCleanup();
+            quickAddSyncCleanup?.();
+        }
+    };
 }

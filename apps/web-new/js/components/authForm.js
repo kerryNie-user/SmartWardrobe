@@ -13,7 +13,9 @@ export function renderAuthForm(config) {
                         <input name="${field.name}" type="${field.type}" placeholder="${field.placeholder}" autocomplete="${field.autocomplete}">
                     </label>
                 `).join('')}
-                <p class="ct-auth-form__status" data-ct-auth-status>${config.status || ''}</p>
+                <div class="ct-auth-form__status" data-ct-auth-status>
+                    <div data-ct-form-notice>${config.status || ''}</div>
+                </div>
                 <div class="ct-auth-form__actions">
                     <button class="ct-auth-form__submit" type="submit">${config.submitLabel}</button>
                     <a class="ct-auth-form__switch" href="${config.switchHref}">${config.switchLabel}</a>

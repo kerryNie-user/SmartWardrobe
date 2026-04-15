@@ -2,11 +2,13 @@ import { renderTopbar } from '../components/topbar.js'
 import { renderPostDetailArticle } from '../components/postDetailArticle.js'
 import { renderStatePanel } from '../components/statePanel.js'
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js'
+import { renderFormNotice } from '../components/formNotice.js'
 import { getPostDetailContent } from '../data/postDetail.js'
 import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js'
 import { bindPageStores } from '../lib/pageStoreBinding.js'
 import { createPostDetailPageContract } from '../lib/pageContracts.js'
 import { getQueryParam } from '../lib/navigationAdapter.js'
+import { getFormFeedbackCopy, focusFirstInvalidField, validateRequired } from '../lib/formValidation.js'
 import { buildCanonicalHref, shareLink } from '../lib/shareAdapter.js'
 import { getDiscoveryCommentSyncState, getPostComments, hydrateDiscoveryComments, retryDiscoveryCommentSync, savePostComment, subscribeDiscoveryCommentStore, subscribeDiscoveryCommentSyncState } from '../lib/discoveryCommentStore.js'
 import { subscribeFavoritesStore } from '../lib/favoritesStore.js'
@@ -26,6 +28,7 @@ function renderComments(post) {
             <form class="ct-post-comments__form" data-ct-post-comment-form>
                 <textarea class="ct-post-comments__input" name="commentBody" placeholder="${getLocale() === 'zh-CN' ? '写下你的评论' : 'Write your comment'}"></textarea>
                 <button class="ct-post-detail__share" type="submit">${getLocale() === 'zh-CN' ? '发布评论' : 'Post Comment'}</button>
+                <div data-ct-form-notice></div>
             </form>
             <ul class="ct-post-comments__list">
                 ${comments.map((comment) => `
@@ -46,6 +49,7 @@ export function renderPostDetailPage() {
     const commentsRoot = document.querySelector('[data-ct-post-comments]')
     const syncFeedbackRoot = ensureSyncFeedbackRoot(topbarRoot, 'post-detail')
     let shareFeedback = ''
+    let commentNotice = null
     const listenerCleanups = []
 
     const paint = () => {
@@ -94,6 +98,8 @@ export function renderPostDetailPage() {
         }
         if (commentsRoot) {
             commentsRoot.innerHTML = renderComments(contract.derivedView.article)
+            const noticeRoot = commentsRoot.querySelector('[data-ct-post-comment-form] [data-ct-form-notice]')
+            if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(commentNotice)
         }
     }
 
@@ -144,12 +150,32 @@ export function renderPostDetailPage() {
             event.preventDefault()
 
             const locale = getLocale()
+            const copy = getFormFeedbackCopy(locale)
             const { activePost } = getPostDetailContent(locale, getPostId())
             if (!activePost) return
 
             const formData = new window.FormData(form)
+            const validation = validateRequired(formData, [
+                { field: 'commentBody', label: locale === 'zh-CN' ? '评论' : 'Comment' }
+            ], locale)
+
+            if (!validation.ok) {
+                commentNotice = {
+                    tone: 'error',
+                    title: copy.status.validating,
+                    message: validation.errors[0]?.message || copy.status.validating,
+                    actions: []
+                }
+                const noticeRoot = form.querySelector('[data-ct-form-notice]')
+                if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(commentNotice)
+                focusFirstInvalidField(form, validation.errors)
+                return
+            }
+
             const body = String(formData.get('commentBody') || '').trim()
-            if (!body) return
+            commentNotice = null
+            const noticeRoot = form.querySelector('[data-ct-form-notice]')
+            if (noticeRoot) noticeRoot.innerHTML = ''
 
             savePostComment(activePost.id, {
                 author: locale === 'zh-CN' ? '你' : 'You',

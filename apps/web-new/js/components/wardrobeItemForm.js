@@ -54,6 +54,7 @@ export function renderWardrobeItemForm(config) {
                     <input name="favorite" type="checkbox"${config.item.favorite ? ' checked' : ''}>
                     ${config.form.labels.favorite}
                 </label>
+                <div data-ct-form-notice></div>
                 <div class="ct-wardrobe-form__actions">
                     <a class="ct-wardrobe-form__cancel-link" href="wardrobe.html">${sharedCopy.actions.cancel}</a>
                     <button class="ct-wardrobe-form__submit" type="submit">${config.submitLabel}</button>

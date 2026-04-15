@@ -152,6 +152,7 @@ async function main() {
     const cards = Array.from(dom.window.document.querySelectorAll('[data-ct-outfit-alternative-card]'));
     assert.ok(cards.length > 0, 'Alternatives section should render cards');
     assert.ok(cards.every((card) => !/Midnight Formalism/.test(card.textContent)), 'Alternatives should exclude current look');
+    assert.ok(cards.every((card) => /^outfit-detail\.html\?id=/.test(card.getAttribute('href') || '')), 'Alternative cards should use stable outfit detail href contract');
   });
 }
 
