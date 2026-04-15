@@ -1,6 +1,7 @@
 const PANEL_IDS = {
     home: 'ct-home-feed-panel',
     me: 'ct-me-panel',
+    discovery: 'ct-discovery-feed-panel',
     favorites: 'ct-favorites-panel',
     wardrobe: 'ct-wardrobe-panel',
     schedule: 'ct-schedule-panel'
@@ -100,6 +101,13 @@ function createCollectionEmpty(items = [], activeTab = 'all', query = '') {
     return {
         kind: 'noData',
         active: true
+    }
+}
+
+function createStaticEmpty(active = false, kind = 'fallbackContent') {
+    return {
+        kind,
+        active
     }
 }
 
@@ -294,6 +302,61 @@ export function createMePageContract({
     }
 }
 
+export function createDiscoveryPageContract({
+    locale,
+    content,
+    activeTab,
+    query,
+    trendStrip,
+    feed,
+    shareFeedbackPostId = '',
+    syncStates = {}
+}) {
+    const tabs = buildTabState(activeTab, content.tabs, 'ct-discovery-tab', PANEL_IDS.discovery)
+    const sync = createSyncSemantics(syncStates, ['discoveryView', 'discoverySocial'])
+    const items = Array.isArray(feed?.items) ? feed.items : []
+    return {
+        state: {
+            tab: activeTab,
+            query,
+            shareFeedbackPostId
+        },
+        derivedView: {
+            topbar: {
+                rightHref: 'profile.html'
+            },
+            activeTab,
+            query,
+            tabs,
+            search: {
+                placeholder: content.searchPlaceholder?.[activeTab] || '',
+                value: query
+            },
+            trendStrip,
+            panel: {
+                id: PANEL_IDS.discovery
+            },
+            feed: {
+                kind: feed?.kind || (items.length ? 'ready' : 'empty'),
+                items
+            }
+        },
+        actions: {
+            switchTab: { type: 'ui', retryable: false },
+            setQuery: { type: 'ui', retryable: false },
+            togglePostLike: { type: 'domain', optimistic: true, retryable: true },
+            togglePostSave: { type: 'domain', optimistic: true, retryable: true },
+            sharePost: { type: 'ui', retryable: false }
+        },
+        loading: createLoadingSemantics(sync),
+        empty: items.length
+            ? createStaticEmpty(false, 'notApplicable')
+            : createCollectionEmpty([], activeTab, query),
+        error: createErrorSemantics(sync),
+        sync
+    }
+}
+
 export function createProfilePageContract({
     locale,
     content,
@@ -326,6 +389,40 @@ export function createProfilePageContract({
             kind: previewItems.length ? 'notApplicable' : 'noData',
             active: !previewItems.length
         },
+        error: createErrorSemantics(sync),
+        sync
+    }
+}
+
+export function createProfileEditPageContract({
+    locale,
+    content,
+    profile,
+    status = '',
+    syncStates = {}
+}) {
+    const sync = createSyncSemantics(syncStates, ['profile'])
+    return {
+        state: {
+            status
+        },
+        derivedView: {
+            content,
+            profile,
+            status,
+            topbar: {
+                leftLabel: locale === 'zh-CN' ? '返回资料' : 'Back to profile',
+                leftHref: 'profile.html',
+                rightLabel: content.topbar?.rightLabel || ''
+            }
+        },
+        actions: {
+            restoreProfile: { type: 'ui', retryable: false },
+            saveProfile: { type: 'domain', optimistic: true, retryable: true },
+            backToProfile: { type: 'navigation', retryable: false }
+        },
+        loading: createLoadingSemantics(sync),
+        empty: createStaticEmpty(false),
         error: createErrorSemantics(sync),
         sync
     }
@@ -448,6 +545,89 @@ export function createWardrobePageContract({
     }
 }
 
+export function createWardrobeItemPageContract({
+    locale,
+    itemId,
+    imagePreview = '',
+    content,
+    item,
+    pageCopy,
+    submitLabel,
+    syncStates = {}
+}) {
+    const sync = createSyncSemantics(syncStates, ['wardrobe'])
+    return {
+        state: {
+            itemId,
+            isEditing: Boolean(itemId),
+            imagePreview
+        },
+        derivedView: {
+            item,
+            pageCopy,
+            tabs: content.tabs,
+            form: content.form,
+            submitLabel,
+            topbar: {
+                leftLabel: locale === 'zh-CN' ? '返回衣橱' : 'Back to wardrobe',
+                leftHref: 'wardrobe.html',
+                rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
+                rightHref: 'profile.html'
+            }
+        },
+        actions: {
+            previewUpload: { type: 'ui', retryable: false },
+            saveWardrobeItem: { type: 'domain', optimistic: true, retryable: true },
+            backToWardrobe: { type: 'navigation', retryable: false }
+        },
+        loading: createLoadingSemantics(sync),
+        empty: createStaticEmpty(false),
+        error: createErrorSemantics(sync),
+        sync
+    }
+}
+
+export function createWardrobeDetailPageContract({
+    locale,
+    itemId,
+    item,
+    syncStates = {}
+}) {
+    const sync = createSyncSemantics(syncStates, ['wardrobe'])
+    return {
+        state: {
+            itemId
+        },
+        derivedView: {
+            item,
+            topbar: {
+                leftLabel: locale === 'zh-CN' ? '返回衣橱' : 'Back to wardrobe',
+                leftHref: 'wardrobe.html',
+                rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
+                rightHref: 'profile.html'
+            },
+            missingState: item ? null : {
+                kind: 'error',
+                eyebrow: locale === 'zh-CN' ? '单品不存在' : 'Missing Item',
+                title: locale === 'zh-CN' ? '这件单品暂时不可用' : 'This wardrobe item is unavailable',
+                description: locale === 'zh-CN' ? '请返回衣橱重新选择单品。' : 'Return to wardrobe and choose another item.',
+                action: {
+                    label: locale === 'zh-CN' ? '返回衣橱' : 'Back to wardrobe',
+                    href: 'wardrobe.html'
+                }
+            }
+        },
+        actions: {
+            openEditItem: { type: 'navigation', retryable: false },
+            backToWardrobe: { type: 'navigation', retryable: false }
+        },
+        loading: createLoadingSemantics(sync),
+        empty: createStaticEmpty(!item, 'noData'),
+        error: createErrorSemantics(sync),
+        sync
+    }
+}
+
 export function createSchedulePageContract({
     locale,
     activeTab,
@@ -487,6 +667,94 @@ export function createSchedulePageContract({
         },
         loading: createLoadingSemantics(sync),
         empty: createCollectionEmpty(activeView.groups.flatMap((group) => group.events), activeTab),
+        error: createErrorSemantics(sync),
+        sync
+    }
+}
+
+export function createScheduleEventPageContract({
+    locale,
+    eventId,
+    content,
+    event,
+    scheduleDraft,
+    syncStates = {}
+}) {
+    const activeEvent = event || scheduleDraft || null
+    const isEditing = Boolean(eventId && activeEvent?.id)
+    const sync = createSyncSemantics(syncStates, ['schedule'])
+    return {
+        state: {
+            eventId,
+            isEditing
+        },
+        derivedView: {
+            content,
+            event: activeEvent,
+            topbar: {
+                leftLabel: locale === 'zh-CN' ? '返回日程' : 'Back to schedule',
+                leftHref: 'schedule.html',
+                rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
+                rightHref: 'profile.html'
+            }
+        },
+        actions: {
+            saveScheduleEvent: { type: 'domain', optimistic: true, retryable: true },
+            backToSchedule: { type: 'navigation', retryable: false }
+        },
+        loading: createLoadingSemantics(sync),
+        empty: createStaticEmpty(Boolean(eventId && !activeEvent), 'noData'),
+        error: createErrorSemantics(sync),
+        sync
+    }
+}
+
+export function createPostDetailPageContract({
+    locale,
+    postId,
+    post,
+    social,
+    comments = [],
+    shareFeedback = '',
+    syncStates = {}
+}) {
+    const sync = createSyncSemantics(syncStates, ['discoverySocial', 'discoveryComments'])
+    return {
+        state: {
+            postId,
+            shareFeedback
+        },
+        derivedView: {
+            topbar: {
+                leftLabel: locale === 'zh-CN' ? '返回发现' : 'Back to discovery',
+                leftHref: 'discovery.html',
+                rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
+                rightHref: 'profile.html'
+            },
+            article: post,
+            social,
+            comments,
+            missingState: post ? null : {
+                kind: 'error',
+                eyebrow: locale === 'zh-CN' ? '帖子未找到' : 'Post Missing',
+                title: locale === 'zh-CN' ? '当前帖子不存在' : 'This post is unavailable',
+                description: locale === 'zh-CN' ? '请返回发现页重新选择帖子。' : 'Return to discovery and choose another post.',
+                action: {
+                    label: locale === 'zh-CN' ? '返回发现' : 'Back to discovery',
+                    href: 'discovery.html'
+                }
+            }
+        },
+        actions: {
+            togglePostSave: { type: 'domain', optimistic: true, retryable: true },
+            togglePostLike: { type: 'domain', optimistic: true, retryable: true },
+            toggleAuthorFollow: { type: 'domain', optimistic: true, retryable: true },
+            sharePost: { type: 'ui', retryable: false },
+            saveComment: { type: 'domain', optimistic: true, retryable: true },
+            backToDiscovery: { type: 'navigation', retryable: false }
+        },
+        loading: createLoadingSemantics(sync),
+        empty: createStaticEmpty(!post, 'noData'),
         error: createErrorSemantics(sync),
         sync
     }

@@ -60,6 +60,36 @@ runTest('New Discovery 页面应默认渲染 Hotspots 并支持切换到 Posts',
   assert.ok(!nextTitles.includes('Structural Silhouettes in Urban Landscapes'));
 });
 
+runTest('New Discovery 页面应通过统一 binding 暴露 sync feedback 与 teardown', async () => {
+  const htmlPath = path.join(__dirname, '..', 'discovery.html');
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
+
+  global.window = dom.window;
+  global.document = dom.window.document;
+  global.localStorage = dom.window.localStorage;
+  global.CustomEvent = dom.window.CustomEvent;
+  global.HTMLElement = dom.window.HTMLElement;
+  global.Node = dom.window.Node;
+  dom.window.localStorage.setItem('ct_discovery_view', '{');
+  dom.window.localStorage.setItem('ct_discovery_social', '{');
+
+  const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'discoveryPage.js')).href}?binding=1`;
+  const { renderDiscoveryPage } = await import(modulePath);
+
+  const binding = renderDiscoveryPage();
+  assert.ok(binding && typeof binding.teardown === 'function', 'Discovery page should return page binding');
+
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+
+  const syncRoot = dom.window.document.querySelector('[data-ct-sync-feedback-root="discovery"]');
+  assert.ok(syncRoot, 'Discovery page should mount sync feedback root');
+  assert.ok(syncRoot.querySelector('[data-ct-sync-retry-domain="discoveryView"]'), 'Discovery page should expose discoveryView retry');
+  assert.ok(syncRoot.querySelector('[data-ct-sync-retry-domain="discoverySocial"]'), 'Discovery page should expose discoverySocial retry');
+
+  binding.teardown();
+});
+
 runTest('New Discovery 页面底部导航应联通 Home 与 Discovery', async () => {
   const htmlPath = path.join(__dirname, '..', 'discovery.html');
   const html = fs.readFileSync(htmlPath, 'utf8');

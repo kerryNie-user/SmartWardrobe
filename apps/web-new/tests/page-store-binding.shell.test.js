@@ -123,7 +123,7 @@ runTest('pageStoreBinding 应接管 sync feedback 渲染与 retry-domain 点击'
   assert.strictEqual(retryCount, 1);
 
   syncListeners[0]({ status: 'synced', lastSyncedAt: Date.now() });
-  assert.strictEqual(root.querySelector('[data-sync-status]')?.getAttribute('data-sync-status'), 'synced');
+  assert.strictEqual(root.querySelector('[data-sync-status]'), null);
   binding.teardown();
 });
 

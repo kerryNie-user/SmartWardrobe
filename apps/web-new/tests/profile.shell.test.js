@@ -16,6 +16,37 @@ async function runTest(name, testFn) {
 }
 
 async function main() {
+  await runTest('Profile Edit 页面应通过统一 binding 暴露 sync feedback 与 teardown', async () => {
+  const htmlPath = path.join(__dirname, '..', 'profile-edit.html');
+  assert.ok(fs.existsSync(htmlPath), 'Missing profile-edit.html');
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  const dom = new JSDOM(html, { url: 'http://localhost/profile-edit.html' });
+
+  dom.window.localStorage.setItem('app_locale', 'zh-CN');
+  global.window = dom.window;
+  global.document = dom.window.document;
+  global.localStorage = dom.window.localStorage;
+  global.CustomEvent = dom.window.CustomEvent;
+  global.HTMLElement = dom.window.HTMLElement;
+  global.HTMLInputElement = dom.window.HTMLInputElement;
+  global.HTMLTextAreaElement = dom.window.HTMLTextAreaElement;
+  global.Node = dom.window.Node;
+
+  const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'profileEditPage.js')).href}?binding=1`;
+  const { renderProfileEditPage } = await import(modulePath);
+  const binding = renderProfileEditPage();
+
+  assert.ok(binding && typeof binding.teardown === 'function', 'Profile edit page should return page binding');
+
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+
+  const syncRoot = dom.window.document.querySelector('[data-ct-sync-feedback-root="profile-edit"]');
+  assert.ok(syncRoot, 'Profile edit page should mount sync feedback root');
+  assert.ok(syncRoot.querySelector('[data-ct-sync-retry-domain="profile"]'), 'Profile edit page should expose profile retry action');
+
+  binding.teardown();
+  });
+
   await runTest('New Profile Edit 页面应支持双语编辑、保存并回跳资料页', async () => {
   const htmlPath = path.join(__dirname, '..', 'profile-edit.html');
   assert.ok(fs.existsSync(htmlPath), 'Missing profile-edit.html');

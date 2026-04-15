@@ -1,10 +1,13 @@
 import { renderTopbar } from '../components/topbar.js';
 import { renderBottomNav } from '../components/bottomNav.js';
+import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
 import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js';
 import { navigateTo } from '../lib/navigation.js';
 import { getQueryParam } from '../lib/navigationAdapter.js';
 import { getScheduleContent } from '../data/schedule.js';
-import { createScheduleEvent, getScheduleEventById, hydrateSchedule, updateScheduleEvent } from '../lib/scheduleStore.js';
+import { bindPageStores } from '../lib/pageStoreBinding.js';
+import { createScheduleEventPageContract } from '../lib/pageContracts.js';
+import { createScheduleEvent, getScheduleEventById, getScheduleSyncState, hydrateSchedule, retryScheduleSync, subscribeScheduleStore, subscribeScheduleSyncState, updateScheduleEvent } from '../lib/scheduleStore.js';
 import { clearScheduleDraft, getScheduleDraft } from '../lib/scheduleDraft.js';
 
 function getEventId() {
@@ -77,37 +80,49 @@ export function renderScheduleEventPage() {
     const topbarRoot = document.querySelector('[data-ct-topbar]');
     const shellRoot = document.querySelector('[data-ct-schedule-event-shell]');
     const bottomNavRoot = document.querySelector('[data-ct-bottom-nav]');
-    const locale = getLocale();
-    const content = getScheduleContent(locale);
+    const syncFeedbackRoot = ensureSyncFeedbackRoot(topbarRoot, 'schedule-event');
     const eventId = getEventId();
-    const scheduleDraft = eventId ? null : getScheduleDraft();
+    const listenerCleanups = [];
     
     const paint = () => {
+        const locale = getLocale();
+        const content = getScheduleContent(locale);
+        const scheduleDraft = eventId ? null : getScheduleDraft();
         const event = eventId ? getScheduleEventById(eventId, locale) : scheduleDraft;
+        const contract = createScheduleEventPageContract({
+            locale,
+            eventId,
+            content,
+            event,
+            scheduleDraft,
+            syncStates: {
+                schedule: getScheduleSyncState()
+            }
+        });
         applyLocaleDocument('scheduleEvent', locale);
 
         if (topbarRoot) {
             topbarRoot.innerHTML = renderTopbar({
-                leftLabel: locale === 'zh-CN' ? '返回日程' : 'Back to schedule',
+                leftLabel: contract.derivedView.topbar.leftLabel,
                 leftIcon: '←',
-                leftHref: 'schedule.html',
+                leftHref: contract.derivedView.topbar.leftHref,
                 rightLabel: getSharedCopy(locale).topbar.openProfile,
                 rightIcon: '◐',
-                rightHref: 'profile.html'
+                rightHref: contract.derivedView.topbar.rightHref
             });
         }
 
-        if (shellRoot) shellRoot.innerHTML = renderScheduleEventForm(content, locale, event);
+        if (shellRoot) shellRoot.innerHTML = renderScheduleEventForm(contract.derivedView.content, locale, contract.derivedView.event);
         if (bottomNavRoot) bottomNavRoot.innerHTML = renderBottomNav('me');
-    }
+    };
 
-    paint()
-
-    shellRoot?.addEventListener('submit', (submitEvent) => {
+    const handleSubmit = (submitEvent) => {
         const form = submitEvent.target.closest('[data-ct-schedule-event-form]');
         if (!form) return;
         submitEvent.preventDefault();
 
+        const locale = getLocale();
+        const content = getScheduleContent(locale);
         const formData = new window.FormData(form);
         const title = String(formData.get('title') || '').trim();
         if (!title) return;
@@ -135,9 +150,40 @@ export function renderScheduleEventPage() {
         }
 
         navigateTo('schedule.html');
+    };
+    shellRoot?.addEventListener('submit', handleSubmit);
+    if (shellRoot) {
+        listenerCleanups.push(() => shellRoot.removeEventListener('submit', handleSubmit));
+    }
+
+    const binding = bindPageStores({
+        paint,
+        subscriptions: [
+            (listener) => subscribeScheduleStore(listener)
+        ],
+        hydrators: [
+            () => hydrateSchedule(getLocale())
+        ],
+        syncFeedback: {
+            root: syncFeedbackRoot,
+            locale: () => getLocale(),
+            bindings: [
+                {
+                    key: 'schedule',
+                    label: { 'zh-CN': '日程', 'en-US': 'Schedule' },
+                    getState: () => getScheduleSyncState(),
+                    subscribe: (listener) => subscribeScheduleSyncState(listener),
+                    retry: (locale) => retryScheduleSync(locale)
+                }
+            ]
+        }
     });
 
-    void hydrateSchedule(locale).then(() => {
-        paint()
-    });
+    return {
+        ...binding,
+        teardown() {
+            binding.teardown();
+            listenerCleanups.forEach((cleanup) => cleanup());
+        }
+    };
 }

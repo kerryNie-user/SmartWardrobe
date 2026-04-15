@@ -1,17 +1,16 @@
 import { renderTopbar } from '../components/topbar.js'
 import { renderPostDetailArticle } from '../components/postDetailArticle.js'
 import { renderStatePanel } from '../components/statePanel.js'
+import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js'
 import { getPostDetailContent } from '../data/postDetail.js'
 import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js'
+import { bindPageStores } from '../lib/pageStoreBinding.js'
+import { createPostDetailPageContract } from '../lib/pageContracts.js'
 import { getQueryParam } from '../lib/navigationAdapter.js'
 import { buildCanonicalHref, shareLink } from '../lib/shareAdapter.js'
-import { getPostComments, savePostComment } from '../lib/discoveryCommentStore.js'
-import {
-    getPostSocialState,
-    toggleDiscoveryFollow,
-    toggleDiscoveryLike,
-    toggleDiscoverySave
-} from '../lib/discoveryState.js'
+import { getDiscoveryCommentSyncState, getPostComments, hydrateDiscoveryComments, retryDiscoveryCommentSync, savePostComment, subscribeDiscoveryCommentStore, subscribeDiscoveryCommentSyncState } from '../lib/discoveryCommentStore.js'
+import { subscribeFavoritesStore } from '../lib/favoritesStore.js'
+import { getDiscoverySocialSyncState, getPostSocialState, hydrateDiscoverySocial, retryDiscoverySocialSync, subscribeDiscoverySocialStore, subscribeDiscoverySocialSyncState, toggleDiscoveryAuthorFollow, toggleDiscoveryPostLike, toggleDiscoveryPostSave } from '../lib/discoverySocialStore.js'
 
 function getPostId() {
     return getQueryParam('id')
@@ -45,74 +44,80 @@ export function renderPostDetailPage() {
     const topbarRoot = document.querySelector('[data-ct-topbar]')
     const detailRoot = document.querySelector('[data-ct-post-detail]')
     const commentsRoot = document.querySelector('[data-ct-post-comments]')
-    const locale = getLocale()
+    const syncFeedbackRoot = ensureSyncFeedbackRoot(topbarRoot, 'post-detail')
     let shareFeedback = ''
-
-    applyLocaleDocument('postDetail', locale)
-
-    if (topbarRoot) {
-        topbarRoot.innerHTML = renderTopbar({
-            leftLabel: locale === 'zh-CN' ? '返回发现' : 'Back to discovery',
-            leftIcon: '←',
-            leftHref: 'discovery.html',
-            rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
-            rightIcon: '◐',
-            rightHref: 'profile.html'
-        })
-    }
+    const listenerCleanups = []
 
     const paint = () => {
+        const locale = getLocale()
         const { activePost } = getPostDetailContent(locale, getPostId())
-        if (!activePost) {
+        const social = activePost ? getPostSocialState(activePost) : null
+        const comments = activePost ? getPostComments(activePost) : []
+        const contract = createPostDetailPageContract({
+            locale,
+            postId: getPostId(),
+            post: activePost,
+            social,
+            comments,
+            shareFeedback,
+            syncStates: {
+                discoverySocial: getDiscoverySocialSyncState(),
+                discoveryComments: getDiscoveryCommentSyncState()
+            }
+        })
+
+        applyLocaleDocument('postDetail', locale)
+
+        if (topbarRoot) {
+            topbarRoot.innerHTML = renderTopbar({
+                leftLabel: contract.derivedView.topbar.leftLabel,
+                leftIcon: '←',
+                leftHref: contract.derivedView.topbar.leftHref,
+                rightLabel: contract.derivedView.topbar.rightLabel,
+                rightIcon: '◐',
+                rightHref: contract.derivedView.topbar.rightHref
+            })
+        }
+
+        if (!contract.derivedView.article) {
             if (detailRoot) {
-                detailRoot.innerHTML = renderStatePanel({
-                    kind: 'error',
-                    eyebrow: locale === 'zh-CN' ? '帖子未找到' : 'Post Missing',
-                    title: locale === 'zh-CN' ? '当前帖子不存在' : 'This post is unavailable',
-                    description: locale === 'zh-CN' ? '请返回发现页重新选择帖子。' : 'Return to discovery and choose another post.',
-                    action: {
-                        label: locale === 'zh-CN' ? '返回发现' : 'Back to discovery',
-                        href: 'discovery.html'
-                    }
-                })
+                detailRoot.innerHTML = renderStatePanel(contract.derivedView.missingState)
             }
             if (commentsRoot) commentsRoot.innerHTML = ''
             return
         }
 
         if (detailRoot) {
-            detailRoot.innerHTML = renderPostDetailArticle(activePost, getPostSocialState(activePost), { shareFeedback })
+            detailRoot.innerHTML = renderPostDetailArticle(contract.derivedView.article, contract.derivedView.social, {
+                shareFeedback: contract.state.shareFeedback
+            })
         }
         if (commentsRoot) {
-            commentsRoot.innerHTML = renderComments(activePost)
+            commentsRoot.innerHTML = renderComments(contract.derivedView.article)
         }
     }
 
-    paint()
-
     if (detailRoot) {
-        detailRoot.addEventListener('click', (event) => {
+        const handleDetailClick = (event) => {
             const bookmark = event.target.closest('[data-ct-post-bookmark]')
+            const locale = getLocale()
             const { activePost } = getPostDetailContent(locale, getPostId())
             if (!activePost) return
 
             if (bookmark) {
-                toggleDiscoverySave(activePost)
-                paint()
+                toggleDiscoveryPostSave(activePost)
                 return
             }
 
             const likeButton = event.target.closest('[data-ct-post-like]')
             if (likeButton) {
-                toggleDiscoveryLike(activePost.id)
-                paint()
+                toggleDiscoveryPostLike(activePost.id)
                 return
             }
 
             const followButton = event.target.closest('[data-ct-post-follow]')
             if (followButton) {
-                toggleDiscoveryFollow(activePost.authorId || activePost.author)
-                paint()
+                toggleDiscoveryAuthorFollow(activePost.authorId || activePost.author)
                 return
             }
 
@@ -120,22 +125,25 @@ export function renderPostDetailPage() {
             if (shareButton) {
                 const shareUrl = buildCanonicalHref('post-detail.html', { id: activePost.id })
                 shareFeedback = locale === 'zh-CN' ? '链接已复制' : 'Link copied'
-                paint()
+                binding.requestPaint()
                 void shareLink({
                     href: shareUrl,
                     title: activePost.title,
                     text: activePost.description
                 })
             }
-        })
+        }
+        detailRoot.addEventListener('click', handleDetailClick)
+        listenerCleanups.push(() => detailRoot.removeEventListener('click', handleDetailClick))
     }
 
     if (commentsRoot) {
-        commentsRoot.addEventListener('submit', (event) => {
+        const handleCommentSubmit = (event) => {
             const form = event.target.closest('[data-ct-post-comment-form]')
             if (!form) return
             event.preventDefault()
 
+            const locale = getLocale()
             const { activePost } = getPostDetailContent(locale, getPostId())
             if (!activePost) return
 
@@ -148,7 +156,49 @@ export function renderPostDetailPage() {
                 time: locale === 'zh-CN' ? '刚刚' : 'Just now',
                 body
             })
-            paint()
-        })
+        }
+        commentsRoot.addEventListener('submit', handleCommentSubmit)
+        listenerCleanups.push(() => commentsRoot.removeEventListener('submit', handleCommentSubmit))
+    }
+
+    const binding = bindPageStores({
+        paint,
+        subscriptions: [
+            (listener) => subscribeDiscoverySocialStore(listener),
+            (listener) => subscribeDiscoveryCommentStore(listener),
+            (listener) => subscribeFavoritesStore(listener)
+        ],
+        hydrators: [
+            () => hydrateDiscoverySocial(getLocale()),
+            () => hydrateDiscoveryComments(getLocale())
+        ],
+        syncFeedback: {
+            root: syncFeedbackRoot,
+            locale: () => getLocale(),
+            bindings: [
+                {
+                    key: 'discoverySocial',
+                    label: { 'zh-CN': '发现社交', 'en-US': 'Discovery Social' },
+                    getState: () => getDiscoverySocialSyncState(),
+                    subscribe: (listener) => subscribeDiscoverySocialSyncState(listener),
+                    retry: () => retryDiscoverySocialSync(getLocale())
+                },
+                {
+                    key: 'discoveryComments',
+                    label: { 'zh-CN': '帖子评论', 'en-US': 'Post Comments' },
+                    getState: () => getDiscoveryCommentSyncState(),
+                    subscribe: (listener) => subscribeDiscoveryCommentSyncState(listener),
+                    retry: () => retryDiscoveryCommentSync(getLocale())
+                }
+            ]
+        }
+    })
+
+    return {
+        ...binding,
+        teardown() {
+            binding.teardown()
+            listenerCleanups.forEach((cleanup) => cleanup())
+        }
     }
 }

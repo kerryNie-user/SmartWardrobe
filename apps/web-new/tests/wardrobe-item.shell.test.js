@@ -16,6 +16,61 @@ async function runTest(name, testFn) {
 }
 
 async function main() {
+  await runTest('New Wardrobe Item 页面应通过统一 binding 暴露 sync feedback 与 teardown', async () => {
+    const htmlPath = path.join(__dirname, '..', 'wardrobe-item.html');
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    const dom = new JSDOM(html, { url: 'http://localhost/wardrobe-item.html' });
+
+    global.window = dom.window;
+    global.document = dom.window.document;
+    global.localStorage = dom.window.localStorage;
+    global.CustomEvent = dom.window.CustomEvent;
+    global.HTMLElement = dom.window.HTMLElement;
+    global.Node = dom.window.Node;
+    global.FormData = dom.window.FormData;
+
+    const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'wardrobeItemPage.js')).href}?binding=1`;
+    const { renderWardrobeItemPage } = await import(modulePath);
+    const binding = renderWardrobeItemPage();
+
+    assert.ok(binding && typeof binding.teardown === 'function', 'Wardrobe item page should return page binding');
+
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+
+    const syncRoot = dom.window.document.querySelector('[data-ct-sync-feedback-root="wardrobe-item"]');
+    assert.ok(syncRoot, 'Wardrobe item page should mount sync feedback root');
+    assert.ok(syncRoot.querySelector('[data-ct-sync-retry-domain="wardrobe"]'), 'Wardrobe item page should expose wardrobe retry action');
+
+    binding.teardown();
+  });
+
+  await runTest('New Wardrobe Detail 页面应通过统一 binding 暴露 sync feedback 与 teardown', async () => {
+    const htmlPath = path.join(__dirname, '..', 'wardrobe-detail.html');
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    const dom = new JSDOM(html, { url: 'http://localhost/wardrobe-detail.html?id=missing-item' });
+
+    global.window = dom.window;
+    global.document = dom.window.document;
+    global.localStorage = dom.window.localStorage;
+    global.CustomEvent = dom.window.CustomEvent;
+    global.HTMLElement = dom.window.HTMLElement;
+    global.Node = dom.window.Node;
+
+    const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'wardrobeDetailPage.js')).href}?binding=1`;
+    const { renderWardrobeDetailPage } = await import(modulePath);
+    const binding = renderWardrobeDetailPage();
+
+    assert.ok(binding && typeof binding.teardown === 'function', 'Wardrobe detail page should return page binding');
+
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+
+    const syncRoot = dom.window.document.querySelector('[data-ct-sync-feedback-root="wardrobe-detail"]');
+    assert.ok(syncRoot, 'Wardrobe detail page should mount sync feedback root');
+    assert.ok(syncRoot.querySelector('[data-ct-sync-retry-domain="wardrobe"]'), 'Wardrobe detail page should expose wardrobe retry action');
+
+    binding.teardown();
+  });
+
   await runTest('New Wardrobe Item 页面应包含独立 Add/Edit 壳层', async () => {
     const htmlPath = path.join(__dirname, '..', 'wardrobe-item.html');
     const html = fs.readFileSync(htmlPath, 'utf8');

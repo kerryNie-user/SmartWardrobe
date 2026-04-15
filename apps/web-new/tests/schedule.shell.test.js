@@ -160,6 +160,34 @@ runTest('New Schedule Event 页面应支持新增并在返回总览后持久化'
   assert.ok(titles.includes('Studio Breakfast'), 'Created event should appear on schedule overview');
 });
 
+runTest('New Schedule Event 页面应通过统一 binding 暴露 sync feedback 与 teardown', async () => {
+  const eventHtmlPath = path.join(__dirname, '..', 'schedule-event.html');
+  const eventHtml = fs.readFileSync(eventHtmlPath, 'utf8');
+  const dom = new JSDOM(eventHtml, { url: 'http://localhost/schedule-event.html' });
+
+  global.window = dom.window;
+  global.document = dom.window.document;
+  global.localStorage = dom.window.localStorage;
+  global.CustomEvent = dom.window.CustomEvent;
+  global.HTMLElement = dom.window.HTMLElement;
+  global.Node = dom.window.Node;
+  global.FormData = dom.window.FormData;
+
+  const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'scheduleEventPage.js')).href}?binding=1`;
+  const { renderScheduleEventPage } = await import(modulePath);
+  const binding = renderScheduleEventPage();
+
+  assert.ok(binding && typeof binding.teardown === 'function', 'Schedule event page should return page binding');
+
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+
+  const syncRoot = dom.window.document.querySelector('[data-ct-sync-feedback-root="schedule-event"]');
+  assert.ok(syncRoot, 'Schedule event page should mount sync feedback root');
+  assert.ok(syncRoot.querySelector('[data-ct-sync-retry-domain="schedule"]'), 'Schedule event page should expose schedule retry action');
+
+  binding.teardown();
+});
+
 runTest('Schedule 页顶部应提供返回 Me 的入口', async () => {
   const htmlPath = path.join(__dirname, '..', 'schedule.html');
   const html = fs.readFileSync(htmlPath, 'utf8');

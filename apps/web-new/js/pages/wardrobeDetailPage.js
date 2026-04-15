@@ -1,9 +1,12 @@
 import { renderTopbar } from '../components/topbar.js'
 import { renderStatePanel } from '../components/statePanel.js'
+import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js'
 import { renderWardrobeDetailPanel } from '../components/wardrobeDetailPanel.js'
 import { applyLocaleDocument, getLocale } from '../lib/locale.js'
+import { bindPageStores } from '../lib/pageStoreBinding.js'
+import { createWardrobeDetailPageContract } from '../lib/pageContracts.js'
 import { getQueryParam } from '../lib/navigationAdapter.js'
-import { getWardrobeItemById, hydrateWardrobe } from '../lib/wardrobeStore.js'
+import { getWardrobeItemById, getWardrobeSyncState, hydrateWardrobe, retryWardrobeSync, subscribeWardrobeStore, subscribeWardrobeSyncState } from '../lib/wardrobeStore.js'
 
 function getItemId() {
     return getQueryParam('id')
@@ -12,42 +15,62 @@ function getItemId() {
 export function renderWardrobeDetailPage() {
     const topbarRoot = document.querySelector('[data-ct-topbar]')
     const detailRoot = document.querySelector('[data-ct-wardrobe-detail-shell]')
-    const locale = getLocale()
+    const syncFeedbackRoot = ensureSyncFeedbackRoot(topbarRoot, 'wardrobe-detail')
     const itemId = getItemId()
     const paint = () => {
+        const locale = getLocale()
         const item = getWardrobeItemById(itemId, locale)
+        const contract = createWardrobeDetailPageContract({
+            locale,
+            itemId,
+            item,
+            syncStates: {
+                wardrobe: getWardrobeSyncState()
+            }
+        })
 
         applyLocaleDocument('wardrobeDetail', locale)
 
         if (topbarRoot) {
             topbarRoot.innerHTML = renderTopbar({
-                leftLabel: locale === 'zh-CN' ? '返回衣橱' : 'Back to wardrobe',
+                leftLabel: contract.derivedView.topbar.leftLabel,
                 leftIcon: '←',
-                leftHref: 'wardrobe.html',
-                rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
+                leftHref: contract.derivedView.topbar.leftHref,
+                rightLabel: contract.derivedView.topbar.rightLabel,
                 rightIcon: '◐',
-                rightHref: 'profile.html'
+                rightHref: contract.derivedView.topbar.rightHref
             })
         }
 
         if (!detailRoot) return
 
-        detailRoot.innerHTML = item
-            ? renderWardrobeDetailPanel(item, locale)
-            : renderStatePanel({
-                kind: 'error',
-                eyebrow: locale === 'zh-CN' ? '单品不存在' : 'Missing Item',
-                title: locale === 'zh-CN' ? '这件单品暂时不可用' : 'This wardrobe item is unavailable',
-                description: locale === 'zh-CN' ? '请返回衣橱重新选择单品。' : 'Return to wardrobe and choose another item.',
-                action: {
-                    label: locale === 'zh-CN' ? '返回衣橱' : 'Back to wardrobe',
-                    href: 'wardrobe.html'
-                }
-            })
+        detailRoot.innerHTML = contract.derivedView.item
+            ? renderWardrobeDetailPanel(contract.derivedView.item, locale)
+            : renderStatePanel(contract.derivedView.missingState)
     }
 
-    paint()
-    void hydrateWardrobe(locale).then(() => {
-        paint()
+    const binding = bindPageStores({
+        paint,
+        subscriptions: [
+            (listener) => subscribeWardrobeStore(listener)
+        ],
+        hydrators: [
+            () => hydrateWardrobe(getLocale())
+        ],
+        syncFeedback: {
+            root: syncFeedbackRoot,
+            locale: () => getLocale(),
+            bindings: [
+                {
+                    key: 'wardrobe',
+                    label: { 'zh-CN': '衣橱', 'en-US': 'Wardrobe' },
+                    getState: () => getWardrobeSyncState(),
+                    subscribe: (listener) => subscribeWardrobeSyncState(listener),
+                    retry: (locale) => retryWardrobeSync(locale)
+                }
+            ]
+        }
     })
+
+    return binding
 }

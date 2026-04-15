@@ -63,6 +63,37 @@ async function main() {
     assert.ok(/post/i.test(errorPanel.textContent), 'Post detail error should explain missing post');
   });
 
+  await runTest('New Post Detail 页面应通过统一 binding 暴露 sync feedback 与 teardown', async () => {
+    const htmlPath = path.join(__dirname, '..', 'post-detail.html');
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    const dom = new JSDOM(html, { url: 'http://localhost/post-detail.html?id=brutalist-basics' });
+
+    global.window = dom.window;
+    global.document = dom.window.document;
+    global.localStorage = dom.window.localStorage;
+    global.CustomEvent = dom.window.CustomEvent;
+    global.HTMLElement = dom.window.HTMLElement;
+    global.Node = dom.window.Node;
+    global.FormData = dom.window.FormData;
+    dom.window.localStorage.setItem('ct_discovery_social', '{');
+    dom.window.localStorage.setItem('ct_discovery_comments', '{');
+
+    const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?binding=1`;
+    const { renderPostDetailPage } = await import(modulePath);
+    const binding = renderPostDetailPage();
+
+    assert.ok(binding && typeof binding.teardown === 'function', 'Post detail page should return page binding');
+
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+
+    const syncRoot = dom.window.document.querySelector('[data-ct-sync-feedback-root="post-detail"]');
+    assert.ok(syncRoot, 'Post detail page should mount sync feedback root');
+    assert.ok(syncRoot.querySelector('[data-ct-sync-retry-domain="discoverySocial"]'), 'Post detail page should expose discoverySocial retry');
+    assert.ok(syncRoot.querySelector('[data-ct-sync-retry-domain="discoveryComments"]'), 'Post detail page should expose discoveryComments retry');
+
+    binding.teardown();
+  });
+
   await runTest('New Post Detail 页面应与 Discovery 社交状态保持一致', async () => {
     const htmlPath = path.join(__dirname, '..', 'post-detail.html');
     const html = fs.readFileSync(htmlPath, 'utf8');
