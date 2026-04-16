@@ -153,6 +153,10 @@ class PromptChainRunner:
                     "layout_name": layout_name,
                     "images_required": layout.images_required
                 })
+            
+            # Post-processing: Ensure the last paragraph of the outline is marked as "结语"
+            if processed_paragraphs and processed_paragraphs[-1].get("section_name") != "结语":
+                processed_paragraphs[-1]["section_name"] = "结语"
                 
             return {
                 "angle_title": angle_title,
@@ -164,16 +168,28 @@ class PromptChainRunner:
             # Phase 3: Call LLM for final draft
             outline_json = json.loads(user_input)
             style_en = outline_json.get("style_en", "street style")
+            outline_paras = outline_json.get("paragraphs", [])
             
-            draft_response = self._llm_client.generate_json(system_prompt, user_input)
+            draft_response = None
+            draft_paras = []
+            
+            for attempt in range(2):
+                draft_response = self._llm_client.generate_json(system_prompt, user_input)
+                draft_paras = draft_response.get("paragraphs", [])
+                if len(draft_paras) >= len(outline_paras):
+                    break
+                if attempt == 0:
+                    logging.warning(f"LLM output truncation detected ({len(draft_paras)}/{len(outline_paras)}). Retrying phase 3...")
+            
+            if len(draft_paras) < len(outline_paras):
+                logging.warning(f"LLM truncation persists after retry. Truncating outline from {len(outline_paras)} to {len(draft_paras)} paragraphs.")
+                outline_paras = outline_paras[:len(draft_paras)]
             
             final_paragraphs = []
-            draft_paras = draft_response.get("paragraphs", [])
-            outline_paras = outline_json.get("paragraphs", [])
             
             for i in range(len(outline_paras)):
                 out_p = outline_paras[i]
-                draft_p = draft_paras[i] if i < len(draft_paras) else {}
+                draft_p = draft_paras[i]
                 
                 final_paragraphs.append({
                     "section_name": draft_p.get("section_name", out_p.get("section_name", "")),
@@ -181,6 +197,10 @@ class PromptChainRunner:
                     "layout_name": out_p.get("layout_name", "hero_full_bleed"),
                     "image_queries": draft_p.get("image_queries", [])
                 })
+            
+            # Post-processing: Ensure the last paragraph is explicitly marked as "结语"
+            if final_paragraphs and final_paragraphs[-1].get("section_name") != "结语":
+                final_paragraphs[-1]["section_name"] = "结语"
                 
             return {
                 "paragraphs": final_paragraphs,

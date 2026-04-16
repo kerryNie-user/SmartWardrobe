@@ -3,6 +3,8 @@ import json
 import logging
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 from services.ai_blogger.chain_runner import PromptChainRunner
 from services.ai_blogger.topic.topic_sourcer import TopicSourcer
 from services.ai_blogger.image_sourcer import get_image_candidates
@@ -24,6 +26,17 @@ class ImageTracker:
         self.duplicate_hashes = 0
         self.skipped_used_url = 0
         self.image_details = []
+        
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=0.5,
+            status_forcelist=[500, 502, 503, 504],
+            allowed_methods=["GET"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
     def render_media_block(self, q: dict | str, idx: int, p_idx: int, layout_name: str, layout_type: str = "portrait_4_3") -> str:
         if not q:
@@ -74,7 +87,7 @@ class ImageTracker:
                 try:
                     self.attempted_images += 1
                     timeout_val = 15
-                    res = requests.get(url, headers=headers, timeout=timeout_val)
+                    res = self.session.get(url, headers=headers, timeout=timeout_val)
                     
                     if res.status_code == 200:
                         content_type = res.headers.get("Content-Type", "")
@@ -339,7 +352,10 @@ def run_batch(config: dict) -> dict:
         f"- article_count: {len(report_articles)}"
     ]
     for a in report_articles:
-        md_lines.append(f"- {a['topic_id']} | {a['title']} | paragraphs={a['paragraph_count']} | unique_layouts={a['unique_layouts']}")
+        if a.get("status") == "success":
+            md_lines.append(f"- {a['topic_id']} | {a['title']} | paragraphs={a.get('paragraph_count', 0)} | unique_layouts={a.get('unique_layouts', 0)}")
+        else:
+            md_lines.append(f"- {a['topic_id']} | {a['title']} | FAILED | error={a.get('error', 'Unknown')}")
     with open(report_md_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines) + "\n")
 

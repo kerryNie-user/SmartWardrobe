@@ -3,6 +3,7 @@ import logging
 import random
 import requests
 import re
+import os
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,9 +33,27 @@ def get_image_from_met(query: str) -> str | None:
 
 def get_pexels_candidates(query: str, per_page: int = 5) -> list[str]:
     """
-    Scrapes high-resolution images from Pexels HTML without an API key.
+    Returns high-resolution images from Pexels.
+    Priority: PEXELS_API_KEY environment variable.
+    Fallback: Scrapes HTML without an API key.
     """
     search_terms = urllib.parse.quote(query)
+    
+    api_key = os.environ.get("PEXELS_API_KEY")
+    if api_key:
+        api_url = f"https://api.pexels.com/v1/search?query={search_terms}&per_page={per_page}"
+        headers = {"Authorization": api_key}
+        try:
+            res = requests.get(api_url, headers=headers, timeout=10)
+            if res.status_code == 200:
+                data = res.json()
+                photos = data.get("photos", [])
+                return [p.get("src", {}).get("large2x", p.get("src", {}).get("original")) for p in photos if "src" in p]
+        except Exception as e:
+            logging.warning(f"Pexels API Request Failed for '{query}': {e}. Falling back to HTML scraping.")
+    else:
+        logging.info("PEXELS_API_KEY not found, falling back to HTML scraping.")
+
     url = f"https://www.pexels.com/search/{search_terms}/"
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
     try:
