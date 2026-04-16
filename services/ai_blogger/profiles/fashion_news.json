@@ -1,0 +1,26 @@
+{
+  "id": "fashion_news",
+  "name": "时尚新闻与趋势解读",
+  "constraints": {
+    "paragraph_count_rules": "要求篇幅短小精悍，严格输出 **3到5** 个段落。",
+    "allowed_sections": [
+      "\"新闻速递\" (Breaking News)",
+      "\"事件还原\" (Event Recap)",
+      "\"行业影响\" (Industry Impact)",
+      "\"核心观点\" (Key Takeaways)",
+      "\"结语\" (Conclusion)"
+    ],
+    "conclusion_required": false
+  },
+  "layout_pool": [
+    "hero_full_bleed",
+    "split_image_text",
+    "float_left_photo",
+    "float_right_photo",
+    "pull_quote_center"
+  ],
+  "visual_strategy": "使用诸如 'runway show SS25 model close up' 或 'fashion designer portrait' 等现场、秀场、人物关键词。",
+  "kb_files": [
+    "services/ai_blogger/experience/06_typography_layout_checklist.md"
+  ]
+}

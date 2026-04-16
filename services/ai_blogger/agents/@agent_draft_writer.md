@@ -11,7 +11,7 @@
 5. **图片检索词分离**：
    对于大纲中 `images_required` > 0 的段落，你需要生成对应数量的图片信息。
    每个图片信息必须是一个对象，包含两个字段：
-   - `search_keyword`: 简短、精准的英文搜索词（通常不超过 4 个单词，如 "minimalist white shirt"），用于 API 图库检索。
+   - `search_keyword`: 简短、精准的英文搜索词（通常不超过 4 个单词），用于 API 图库检索。{visual_strategy}
    - `image_caption`: 详细的英文画面描述（如 "A woman wearing a minimalist white shirt walking down a Paris street, cinematic lighting"），用于前端显示和语义一致性校验。
    如果 `images_required` == 0，则该数组为空 `[]`。
 6. 输出必须是纯 JSON，不能有任何其他文字。

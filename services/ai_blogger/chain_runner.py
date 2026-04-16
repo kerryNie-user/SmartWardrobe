@@ -7,12 +7,24 @@ from typing import Dict, List
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class PromptChainRunner:
-    def __init__(self, prompts_dir: str = "services/ai_blogger/agents"):
+    def __init__(self, prompts_dir: str = "services/ai_blogger/agents", profile_name: str = "editorial_styling"):
         self.prompts_dir = prompts_dir
+        self.profile_name = profile_name
+        self.profile = self._load_profile(profile_name)
         self.prompts = self._load_prompts()
         self._layout_registry = None
         self._llm_client = None
         
+    def _load_profile(self, profile_name: str) -> dict:
+        import json
+        profile_path = os.path.join(os.path.dirname(__file__), "profiles", f"{profile_name}.json")
+        if not os.path.exists(profile_path):
+            logging.warning(f"Profile '{profile_name}' not found, falling back to 'editorial_styling'")
+            profile_path = os.path.join(os.path.dirname(__file__), "profiles", "editorial_styling.json")
+            
+        with open(profile_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
     def _load_prompts(self) -> Dict[str, str]:
         """Loads the prompt templates and their knowledge base dependencies from the filesystem."""
         import re
@@ -29,61 +41,79 @@ class PromptChainRunner:
                 with open(path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 
-                # Parse <knowledge_base> tags to inject external context (Vibe Coding style)
-                kb_match = re.search(r'<knowledge_base>(.*?)</knowledge_base>', content, re.DOTALL)
-                if kb_match:
-                    kb_text = kb_match.group(1)
-                    context_blocks = []
-                    # Extract file paths, ignoring empty lines or markdown list dashes
-                    for line in kb_text.split('\n'):
-                        line = line.strip().lstrip('-').strip()
-                        if not line:
-                            continue
-                        
-                        # Resolve path relative to project root or current dir
-                        # Assume paths in knowledge_base are like 'services/ai_blogger/experience/...'
-                        abs_path = line
-                        if not os.path.isabs(line):
-                            # Try to find it relative to the project root (assuming chain_runner.py is in services/ai_blogger)
-                            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-                            candidate = os.path.join(project_root, line)
-                            if os.path.exists(candidate):
-                                abs_path = candidate
-
-                        if os.path.exists(abs_path):
-                            try:
-                                with open(abs_path, 'r', encoding='utf-8') as kb_file:
-                                    kb_content = kb_file.read()
-                                    context_blocks.append(f"--- BEGIN CONTEXT: {line} ---\n{kb_content}\n--- END CONTEXT: {line} ---")
-                            except Exception as e:
-                                logging.warning(f"Failed to read knowledge base file {line}: {e}")
-                        else:
-                            logging.warning(f"Knowledge base file not found: {line}")
+                # Inject dynamic knowledge base from profile instead of prompt tags
+                kb_files = self.profile.get("kb_files", [])
+                context_blocks = []
+                
+                for kb_file in kb_files:
+                    abs_path = kb_file
+                    if not os.path.isabs(kb_file):
+                        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+                        candidate = os.path.join(project_root, kb_file)
+                        if os.path.exists(candidate):
+                            abs_path = candidate
+                            
+                    if os.path.exists(abs_path):
+                        try:
+                            with open(abs_path, 'r', encoding='utf-8') as f_kb:
+                                kb_content = f_kb.read()
+                                context_blocks.append(f"--- BEGIN CONTEXT: {kb_file} ---\n{kb_content}\n--- END CONTEXT: {kb_file} ---")
+                        except Exception as e:
+                            logging.warning(f"Failed to read knowledge base file {kb_file}: {e}")
+                    else:
+                        logging.warning(f"Knowledge base file not found: {kb_file}")
+                
+                if context_blocks:
+                    context_str = "\n\n<context>\n" + "\n\n".join(context_blocks) + "\n</context>\n"
+                    content += context_str
+                
+                # Interpolate profile constraints into prompt
+                constraints = self.profile.get("constraints", {})
+                allowed_sections_str = "\n   - ".join(constraints.get("allowed_sections", []))
+                if allowed_sections_str:
+                    allowed_sections_str = "   - " + allowed_sections_str
                     
-                    if context_blocks:
-                        context_str = "\n\n<context>\n" + "\n\n".join(context_blocks) + "\n</context>\n"
-                        # Append context to the end of the prompt
-                        content += context_str
+                layout_pool_str = "\n   - ".join([f"`{l}`" for l in self.profile.get("layout_pool", [])])
+                if layout_pool_str:
+                    layout_pool_str = "   - " + layout_pool_str
+                    
+                visual_strategy = self.profile.get("visual_strategy", "")
+                
+                content = content.replace("{paragraph_count_rules}", constraints.get("paragraph_count_rules", ""))
+                content = content.replace("{allowed_sections}", allowed_sections_str)
+                content = content.replace("{layout_pool}", layout_pool_str)
+                content = content.replace("{visual_strategy}", visual_strategy)
 
                 prompts[phase_key] = content
             else:
                 logging.warning(f"Agent prompt file not found: {path}")
         return prompts
         
-    def run_chain(self, raw_topic: str) -> Dict:
+    def run_chain(self, raw_topic: str, seed_material: dict = None) -> Dict:
         """
         Executes the 3-step prompt chain based on the blogger_experience docs.
         """
         logging.info(f"Starting Prompt Chain for topic: '{raw_topic}'")
         
+        # Inject seed material if provided
+        angle_input = f"Topic: {raw_topic}"
+        if seed_material:
+            logging.info("Injecting real news seed material into Phase 1...")
+            angle_input += f"\n\nContext/Source: {seed_material.get('source', '')}\nSummary: {seed_material.get('summary', '')}"
+            angle_input += "\n\nCRITICAL INSTRUCTION: You must base your angle and thesis strictly on the real news context provided above. Do not invent unrelated stories."
+        
         # Step 1: Angle Generation
         logging.info("Executing Phase 1: Angle & Thesis Generation...")
         angle_result = self._call_llm(
             system_prompt=self.prompts.get("phase1_angle", ""),
-            user_input=f"Topic: {raw_topic}",
+            user_input=angle_input,
             phase="1"
         )
         
+        # Save real image URL into angle metadata if available, so it can be passed down
+        if seed_material and seed_material.get("image_url"):
+            angle_result["_real_image_url"] = seed_material["image_url"]
+            
         # Step 2: Outline & Visual Strategy
         logging.info("Executing Phase 2: Structural Outline & Image Queries...")
         outline_input = json.dumps(angle_result, ensure_ascii=False)
@@ -103,6 +133,15 @@ class PromptChainRunner:
         )
         
         # Assemble final artifact
+        # Restore real image url to the final output if present
+        if "_real_image_url" in outline_result:
+            final_post["_real_image_url"] = outline_result["_real_image_url"]
+            # Inject real image into the first paragraph that requires an image
+            for p in final_post.get("paragraphs", []):
+                if p.get("image_queries"):
+                    p["image_queries"] = [{"_direct_url": outline_result["_real_image_url"], "search_keyword": "REAL_NEWS_IMAGE"}]
+                    break
+                    
         return {
             "metadata": angle_result,
             "title": angle_result.get("angle_title", "Untitled Editorial"),
@@ -137,11 +176,18 @@ class PromptChainRunner:
             processed_paragraphs = []
             for p in outline_response.get("paragraphs", []):
                 layout_name = p.get("layout_name", "hero_full_bleed")
+                layout_pool = self.profile.get("layout_pool", [])
+                
+                if layout_pool and layout_name not in layout_pool:
+                    logging.warning(f"LLM suggested layout '{layout_name}' not in profile pool, falling back to '{layout_pool[0]}'")
+                    layout_name = layout_pool[0]
+                    
                 try:
                     layout = self._layout_registry.get_layout(layout_name)
                 except KeyError:
-                    logging.warning(f"LLM suggested invalid layout '{layout_name}', falling back to 'hero_full_bleed'")
-                    layout_name = "hero_full_bleed"
+                    fallback = layout_pool[0] if layout_pool else "hero_full_bleed"
+                    logging.warning(f"LLM suggested invalid layout '{layout_name}', falling back to '{fallback}'")
+                    layout_name = fallback
                     layout = self._layout_registry.get_layout(layout_name)
                 
                 processed_paragraphs.append({
@@ -151,9 +197,10 @@ class PromptChainRunner:
                     "images_required": layout.images_required
                 })
             
-            # Post-processing: Ensure the last paragraph of the outline is marked as "结语"
-            if processed_paragraphs and processed_paragraphs[-1].get("section_name") != "结语":
-                processed_paragraphs[-1]["section_name"] = "结语"
+            # Post-processing: Ensure the last paragraph of the outline is marked as "结语" if required
+            if self.profile.get("constraints", {}).get("conclusion_required", False):
+                if processed_paragraphs and processed_paragraphs[-1].get("section_name") != "结语":
+                    processed_paragraphs[-1]["section_name"] = "结语"
                 
             return {
                 "angle_title": angle_title,
@@ -195,9 +242,10 @@ class PromptChainRunner:
                     "image_queries": draft_p.get("image_queries", [])
                 })
             
-            # Post-processing: Ensure the last paragraph is explicitly marked as "结语"
-            if final_paragraphs and final_paragraphs[-1].get("section_name") != "结语":
-                final_paragraphs[-1]["section_name"] = "结语"
+            # Post-processing: Ensure the last paragraph is explicitly marked as "结语" if required by profile
+            if self.profile.get("constraints", {}).get("conclusion_required", False):
+                if final_paragraphs and final_paragraphs[-1].get("section_name") != "结语":
+                    final_paragraphs[-1]["section_name"] = "结语"
                 
             return {
                 "paragraphs": final_paragraphs,

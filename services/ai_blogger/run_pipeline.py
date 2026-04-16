@@ -42,28 +42,33 @@ class ImageTracker:
         if not q:
             return ""
         
+        direct_url = None
         if isinstance(q, dict):
             search_q = q.get("search_keyword", "")
             alt_text = q.get("image_caption", search_q)
+            direct_url = q.get("_direct_url")
         else:
             search_q = str(q)
             alt_text = search_q
             
-        if not search_q:
+        if not search_q and not direct_url:
             return ""
         
         if self.download_images and self.downloaded_images < self.max_images_total:
             current_img_config = {"image_size": layout_type}
                 
-            candidates = get_image_candidates(search_q, current_img_config, per_page=3)
+            if direct_url:
+                candidates = [{"original_url": direct_url, "source_type": "News RSS", "search_query": search_q or "REAL_NEWS_IMAGE"}]
+            else:
+                candidates = get_image_candidates(search_q, current_img_config, per_page=3)
             headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
-            local_img_filename = f"chain_{idx}_img_{p_idx + 1}_{abs(hash(search_q)) % 10000}.jpg"
+            local_img_filename = f"chain_{idx}_img_{p_idx + 1}_{abs(hash(search_q or direct_url)) % 10000}.jpg"
             local_img_path = os.path.join(self.images_dir, local_img_filename)
             rel_img_path = f"images/{local_img_filename}"
 
             for attempt, cand in enumerate(candidates):
-                url = cand["original_url"]
-                source_type = cand["source_type"]
+                url = cand.get("original_url", "")
+                source_type = cand.get("source_type", "Unknown")
                 cand_search_query = cand["search_query"]
 
                 if url in self.used_urls:
@@ -135,8 +140,12 @@ def run_batch(config: dict) -> dict:
     output_dir = str(config.get("output_dir", "services/ai_blogger/output"))
     rng_seed = config.get("rng_seed", None)
     max_images_total = int(config.get("max_images_total", 0 if not download_images else count * 50))
+    profile_name = config.get("profile", "editorial_styling")
 
-    runner = PromptChainRunner(prompts_dir="services/ai_blogger/agents")
+    runner = PromptChainRunner(
+        prompts_dir="services/ai_blogger/agents",
+        profile_name=profile_name
+    )
     sourcer = TopicSourcer(rng_seed=rng_seed)
 
     os.makedirs(output_dir, exist_ok=True)
@@ -164,16 +173,55 @@ def run_batch(config: dict) -> dict:
     # Generate topics autonomously if LLM is enabled
     llm_client = UniversalLLMClient()
     
+    # Initialize the core orchestrator with the specified profile FIRST
+    # So we can extract profile information for topic generation
+    runner = PromptChainRunner(
+        prompts_dir=os.path.join(os.path.dirname(__file__), "agents"),
+        profile_name=profile_name
+    )
+    
     generated_titles = []
-    if llm_client:
-        logging.info("Autonomously generating blog topics via LLM...")
+    seed_materials = []
+    
+    if profile_name == "fashion_news":
+        logging.info("Profile 'fashion_news' selected. Scraping real news from RSS feeds instead of LLM brainstorming...")
+        from services.ai_blogger.trend_scraper import get_latest_trends
+        from services.ai_blogger.utils.config import load_config
+        
+        config_data = load_config()
+        trends = get_latest_trends(config_data)
+        
+        for t in trends:
+            if len(generated_titles) >= count:
+                break
+            # Use real news title
+            generated_titles.append(t["title"])
+            # Save real news context and image for later injection
+            seed_materials.append({
+                "source": t["source"],
+                "summary": t["summary"],
+                "image_url": t["image_url"]
+            })
+            
+        if not generated_titles:
+            logging.warning("RSS scraping returned empty results. Falling back to LLM brainstorming.")
+
+    if llm_client and not generated_titles:
+        logging.info(f"Autonomously generating blog topics via LLM (Profile: {profile_name})...")
         topic_agent_path = os.path.join(os.path.dirname(__file__), "agents", "@agent_topic_generator.md")
-        system_prompt = "You are an elite fashion editor."
-        user_prompt = f"Please brainstorm {count} highly creative, editorial-style fashion blog post titles in Chinese. They should sound like Vogue or GQ editorials (e.g., '复古围巾的情绪价值：格纹如何制造记忆感'). Return a JSON object with a 'titles' array containing strings."
+        
+        p_name = runner.profile.get("name", "高级时尚编辑")
+        p_visual = runner.profile.get("visual_strategy", "时尚、高级、专业")
+        
+        system_prompt = "You are an elite editor."
+        user_prompt = f"Please brainstorm {count} highly creative blog post titles in Chinese for profile: {p_name}. Visual strategy: {p_visual}. Return a JSON object with a 'titles' array containing strings."
         
         if os.path.exists(topic_agent_path):
             with open(topic_agent_path, "r", encoding="utf-8") as f:
-                user_prompt = f.read().replace("{count}", str(count))
+                user_prompt = f.read()
+                user_prompt = user_prompt.replace("{count}", str(count))
+                user_prompt = user_prompt.replace("{profile_name}", p_name)
+                user_prompt = user_prompt.replace("{visual_strategy}", p_visual)
                 
         try:
             res = llm_client.generate_json(system_prompt, user_prompt)
@@ -181,17 +229,20 @@ def run_batch(config: dict) -> dict:
             if len(generated_titles) > count:
                 generated_titles = generated_titles[:count]
         except Exception as e:
-            logging.error(f"Failed to generate topics via LLM: {e}")
+            logging.error(f"Failed to generate topics autonomously: {e}")
             
-    # Fallback to static sourcer if LLM failed
+    # Fallback to test topics if autonomous generation failed or disabled
     if not generated_titles:
-        topics = sourcer.get_topics(count=count)
-        generated_titles = [t.title_zh for t in topics]
+        generated_titles = [f"Autumn Minimalist Look {i}" for i in range(1, count + 1)]
+        
+    logging.info(f"Generated {len(generated_titles)} topics. Starting generation pipeline...")
 
     # Remove the outer redundant for loop that was mistakenly left around the executor logic
     def _process_topic(idx, title):
         try:
-            post = runner.run_chain(raw_topic=title)
+            # Find the corresponding seed material if any
+            seed = seed_materials[idx] if idx < len(seed_materials) else None
+            post = runner.run_chain(raw_topic=title, seed_material=seed)
             return idx, title, post, None
         except Exception as e:
             logging.error(f"Failed to generate article for topic '{title}': {e}")
@@ -373,11 +424,13 @@ def run():
     parser = argparse.ArgumentParser()
     parser.add_argument("--count", type=int, default=1, help="Number of articles to generate")
     parser.add_argument("--llm", type=str, default="real", help="LLM Provider ('real' or 'none' to skip LLM)")
+    parser.add_argument("--profile", type=str, default="editorial_styling", help="Topic profile (e.g. editorial_styling, fashion_news)")
     args = parser.parse_args()
 
     print("Initializing Prompt Chain Runner (Agentic Pipeline)...")
     result = run_batch({
         "count": args.count,
+        "profile": args.profile,
         "download_images": True,  # Keep true for layout realism
         "output_dir": "services/ai_blogger/output",
         "max_images_total": args.count * 50

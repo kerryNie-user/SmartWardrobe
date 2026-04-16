@@ -1,0 +1,27 @@
+{
+  "id": "aesthetic_essay",
+  "name": "哲学与美学长文",
+  "constraints": {
+    "paragraph_count_rules": "这是一篇长篇论述，要求至少输出 **6到8** 个段落，不设上限。",
+    "allowed_sections": [
+      "\"引言\" (Introduction)",
+      "\"概念溯源\" (Conceptual Origins)",
+      "\"历史对照\" (Historical Context)",
+      "\"当代语境\" (Contemporary Relevance)",
+      "\"理论交锋\" (Theoretical Debate)",
+      "\"结语\" (Conclusion)"
+    ],
+    "conclusion_required": true
+  },
+  "layout_pool": [
+    "hero_full_bleed",
+    "pull_quote_center",
+    "split_image_text",
+    "image_mosaic_3"
+  ],
+  "visual_strategy": "使用诸如 '1920s Bauhaus architecture detail' 或 'abstract contemporary art installation' 等历史档案、艺术品或建筑细节词汇。",
+  "kb_files": [
+    "services/ai_blogger/experience/03_language_style_toolkit.md",
+    "services/ai_blogger/experience/09_image_libraries_and_selection.md"
+  ]
+}
