@@ -8,7 +8,6 @@ def test_batch_pipeline_generates_10_articles_and_reports(tmp_path):
     result = run_batch(
         {
             "count": 10,
-            "llm_provider": "mock",
             "download_images": False,
             "output_dir": str(tmp_path),
             "rng_seed": 0

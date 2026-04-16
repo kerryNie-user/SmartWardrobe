@@ -14,7 +14,7 @@ def test_prompt_chain_loading():
 
 def test_prompt_chain_execution():
     runner = PromptChainRunner(prompts_dir="services/ai_blogger_new/prompts")
-    result = runner.run_chain(raw_topic="极简风", llm_provider="mock")
+    result = runner.run_chain(raw_topic="极简风")
     
     # Verify the output structure as defined by the Prompt Chain
     assert "metadata" in result

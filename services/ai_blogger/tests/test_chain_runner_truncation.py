@@ -31,7 +31,6 @@ class TestChainRunnerTruncation(unittest.TestCase):
         result = runner._call_llm(
             system_prompt="sys", 
             user_input=json.dumps(outline_input), 
-            provider="real", 
             phase="3"
         )
         
@@ -70,7 +69,6 @@ class TestChainRunnerTruncation(unittest.TestCase):
         result = runner._call_llm(
             system_prompt="sys", 
             user_input=json.dumps(outline_input), 
-            provider="real", 
             phase="3"
         )
         

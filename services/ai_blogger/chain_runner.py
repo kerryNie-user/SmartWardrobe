@@ -10,7 +10,7 @@ class PromptChainRunner:
     def __init__(self, prompts_dir: str = "services/ai_blogger/agents"):
         self.prompts_dir = prompts_dir
         self.prompts = self._load_prompts()
-        self._mock_layout_registry = None
+        self._layout_registry = None
         self._llm_client = None
         
     def _load_prompts(self) -> Dict[str, str]:
@@ -70,7 +70,7 @@ class PromptChainRunner:
                 logging.warning(f"Agent prompt file not found: {path}")
         return prompts
         
-    def run_chain(self, raw_topic: str, llm_provider: str = "real") -> Dict:
+    def run_chain(self, raw_topic: str) -> Dict:
         """
         Executes the 3-step prompt chain based on the blogger_experience docs.
         """
@@ -81,7 +81,6 @@ class PromptChainRunner:
         angle_result = self._call_llm(
             system_prompt=self.prompts.get("phase1_angle", ""),
             user_input=f"Topic: {raw_topic}",
-            provider=llm_provider,
             phase="1"
         )
         
@@ -91,7 +90,6 @@ class PromptChainRunner:
         outline_result = self._call_llm(
             system_prompt=self.prompts.get("phase2_outline", ""),
             user_input=outline_input,
-            provider=llm_provider,
             phase="2"
         )
         
@@ -101,7 +99,6 @@ class PromptChainRunner:
         final_post = self._call_llm(
             system_prompt=self.prompts.get("phase3_drafting", ""),
             user_input=draft_input,
-            provider=llm_provider,
             phase="3"
         )
         
@@ -112,7 +109,7 @@ class PromptChainRunner:
             "paragraphs": final_post.get("paragraphs", [])
         }
 
-    def _call_llm(self, system_prompt: str, user_input: str, provider: str, phase: str) -> Dict:
+    def _call_llm(self, system_prompt: str, user_input: str, phase: str) -> Dict:
         """
         Wrapper to call the LLM API.
         Uses UniversalLLMClient.
@@ -134,18 +131,18 @@ class PromptChainRunner:
             angle_title = angle.get("angle_title", "Untitled")
             
             from services.ai_blogger.layouts.registry import LayoutRegistry
-            if self._mock_layout_registry is None:
-                self._mock_layout_registry = LayoutRegistry()
+            if self._layout_registry is None:
+                self._layout_registry = LayoutRegistry()
                 
             processed_paragraphs = []
             for p in outline_response.get("paragraphs", []):
                 layout_name = p.get("layout_name", "hero_full_bleed")
                 try:
-                    layout = self._mock_layout_registry.get_layout(layout_name)
+                    layout = self._layout_registry.get_layout(layout_name)
                 except KeyError:
                     logging.warning(f"LLM suggested invalid layout '{layout_name}', falling back to 'hero_full_bleed'")
                     layout_name = "hero_full_bleed"
-                    layout = self._mock_layout_registry.get_layout(layout_name)
+                    layout = self._layout_registry.get_layout(layout_name)
                 
                 processed_paragraphs.append({
                     "section_name": p.get("section_name", "段落"),

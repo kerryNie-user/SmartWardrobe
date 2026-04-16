@@ -131,7 +131,6 @@ def _load_html_template() -> str:
 
 def run_batch(config: dict) -> dict:
     count = int(config.get("count", 10))
-    llm_provider = str(config.get("llm_provider", "real"))
     download_images = bool(config.get("download_images", True))
     output_dir = str(config.get("output_dir", "services/ai_blogger/output"))
     rng_seed = config.get("rng_seed", None)
@@ -163,7 +162,7 @@ def run_batch(config: dict) -> dict:
     tracker = ImageTracker(images_dir=images_dir, max_images_total=max_images_total, download_images=download_images)
 
     # Generate topics autonomously if LLM is enabled
-    llm_client = UniversalLLMClient() if llm_provider != "none" else None
+    llm_client = UniversalLLMClient()
     
     generated_titles = []
     if llm_client:
@@ -185,7 +184,7 @@ def run_batch(config: dict) -> dict:
     # Remove the outer redundant for loop that was mistakenly left around the executor logic
     def _process_topic(idx, title):
         try:
-            post = runner.run_chain(raw_topic=title, llm_provider=llm_provider)
+            post = runner.run_chain(raw_topic=title)
             return idx, title, post, None
         except Exception as e:
             logging.error(f"Failed to generate article for topic '{title}': {e}")
@@ -372,7 +371,6 @@ def run():
     print("Initializing Prompt Chain Runner (Agentic Pipeline)...")
     result = run_batch({
         "count": args.count,
-        "llm_provider": args.llm,
         "download_images": True,  # Keep true for layout realism
         "output_dir": "services/ai_blogger/output",
         "max_images_total": args.count * 50

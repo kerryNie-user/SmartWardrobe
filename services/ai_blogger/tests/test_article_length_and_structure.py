@@ -3,7 +3,7 @@ from services.ai_blogger.chain_runner import PromptChainRunner
 
 def test_article_has_min_10_paragraphs_and_sections():
     runner = PromptChainRunner(prompts_dir="services/ai_blogger_new/prompts")
-    result = runner.run_chain(raw_topic="测试选题", llm_provider="mock")
+    result = runner.run_chain(raw_topic="测试选题")
 
     paragraphs = result.get("paragraphs", [])
     assert len(paragraphs) >= 10
@@ -15,7 +15,7 @@ def test_article_has_min_10_paragraphs_and_sections():
 
 def test_each_paragraph_has_min_length_and_layout_contract():
     runner = PromptChainRunner(prompts_dir="services/ai_blogger_new/prompts")
-    result = runner.run_chain(raw_topic="测试选题", llm_provider="mock")
+    result = runner.run_chain(raw_topic="测试选题")
 
     for p in result.get("paragraphs", []):
         assert isinstance(p.get("text"), str)
