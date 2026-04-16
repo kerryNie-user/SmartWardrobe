@@ -2,49 +2,63 @@ import feedparser
 import re
 import ssl
 
-def get_latest_trends(config):
-    """
-    Fetches the latest fashion news/trends from configured RSS feeds.
-    """
-    if hasattr(ssl, '_create_unverified_context'):
+def scrape_feed(feed_url: str) -> list[dict]:
+    if hasattr(ssl, "_create_unverified_context"):
         ssl._create_default_https_context = ssl._create_unverified_context
 
+    feed = feedparser.parse(feed_url)
+    source = feed.feed.get("title", feed_url)
+    results = []
+
+    for entry in feed.entries[:3]:
+        image_urls = []
+
+        if hasattr(entry, "media_content") and entry.media_content:
+            for media in entry.media_content:
+                url = media.get("url")
+                if url:
+                    image_urls.append(url)
+
+        if hasattr(entry, "enclosures") and entry.enclosures:
+            for enclosure in entry.enclosures:
+                if enclosure.get("type", "").startswith("image/"):
+                    url = enclosure.get("href") or enclosure.get("url")
+                    if url:
+                        image_urls.append(url)
+
+        summary = entry.get("summary", "")
+        if summary:
+            image_urls.extend(re.findall(r'<img[^>]+src=["\'](.*?)["\']', summary, re.IGNORECASE))
+
+        unique_image_urls = []
+        for url in image_urls:
+            if url and url not in unique_image_urls:
+                unique_image_urls.append(url)
+
+        clean_summary = re.sub(r"<[^>]+>", "", summary).strip()
+
+        results.append(
+            {
+                "title": entry.get("title", ""),
+                "link": entry.get("link", ""),
+                "summary": clean_summary,
+                "source": source,
+                "image_urls": unique_image_urls,
+                "image_url": unique_image_urls[0] if unique_image_urls else None,
+            }
+        )
+
+    return results
+
+
+def get_latest_trends(config) -> list[dict]:
     trends = []
     feeds = config.get("rss_feeds", [])
-    
+
     for feed_url in feeds:
         try:
-            feed = feedparser.parse(feed_url)
-            # Limit to top 3 articles per feed to avoid context window explosion
-            for entry in feed.entries[:3]:
-                image_url = None
-                
-                # 1. Try to get image from media_content or enclosures
-                if hasattr(entry, 'media_content') and entry.media_content:
-                    image_url = entry.media_content[0].get('url')
-                elif hasattr(entry, 'enclosures') and entry.enclosures:
-                    for enclosure in entry.enclosures:
-                        if enclosure.get('type', '').startswith('image/'):
-                            image_url = enclosure.get('href')
-                            break
-                
-                # 2. Fallback: Parse <img> tag from summary using regex
-                summary = entry.get("summary", "")
-                if not image_url and summary:
-                    img_match = re.search(r'<img[^>]+src=["\'](.*?)["\']', summary, re.IGNORECASE)
-                    if img_match:
-                        image_url = img_match.group(1)
-                
-                # 3. Clean summary: Remove HTML tags for the text summary
-                clean_summary = re.sub(r'<[^>]+>', '', summary).strip()
-                
-                trends.append({
-                    "title": entry.get("title", ""),
-                    "summary": clean_summary,
-                    "source": feed.feed.get("title", feed_url),
-                    "image_url": image_url
-                })
+            trends.extend(scrape_feed(feed_url))
         except Exception as e:
             print(f"Error fetching feed {feed_url}: {e}")
-            
+
     return trends

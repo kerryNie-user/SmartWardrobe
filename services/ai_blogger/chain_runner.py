@@ -99,7 +99,7 @@ class PromptChainRunner:
         angle_input = f"Topic: {raw_topic}"
         if seed_material:
             logging.info("Injecting real news seed material into Phase 1...")
-            angle_input += f"\n\nContext/Source: {seed_material.get('source', '')}\nSummary: {seed_material.get('summary', '')}"
+            angle_input += f"\n\nContext/Source: {seed_material.get('source', '')}\nLink: {seed_material.get('link', '')}\nSummary: {seed_material.get('summary', '')}"
             angle_input += "\n\nCRITICAL INSTRUCTION: You must base your angle and thesis strictly on the real news context provided above. Do not invent unrelated stories."
         
         # Step 1: Angle Generation
@@ -109,10 +109,13 @@ class PromptChainRunner:
             user_input=angle_input,
             phase="1"
         )
-        
-        # Save real image URL into angle metadata if available, so it can be passed down
-        if seed_material and seed_material.get("image_url"):
-            angle_result["_real_image_url"] = seed_material["image_url"]
+
+        real_image_urls = []
+        if seed_material:
+            if seed_material.get("image_urls"):
+                real_image_urls = list(seed_material.get("image_urls") or [])
+            elif seed_material.get("image_url"):
+                real_image_urls = [seed_material.get("image_url")]
             
         # Step 2: Outline & Visual Strategy
         logging.info("Executing Phase 2: Structural Outline & Image Queries...")
@@ -132,15 +135,25 @@ class PromptChainRunner:
             phase="3"
         )
         
-        # Assemble final artifact
-        # Restore real image url to the final output if present
-        if "_real_image_url" in outline_result:
-            final_post["_real_image_url"] = outline_result["_real_image_url"]
-            # Inject real image into the first paragraph that requires an image
-            for p in final_post.get("paragraphs", []):
-                if p.get("image_queries"):
-                    p["image_queries"] = [{"_direct_url": outline_result["_real_image_url"], "search_keyword": "REAL_NEWS_IMAGE"}]
-                    break
+        if real_image_urls:
+            queue = list(real_image_urls)
+            for i, p in enumerate(final_post.get("paragraphs", [])):
+                queries = p.get("image_queries", [])
+                     
+                if not queries or not queue:
+                    continue
+                new_queries = []
+                for q in queries:
+                    if not queue:
+                        new_queries.append(q)
+                        continue
+                    if isinstance(q, dict):
+                        q2 = dict(q)
+                        q2["_direct_url"] = queue.pop(0)
+                        new_queries.append(q2)
+                    else:
+                        new_queries.append({"search_keyword": str(q), "_direct_url": queue.pop(0)})
+                p["image_queries"] = new_queries
                     
         return {
             "metadata": angle_result,
@@ -157,13 +170,14 @@ class PromptChainRunner:
             from services.ai_blogger.llm_client import UniversalLLMClient
             self._llm_client = UniversalLLMClient()
             
+        enable_search = self.profile_name == "fashion_news"
+        
         if phase == "1":
-            # Phase 1: Direct LLM Call
-            return self._llm_client.generate_json(system_prompt, user_input)
+            return self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
             
         if phase == "2":
             # Phase 2: Call LLM for outline, then validate layouts
-            outline_response = self._llm_client.generate_json(system_prompt, user_input)
+            outline_response = self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
             
             angle = json.loads(user_input)
             style_en = angle.get("style_en", "street style")
@@ -218,7 +232,7 @@ class PromptChainRunner:
             draft_paras = []
             
             for attempt in range(2):
-                draft_response = self._llm_client.generate_json(system_prompt, user_input)
+                draft_response = self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
                 draft_paras = draft_response.get("paragraphs", [])
                 if len(draft_paras) >= len(outline_paras):
                     break

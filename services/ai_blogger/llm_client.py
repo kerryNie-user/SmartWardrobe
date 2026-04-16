@@ -33,7 +33,7 @@ class UniversalLLMClient:
         """Clears the conversation history."""
         self.history = []
 
-    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False) -> dict:
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
         """
         Sends a request to the LLM and strictly expects a JSON object back.
         If use_memory is True, the system will append to self.history and send the full history.
@@ -65,16 +65,22 @@ class UniversalLLMClient:
             "temperature": 0.7
         }
         
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+        
         # Only some models support response_format strict json
         if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
             payload["response_format"] = {"type": "json_object"}
         
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-        
         max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
         for attempt in range(max_retries):
             try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
                 with urllib.request.urlopen(req, timeout=120) as response:
                     response_text = response.read().decode('utf-8')
                     try:
@@ -110,6 +116,9 @@ class UniversalLLMClient:
             except urllib.error.HTTPError as e:
                 error_body = e.read().decode('utf-8')
                 logging.error(f"LLM API HTTPError {e.code}: {error_body}")
+                if allow_search and e.code in (400, 422):
+                    allow_search = False
+                    continue
                 if attempt == max_retries - 1:
                     raise RuntimeError(f"LLM API Error: {e.code} - {error_body}")
             except Exception as e:

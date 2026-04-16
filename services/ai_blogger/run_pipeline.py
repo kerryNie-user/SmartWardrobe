@@ -60,7 +60,11 @@ class ImageTracker:
             if direct_url:
                 candidates = [{"original_url": direct_url, "source_type": "News RSS", "search_query": search_q or "REAL_NEWS_IMAGE"}]
             else:
-                candidates = get_image_candidates(search_q, current_img_config, per_page=3)
+                is_hero = (layout_name == "hero_full_bleed" or p_idx == 0)
+                if is_hero:
+                    current_img_config["image_size"] = "landscape_16_9"
+                    
+                candidates = get_image_candidates(search_q, current_img_config, per_page=3, force_ai=False)
             headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
             local_img_filename = f"chain_{idx}_img_{p_idx + 1}_{abs(hash(search_q or direct_url)) % 10000}.jpg"
             local_img_path = os.path.join(self.images_dir, local_img_filename)
@@ -200,7 +204,8 @@ def run_batch(config: dict) -> dict:
             seed_materials.append({
                 "source": t["source"],
                 "summary": t["summary"],
-                "image_url": t["image_url"]
+                "link": t.get("link", ""),
+                "image_urls": t.get("image_urls", []) or ([t["image_url"]] if t.get("image_url") else [])
             })
             
         if not generated_titles:
