@@ -167,9 +167,16 @@ def run_batch(config: dict) -> dict:
     generated_titles = []
     if llm_client:
         logging.info("Autonomously generating blog topics via LLM...")
-        prompt = f"Please brainstorm {count} highly creative, editorial-style fashion blog post titles in Chinese. They should sound like Vogue or GQ editorials (e.g., '复古围巾的情绪价值：格纹如何制造记忆感'). Return a JSON object with a 'titles' array containing strings."
+        topic_agent_path = os.path.join(os.path.dirname(__file__), "agents", "@agent_topic_generator.md")
+        system_prompt = "You are an elite fashion editor."
+        user_prompt = f"Please brainstorm {count} highly creative, editorial-style fashion blog post titles in Chinese. They should sound like Vogue or GQ editorials (e.g., '复古围巾的情绪价值：格纹如何制造记忆感'). Return a JSON object with a 'titles' array containing strings."
+        
+        if os.path.exists(topic_agent_path):
+            with open(topic_agent_path, "r", encoding="utf-8") as f:
+                user_prompt = f.read().replace("{count}", str(count))
+                
         try:
-            res = llm_client.generate_json("You are an elite fashion editor.", prompt)
+            res = llm_client.generate_json(system_prompt, user_prompt)
             generated_titles = res.get("titles", [])
             if len(generated_titles) > count:
                 generated_titles = generated_titles[:count]
