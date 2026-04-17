@@ -66,7 +66,8 @@ class UniversalLLMClient:
         }
         
         if enable_search and "qwen" in self.model.lower():
-            payload["enable_search"] = True
+            # Will be added inside the retry loop so we can disable it on error
+            pass
         
         # Only some models support response_format strict json
         if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
@@ -77,8 +78,9 @@ class UniversalLLMClient:
         for attempt in range(max_retries):
             try:
                 payload_local = dict(payload)
-                if not allow_search:
-                    payload_local.pop("enable_search", None)
+                if allow_search:
+                    payload_local["enable_search"] = True
+                
                 data = json.dumps(payload_local).encode("utf-8")
                 req = urllib.request.Request(url, data=data, headers=headers, method="POST")
                 with urllib.request.urlopen(req, timeout=120) as response:
@@ -113,9 +115,20 @@ class UniversalLLMClient:
                         # Sometimes LLM truncates the JSON. We could try a very basic recovery, but for now just fail.
                         raise ValueError(f"Failed to parse JSON from LLM response: {content}")
                         
+            except ValueError as ve:
+                logging.error(f"JSON Parse Error (attempt {attempt + 1}/{max_retries}): {ve}")
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"LLM response JSON parsing completely failed: {ve}")
+                
             except urllib.error.HTTPError as e:
                 error_body = e.read().decode('utf-8')
                 logging.error(f"LLM API HTTPError {e.code}: {error_body}")
+                
+                # Token limit exceeded or rate limited
+                if e.code == 401 or e.code == 429:
+                    logging.warning("API Quota/Rate Limit hit. Pausing for 5 seconds...")
+                    time.sleep(5)
+                
                 if allow_search and e.code in (400, 422):
                     allow_search = False
                     continue

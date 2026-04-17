@@ -177,11 +177,11 @@ class PromptChainRunner:
             
         if phase == "2":
             # Phase 2: Call LLM for outline, then validate layouts
-            outline_response = self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
-            
             angle = json.loads(user_input)
             style_en = angle.get("style_en", "street style")
             angle_title = angle.get("angle_title", "Untitled")
+            
+            outline_response = self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
             
             from services.ai_blogger.layouts.registry import LayoutRegistry
             if self._layout_registry is None:

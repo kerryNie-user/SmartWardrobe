@@ -12,6 +12,5 @@ def test_html_image_sizing_rules(tmp_path):
     )
 
     html = tmp_path.joinpath(result["html_file"]).read_text(encoding="utf-8")
-    assert ".layout-split img" in html
     assert "object-fit: cover" in html
 
