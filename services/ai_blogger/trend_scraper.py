@@ -11,6 +11,19 @@ def scrape_feed(feed_url: str) -> list[dict]:
     results = []
 
     for entry in feed.entries[:3]:
+        published_at = ""
+        try:
+            from datetime import datetime
+            ts = None
+            if hasattr(entry, "published_parsed") and entry.published_parsed:
+                ts = entry.published_parsed
+            elif hasattr(entry, "updated_parsed") and entry.updated_parsed:
+                ts = entry.updated_parsed
+            if ts:
+                published_at = datetime(*ts[:6]).date().isoformat()
+        except Exception:
+            published_at = ""
+
         image_urls = []
 
         if hasattr(entry, "media_content") and entry.media_content:
@@ -43,6 +56,7 @@ def scrape_feed(feed_url: str) -> list[dict]:
                 "link": entry.get("link", ""),
                 "summary": clean_summary,
                 "source": source,
+                "published_at": published_at,
                 "image_urls": unique_image_urls,
                 "image_url": unique_image_urls[0] if unique_image_urls else None,
             }

@@ -4,6 +4,7 @@ import random
 import requests
 import re
 import os
+import json
 
 logging.basicConfig(level=logging.INFO)
 
@@ -74,40 +75,59 @@ def get_pexels_candidates(query: str, per_page: int = 5) -> list[str]:
         logging.warning(f"Pexels Scrape Failed for '{query}': {e}")
     return []
 
-def get_ddgs_candidates(query: str, per_page: int = 5) -> list[str]:
+def get_bing_candidates(query: str, per_page: int = 5) -> list[str]:
     """
-    使用 DuckDuckGo 搜索真实图片，并通过去重和随机抽样提高多样性。
+    使用 Bing 搜索真实图片，并通过去重和随机抽样提高多样性。
+    包含视角关键词轮换和基于图片域名的去重逻辑。
     """
-    try:
-        from duckduckgo_search import DDGS
-        from urllib.parse import urlparse
-    except ImportError:
-        logging.warning("duckduckgo_search package is not installed. Falling back to other sources.")
-        return []
+    import urllib.parse
+    from urllib.parse import urlparse
+    import time
+    import json
 
     # 策略 1: 视角关键词轮换 (打破默认聚合逻辑)
     perspectives = ["", " backstage", " close-up details", " runway full body", " street style"]
     enhanced_query = f"{query}{random.choice(perspectives)}"
-    logging.info(f"DDGS Search Query: {enhanced_query}")
+    logging.info(f"Bing Search Query: {enhanced_query}")
     
-    # 策略 2: 扩大请求基数 (例如需要 5 张，请求 25 张来供筛选)
+    # 策略 2: 扩大请求基数来供筛选
     fetch_count = per_page * 5 
     extracted_images = []
     seen_domains = set()
     
-    try:
-        with DDGS() as ddgs:
-            results = ddgs.images(
-                keywords=enhanced_query,
-                region="wt-wt",
-                safesearch="moderate",
-                size="Large",         # 确保是高清大图
-                type="photo",         # 限制为真实照片，过滤插画
-                max_results=fetch_count,
-            )
+    user_agents = [
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+    ]
+    
+    url = f"https://www.bing.com/images/search?q={urllib.parse.quote(enhanced_query)}"
+    
+    max_retries = 3
+    for attempt in range(max_retries):
+        headers = {
+            "User-Agent": random.choice(user_agents),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5"
+        }
+        try:
+            res = requests.get(url, headers=headers, timeout=15)
+            res.raise_for_status()
             
-            # 策略 3: 随机打乱结果顺序，避免永远只拿排名最靠前的
-            results_list = list(results)
+            matches = re.findall(r'm="({[^}]*})"', res.text)
+            results_list = []
+            for m in matches:
+                try:
+                    clean_m = m.replace('&quot;', '"')
+                    data = json.loads(clean_m)
+                    if "murl" in data:
+                        img_url = data["murl"].replace('&amp;', '&')
+                        source_url = data.get("purl", "")
+                        results_list.append({"image": img_url, "source": source_url})
+                except Exception:
+                    continue
+                    
+            # 策略 3: 随机打乱结果顺序
             random.shuffle(results_list)
             
             for item in results_list:
@@ -115,11 +135,11 @@ def get_ddgs_candidates(query: str, per_page: int = 5) -> list[str]:
                     break
                     
                 img_url = item.get("image")
-                source_url = item.get("url") or item.get("source") or ""
+                source_url = item.get("source", "")
                 
-                # 策略 4: 基于图片域名去重 (例如过滤掉同场同机位的 GettyImages 连拍)
+                # 策略 4: 基于图片域名去重
                 img_domain = urlparse(img_url).netloc.lower().replace("www.", "")
-                source_domain = urlparse(source_url).netloc.lower().replace("www.", "")
+                source_domain = urlparse(source_url).netloc.lower().replace("www.", "") if source_url else ""
                 
                 if img_domain in seen_domains or (source_domain and source_domain in seen_domains):
                     continue
@@ -130,11 +150,15 @@ def get_ddgs_candidates(query: str, per_page: int = 5) -> list[str]:
                     
                 extracted_images.append(img_url)
                 
-        return extracted_images
-        
-    except Exception as e:
-        logging.warning(f"DDGS Request Failed for '{enhanced_query}': {e}")
-        return []
+            if extracted_images:
+                return extracted_images
+                
+        except Exception as e:
+            logging.warning(f"Bing Request Failed for '{enhanced_query}' (Attempt {attempt+1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(random.uniform(1, 3))
+                
+    return extracted_images
 
 def get_image_candidates(query: str, config: dict, per_page: int = 5, force_ai: bool = False) -> list[dict]:
     """
@@ -147,26 +171,27 @@ def get_image_candidates(query: str, config: dict, per_page: int = 5, force_ai: 
     candidates = []
     
     if not force_ai:
-        # 0. DDGS (Highest priority for real event/news photos)
-        ddgs_urls = get_ddgs_candidates(q, per_page=per_page)
-        for url in ddgs_urls:
-            candidates.append({"source_type": "ddgs", "original_url": url, "search_query": q})
-            
-        remaining_slots = per_page - len(ddgs_urls)
+        remaining_slots = per_page
         
+        # 1. The Met (Highest priority for historical/artistic queries)
+        if any(kw in q.lower() for kw in ["vintage", "history", "art", "retro"]):
+            met_url = get_image_from_met(q)
+            if met_url:
+                candidates.append({"source_type": "met", "original_url": met_url, "search_query": q})
+                remaining_slots -= 1
+                
+        # 2. Bing Search (For real event/news/runway photos)
         if remaining_slots > 0:
-            # 1. The Met Fallback for historical/artistic queries
-            if any(kw in q.lower() for kw in ["vintage", "history", "art", "retro"]):
-                met_url = get_image_from_met(q)
-                if met_url:
-                    candidates.append({"source_type": "met", "original_url": met_url, "search_query": q})
-                    remaining_slots -= 1
-    
-            # 2. Pexels search (General high-quality stock photography)
-            if remaining_slots > 0:
-                pexels_urls = get_pexels_candidates(q, per_page=remaining_slots)
-                for url in pexels_urls:
-                    candidates.append({"source_type": "pexels", "original_url": url, "search_query": q})
+            bing_urls = get_bing_candidates(q, per_page=remaining_slots)
+            for url in bing_urls:
+                candidates.append({"source_type": "bing", "original_url": url, "search_query": q})
+            remaining_slots -= len(bing_urls)
+        
+        # 3. Pexels search (Fallback for general high-quality stock photography)
+        if remaining_slots > 0:
+            pexels_urls = get_pexels_candidates(q, per_page=remaining_slots)
+            for url in pexels_urls:
+                candidates.append({"source_type": "pexels", "original_url": url, "search_query": q})
     
     # 3. Trae AI Fallbacks (Guaranteed to return an image, but generated)
     image_size = config.get("image_size", "portrait_4_3")

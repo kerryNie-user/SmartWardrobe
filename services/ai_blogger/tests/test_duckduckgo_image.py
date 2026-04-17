@@ -1,4 +1,7 @@
-from duckduckgo_search import DDGS
+try:
+    from duckduckgo_search import DDGS
+except ImportError:
+    DDGS = None
 import json
 
 def test_duckduckgo_image_search(query: str, max_results: int = 5):
@@ -9,6 +12,9 @@ def test_duckduckgo_image_search(query: str, max_results: int = 5):
     
     extracted_images = []
     try:
+        if DDGS is None:
+            print("duckduckgo_search package is not installed.")
+            return []
         with DDGS() as ddgs:
             # 搜索图片，限制为高清大图 (Large)
             results = ddgs.images(

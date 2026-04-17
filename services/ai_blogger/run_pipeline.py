@@ -188,16 +188,73 @@ def run_batch(config: dict) -> dict:
     seed_materials = []
     
     if profile_name == "fashion_news":
-        logging.info("Profile 'fashion_news' selected. Scraping real news from RSS feeds instead of LLM brainstorming...")
+        logging.info("Profile 'fashion_news' selected. Scouting latest news via LLM web search...")
+        news_scout_path = os.path.join(os.path.dirname(__file__), "agents", "@agent_news_scout.md")
+        system_prompt = "You are a senior fashion journalist and editor."
+        user_prompt = f"Search the web for the latest fashion news within the last 7 days and return {count} items as JSON. Each item must include title, summary, source, link, published_at."
+        if os.path.exists(news_scout_path):
+            with open(news_scout_path, "r", encoding="utf-8") as f:
+                user_prompt = f.read().replace("{count}", str(count))
+        try:
+            res = llm_client.generate_json(system_prompt, user_prompt, enable_search=True)
+            from datetime import datetime, timedelta
+            now = datetime.now().date()
+            cutoff = now - timedelta(days=7)
+            for item in res.get("news", []):
+                if len(generated_titles) >= count:
+                    break
+                published_at = str(item.get("published_at", "") or "").strip()
+                keep = False
+                if published_at:
+                    try:
+                        d = datetime.fromisoformat(published_at).date()
+                        keep = d >= cutoff
+                    except Exception:
+                        keep = False
+                title_val = str(item.get("title", "") or "")
+                if not keep and any(y in title_val for y in ["2020", "2021", "2022", "2023", "2024", "2025"]):
+                    keep = False
+                if not keep:
+                    continue
+
+                generated_titles.append(title_val or "最新时尚新闻")
+                seed_materials.append({
+                    "source": item.get("source", "Web Search"),
+                    "summary": item.get("summary", ""),
+                    "link": item.get("link", ""),
+                    "published_at": published_at,
+                    "image_urls": []
+                })
+        except Exception as e:
+            logging.error(f"Failed to scout latest news via LLM search: {e}")
+        
+        if generated_titles:
+            logging.info(f"LLM news scout returned {len(generated_titles)} items. Skipping RSS scraping.")
+        else:
+            logging.warning("LLM news scout returned empty results. Falling back to RSS scraping...")
+        
+    if profile_name == "fashion_news" and not generated_titles:
+        logging.info("Falling back to RSS scraping for fashion_news...")
         from services.ai_blogger.trend_scraper import get_latest_trends
         from services.ai_blogger.utils.config import load_config
         
         config_data = load_config()
         trends = get_latest_trends(config_data)
         
+        from datetime import datetime, timedelta
+        now = datetime.now().date()
+        cutoff = now - timedelta(days=7)
         for t in trends:
             if len(generated_titles) >= count:
                 break
+            published_at = str(t.get("published_at", "") or "").strip()
+            if published_at:
+                try:
+                    d = datetime.fromisoformat(published_at).date()
+                    if d < cutoff:
+                        continue
+                except Exception:
+                    pass
             # Use real news title
             generated_titles.append(t["title"])
             # Save real news context and image for later injection
@@ -205,6 +262,7 @@ def run_batch(config: dict) -> dict:
                 "source": t["source"],
                 "summary": t["summary"],
                 "link": t.get("link", ""),
+                "published_at": published_at,
                 "image_urls": t.get("image_urls", []) or ([t["image_url"]] if t.get("image_url") else [])
             })
             

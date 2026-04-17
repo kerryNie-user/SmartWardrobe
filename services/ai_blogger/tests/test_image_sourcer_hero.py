@@ -5,10 +5,12 @@ from services.ai_blogger.image_sourcer import get_image_candidates
 class TestImageSourcerHeroPoster(unittest.TestCase):
     @patch('services.ai_blogger.image_sourcer.get_pexels_candidates')
     @patch('services.ai_blogger.image_sourcer.get_image_from_met')
-    def test_force_ai_skips_real_sources(self, mock_met, mock_pexels):
+    @patch('services.ai_blogger.image_sourcer.get_bing_candidates')
+    def test_force_ai_skips_real_sources(self, mock_bing, mock_met, mock_pexels):
         # Setup mocks to return valid data if they were called
         mock_met.return_value = "http://met.com/art.jpg"
         mock_pexels.return_value = ["http://pexels.com/photo.jpg"]
+        mock_bing.return_value = ["http://bing.com/photo.jpg"]
         
         # Call with force_ai=True
         candidates = get_image_candidates(
@@ -21,6 +23,7 @@ class TestImageSourcerHeroPoster(unittest.TestCase):
         # Verify that real sources were NOT called
         self.assertFalse(mock_met.called, "Met API should not be called when force_ai is True")
         self.assertFalse(mock_pexels.called, "Pexels API should not be called when force_ai is True")
+        self.assertFalse(mock_bing.called, "Bing should not be called when force_ai is True")
         
         # Verify that we still got candidates (from AI fallback)
         self.assertGreater(len(candidates), 0, "Should return AI generated candidates")

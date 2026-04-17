@@ -1,0 +1,28 @@
+On branch ai_blogger
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   services/ai_blogger/image_sourcer.py
+	modified:   services/ai_blogger/run_pipeline.py
+	modified:   services/ai_blogger/tests/test_duckduckgo_image.py
+	deleted:    services/ai_blogger/tests/test_image_sourcer_ddgs.py
+	modified:   services/ai_blogger/tests/test_image_sourcer_hero.py
+	modified:   services/ai_blogger/trend_scraper.py
+	modified:   services/ai_blogger/utils/config.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	do_commit.sh
+	git_status.txt
+	pytest_out.txt
+	services/ai_blogger/agents/@agent_news_scout.md
+	services/ai_blogger/output_test/
+	services/ai_blogger/tests/test_image_sourcer_bing.py
+	services/ai_blogger/tests/test_latest_news_scout.py
+	test_all_out.txt
+	test_bing_scraper.py
+	test_out.txt
+	test_output/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+

@@ -11,8 +11,9 @@ def load_config(config_path="services/ai_blogger/config.json"):
         "image_provider": "unsplash_source",
         "output_dir": "services/ai_blogger/output",
         "rss_feeds": [
-            "https://www.vogue.com/feed/fashion",
-            "https://www.gq.com/feed/style"
+            "https://news.google.com/rss/search?q=haute%20couture%20OR%20fashion%20week%20OR%20runway%20show&hl=en-US&gl=US&ceid=US:en",
+            "https://news.google.com/rss/search?q=creative%20director%20fashion%20brand%20OR%20luxury%20brand%20announcement&hl=en-US&gl=US&ceid=US:en",
+            "https://news.google.com/rss/search?q=Dior%20OR%20Chanel%20OR%20Valentino%20OR%20Prada%20fashion%20news&hl=en-US&gl=US&ceid=US:en"
         ]
     }
     
