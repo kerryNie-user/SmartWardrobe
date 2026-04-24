@@ -27,6 +27,762 @@
     }
   },
   "schedules": {},
-  "favorites": {},
-  "wardrobe": {}
+  "favorites": {
+    "user-096fb511f3ff": {
+      "looks": [],
+      "posts": [
+        {
+          "id": "brutalist-basics",
+          "title": "现代制服：粗野主义基础款",
+          "subtitle": "ELIAS.VAULT · 2小时前",
+          "image": "./images/shared/travel-look.jpg",
+          "href": "post-detail.html?id=brutalist-basics",
+          "savedAt": 1776337101962
+        }
+      ]
+    }
+  },
+  "wardrobe": {},
+  "discoverySocial": {
+    "user-096fb511f3ff": {
+      "posts": {
+        "brutalist-basics": {
+          "likedByUser": true
+        }
+      },
+      "authors": {
+        "ELIAS.VAULT": {
+          "followedByUser": true
+        }
+      }
+    }
+  },
+  "discoveryComments": {
+    "user-096fb511f3ff": {
+      "posts": {
+        "brutalist-basics": [
+          {
+            "id": "comment-023102412473",
+            "author": "你",
+            "time": "刚刚",
+            "body": "browser-button-check-20260424"
+          },
+          {
+            "id": "comment-3b91ede9ef83",
+            "author": "你",
+            "time": "刚刚",
+            "body": "hi"
+          }
+        ]
+      }
+    }
+  },
+  "discoveryContent": {
+    "en-US": {
+      "tabs": [
+        {
+          "key": "hotspots",
+          "label": "Fashion Hotspots",
+          "active": true
+        },
+        {
+          "key": "posts",
+          "label": "Posts",
+          "active": false
+        }
+      ],
+      "hotspotTrendStrip": {
+        "eyebrow": "Seasonal Intelligence",
+        "title": "The Global Edit",
+        "action": "View All",
+        "items": [
+          {
+            "id": "copenhagen-minimalist",
+            "tag": "International Styling Analysis",
+            "title": "The Copenhagen Minimalist Phenomenon",
+            "description": "A cleaner study of quiet tailoring, softened monochrome, and directional silhouettes across Scandinavia.",
+            "image": "./images/shared/copenhagen-minimalist.jpg"
+          },
+          {
+            "id": "parisian-tweed",
+            "tag": "Fashion Week Trends",
+            "title": "Parisian Streets: The Rebirth of Tweed",
+            "description": "Sharper proportion, tactile heritage fabric, and elevated restraint define the current Paris mood.",
+            "image": "./images/shared/editorial-look-01.jpg"
+          }
+        ]
+      },
+      "postTrendStrip": {
+        "eyebrow": "Community Signals",
+        "title": "Runway Analysis",
+        "action": "Refresh",
+        "items": [
+          {
+            "id": "deconstructed-blazer",
+            "tag": "SS24 / Paris",
+            "title": "The Deconstructed Blazer",
+            "description": "Fluid tailoring and broken lines continue to overtake rigid executive dressing.",
+            "image": "./images/shared/copenhagen-minimalist.jpg"
+          },
+          {
+            "id": "sustainable-silk",
+            "tag": "Materiality",
+            "title": "Sustainable Silk Synthetics",
+            "description": "Biotech textiles are redefining luxury hand-feel without losing performance.",
+            "image": "./images/shared/editorial-look-02.jpg"
+          }
+        ]
+      },
+      "hotspotStories": [
+        {
+          "id": "seoul-structure",
+          "tag": "Hotspot: Seoul",
+          "meta": "Architectural Tailoring",
+          "title": "Structural Silhouettes in Urban Landscapes",
+          "description": "Seoul designers sharpen executive dressing through sculpted shoulders, technical textiles, and metropolitan precision.",
+          "image": "./images/shared/editorial-look-02.jpg"
+        },
+        {
+          "id": "monochrome-saturation",
+          "tag": "Trend Report",
+          "meta": "Tokyo Shift",
+          "title": "The Monochrome Saturation",
+          "description": "Single-hue dressing continues to dominate city wardrobes with confidence, clarity, and graphic impact.",
+          "image": "./images/discovery/monochrome-saturation.jpg"
+        },
+        {
+          "id": "milan-leather",
+          "tag": "Hotspot: Milan",
+          "meta": "Craft Focus",
+          "title": "Leather Craftsmanship 2.0",
+          "description": "Lombardy ateliers merge artisanal finishing and sustainable material innovation into a sharper luxury code.",
+          "image": "./images/shared/leather-craft-fabric.jpg"
+        }
+      ],
+      "communityPosts": [
+        {
+          "id": "brutalist-basics",
+          "author": "ELIAS.VAULT",
+          "time": "2H AGO",
+          "title": "The Modern Uniform: Brutalist Basics",
+          "description": "Heavy wool against technical silk creates a silhouette that feels grounded, controlled, and editorial without excess.",
+          "stats": {
+            "likes": "1.2K",
+            "comments": "84"
+          },
+          "heroImage": "./images/shared/travel-look.jpg",
+          "body": [
+            "This season marks a return to structure. The deconstructed blazer becomes the anchor of a sharper silhouette that claims space instead of apologizing for it.",
+            "Exposed construction, heavier cloth, and controlled drape turn the look into a study of intention. It is less about volume and more about architectural presence."
+          ],
+          "tags": [
+            "Minimalist",
+            "Urban Tailoring",
+            "SS24"
+          ],
+          "comments": [
+            {
+              "author": "Julian_K",
+              "time": "1H AGO",
+              "body": "The silhouette is incredible. It feels like wearing architecture."
+            },
+            {
+              "author": "Nova_Studio",
+              "time": "45M AGO",
+              "body": "Is this from the new archive drop? The lapel stitching looks extremely distinct."
+            }
+          ],
+          "images": [
+            "./images/shared/travel-look.jpg",
+            "./images/discovery/brutalist-basics-02.jpg"
+          ]
+        },
+        {
+          "id": "structural-silk",
+          "author": "STUDIO_NOIR",
+          "time": "5H AGO",
+          "title": "Shadow Play & Structural Silk",
+          "description": "Function-led eveningwear turns every seam into geometry and every fold into motion for the next limited drop.",
+          "stats": {
+            "likes": "2.5K",
+            "comments": "142"
+          },
+          "heroImage": "./images/shared/editorial-look-01.jpg",
+          "body": [
+            "Evening dressing is shifting toward utility-led elegance. Every seam is drafted to describe movement rather than decoration.",
+            "The result is a quieter glamour: controlled shine, sharp folds, and a body line that feels engineered instead of embellished."
+          ],
+          "tags": [
+            "Eveningwear",
+            "Material Study",
+            "Drop Notes"
+          ],
+          "comments": [
+            {
+              "author": "Atelier_67",
+              "time": "2H AGO",
+              "body": "The construction feels technical without losing softness."
+            },
+            {
+              "author": "Lune_Form",
+              "time": "52M AGO",
+              "body": "Would love to see the back view of this drape."
+            }
+          ],
+          "images": [
+            "./images/shared/editorial-look-01.jpg"
+          ]
+        }
+      ],
+      "searchPlaceholder": {
+        "hotspots": "HOT SEARCHES · TOKYO · TAILORING · CITY EDITS",
+        "posts": "HOT SEARCHES · ARCHIVES · TREND NOTES"
+      }
+    },
+    "zh-CN": {
+      "tabs": [
+        {
+          "key": "hotspots",
+          "label": "热点趋势",
+          "active": true
+        },
+        {
+          "key": "posts",
+          "label": "帖子",
+          "active": false
+        }
+      ],
+      "hotspotTrendStrip": {
+        "eyebrow": "季节情报",
+        "title": "全球选集",
+        "action": "查看全部",
+        "items": [
+          {
+            "id": "copenhagen-minimalist",
+            "tag": "国际风格观察",
+            "title": "哥本哈根极简现象",
+            "description": "从北欧城市中提炼更安静的剪裁、柔化的同色层次与方向感轮廓。",
+            "image": "./images/shared/copenhagen-minimalist.jpg"
+          },
+          {
+            "id": "parisian-tweed",
+            "tag": "时装周趋势",
+            "title": "巴黎街头：粗花呢回归",
+            "description": "更利落的比例、带触感的传统面料与克制高级感定义当下巴黎气氛。",
+            "image": "./images/shared/editorial-look-01.jpg"
+          }
+        ]
+      },
+      "postTrendStrip": {
+        "eyebrow": "社区信号",
+        "title": "秀场解析",
+        "action": "刷新",
+        "items": [
+          {
+            "id": "deconstructed-blazer",
+            "tag": "SS24 / 巴黎",
+            "title": "解构西装外套",
+            "description": "流动剪裁和断裂线条正在取代僵硬的传统通勤正装。",
+            "image": "./images/shared/copenhagen-minimalist.jpg"
+          },
+          {
+            "id": "sustainable-silk",
+            "tag": "材质研究",
+            "title": "可持续丝感合成材",
+            "description": "生物科技面料正在重新定义兼顾性能与高级手感的奢华体验。",
+            "image": "./images/shared/editorial-look-02.jpg"
+          }
+        ]
+      },
+      "hotspotStories": [
+        {
+          "id": "seoul-structure",
+          "tag": "热点：首尔",
+          "meta": "建筑感剪裁",
+          "title": "都市中的结构化轮廓",
+          "description": "首尔设计师用雕塑肩线、技术面料与都市精度重塑新一代通勤着装。",
+          "image": "./images/shared/editorial-look-02.jpg"
+        },
+        {
+          "id": "monochrome-saturation",
+          "tag": "趋势速报",
+          "meta": "东京动向",
+          "title": "单色饱和穿搭",
+          "description": "单一色系造型正以更清晰、更有图形感的方式占领城市衣橱。",
+          "image": "./images/discovery/monochrome-saturation.jpg"
+        },
+        {
+          "id": "milan-leather",
+          "tag": "热点：米兰",
+          "meta": "工艺聚焦",
+          "title": "皮革工艺 2.0",
+          "description": "伦巴第工坊正把手工收尾与可持续材质创新融合成更锐利的奢华语言。",
+          "image": "./images/shared/leather-craft-fabric.jpg"
+        }
+      ],
+      "communityPosts": [
+        {
+          "id": "brutalist-basics",
+          "author": "ELIAS.VAULT",
+          "time": "2小时前",
+          "title": "现代制服：粗野主义基础款",
+          "description": "厚羊毛与技术丝面料叠加出稳定、克制且具有编辑感的轮廓。",
+          "stats": {
+            "likes": "1.2K",
+            "comments": "84"
+          },
+          "heroImage": "./images/shared/travel-look.jpg",
+          "body": [
+            "这一季，结构感重新回到中心。解构式西装外套不再只是造型单品，而成为明确占据空间的轮廓核心。",
+            "当内里与结构被适度暴露，厚重面料与克制垂坠一起把这套造型变成一种建筑式存在，而不只是穿着。"
+          ],
+          "tags": [
+            "极简",
+            "都市剪裁",
+            "SS24"
+          ],
+          "comments": [
+            {
+              "author": "Julian_K",
+              "time": "1小时前",
+              "body": "这个轮廓太强了，像是在穿建筑。"
+            },
+            {
+              "author": "Nova_Studio",
+              "time": "45分钟前",
+              "body": "这是新档案系列吗？领驳缝线很有辨识度。"
+            }
+          ],
+          "images": [
+            "./images/shared/travel-look.jpg",
+            "./images/discovery/brutalist-basics-02.jpg"
+          ]
+        },
+        {
+          "id": "structural-silk",
+          "author": "STUDIO_NOIR",
+          "time": "5小时前",
+          "title": "阴影游戏与结构丝感",
+          "description": "功能导向的晚装让每一道缝线都变成几何，让每一道褶皱都充满运动感。",
+          "stats": {
+            "likes": "2.5K",
+            "comments": "142"
+          },
+          "heroImage": "./images/shared/editorial-look-01.jpg",
+          "body": [
+            "晚装正在转向更具功能逻辑的优雅。每一道缝线都在描述运动，而不是单纯装饰。",
+            "这种变化带来更安静的戏剧性：克制光泽、锐利褶线，以及被精确计算过的身体线条。"
+          ],
+          "tags": [
+            "晚装",
+            "材质研究",
+            "限量投放"
+          ],
+          "comments": [
+            {
+              "author": "Atelier_67",
+              "time": "2小时前",
+              "body": "结构非常技术化，但仍保留了柔和度。"
+            },
+            {
+              "author": "Lune_Form",
+              "time": "52分钟前",
+              "body": "很想看看这套背面的垂坠。"
+            }
+          ],
+          "images": [
+            "./images/shared/editorial-look-01.jpg"
+          ]
+        }
+      ],
+      "searchPlaceholder": {
+        "hotspots": "热门搜索 · 东京 · 剪裁 · 城市选集",
+        "posts": "热门搜索 · 档案 · 趋势笔记"
+      }
+    }
+  },
+  "homeContent": {
+    "en-US": {
+      "weather": {
+        "condition": "Unknown",
+        "temperature": {
+          "current": "Unknown",
+          "low": "Unknown",
+          "high": "Unknown"
+        },
+        "location": {
+          "label": "Unknown",
+          "precision": "unknown"
+        },
+        "summary": "Unknown"
+      },
+      "schedule": {
+        "label": "Upcoming Schedule",
+        "actionText": "See All",
+        "actionHref": "schedule.html",
+        "title": "Product Review",
+        "time": "10:00 AM",
+        "location": "SoHo Studio"
+      },
+      "tabs": [
+        {
+          "key": "recommend",
+          "label": "Recommend",
+          "active": true
+        },
+        {
+          "key": "featured",
+          "label": "Featured",
+          "active": false
+        }
+      ],
+      "recommendLooks": [
+        {
+          "id": "urban-commute",
+          "tag": "Daily Ritual",
+          "title": "Urban Commute",
+          "description": "Structured layering for transitional weather and a long city route.",
+          "image": "./images/shared/copenhagen-minimalist.jpg",
+          "openLabel": "Open Urban Commute",
+          "detailSerial": "Recommendation ID: CT-9001",
+          "detailTags": [
+            "City Layering",
+            "Commute Core"
+          ],
+          "breakdown": [
+            {
+              "title": "Sharp Trench",
+              "meta": "Cotton Twill • Sand",
+              "note": "Weather shield"
+            },
+            {
+              "title": "Soft Knit Shell",
+              "meta": "Merino • Stone",
+              "note": "Base warmth"
+            },
+            {
+              "title": "Structured Tote",
+              "meta": "Grain Leather • Ink",
+              "note": "Daily carry"
+            }
+          ]
+        },
+        {
+          "id": "midnight-formalism",
+          "tag": "Evening Form",
+          "title": "Midnight Formalism",
+          "description": "A disciplined monochrome line with soft tailoring and confident restraint.",
+          "image": "./images/shared/editorial-look-01.jpg",
+          "openLabel": "Open Midnight Formalism",
+          "detailSerial": "Recommendation ID: CT-9021",
+          "detailTags": [
+            "Minimalist",
+            "Autumn 24"
+          ],
+          "breakdown": [
+            {
+              "title": "Structural Blazer",
+              "meta": "Virgin Wool • Midnight Black",
+              "note": "In closet since 2023"
+            },
+            {
+              "title": "Relaxed Trousers",
+              "meta": "Technical Crepe • Slate Gray",
+              "note": "Custom tailored"
+            },
+            {
+              "title": "Chelsea Boot",
+              "meta": "Polished Calfskin • Onyx",
+              "note": "Essential staple"
+            }
+          ]
+        },
+        {
+          "id": "weekend-minimal",
+          "tag": "Off Duty",
+          "title": "Weekend Minimal",
+          "description": "Gallery-day essentials built from tactile neutrals and relaxed structure.",
+          "image": "./images/shared/editorial-look-02.jpg",
+          "openLabel": "Open Weekend Minimal",
+          "detailSerial": "Recommendation ID: CT-9044",
+          "detailTags": [
+            "Weekend Edit",
+            "Gallery Day"
+          ],
+          "breakdown": [
+            {
+              "title": "Boxy Shirt",
+              "meta": "Washed Cotton • Chalk",
+              "note": "Relaxed proportion"
+            },
+            {
+              "title": "Straight Denim",
+              "meta": "Rigid Denim • Bone",
+              "note": "Quiet structure"
+            },
+            {
+              "title": "Flat Loafer",
+              "meta": "Brushed Leather • Taupe",
+              "note": "Soft finish"
+            }
+          ]
+        }
+      ],
+      "featuredLooks": [
+        {
+          "id": "runway-analysis",
+          "tag": "Editorial Focus",
+          "title": "Runway Analysis",
+          "description": "A sharper fashion lens on deconstructed tailoring, tonal layering, and sculpted movement.",
+          "image": "./images/home/runway-analysis.jpg",
+          "openLabel": "Open Runway Analysis",
+          "detailSerial": "Recommendation ID: CT-9102",
+          "detailTags": [
+            "Editorial",
+            "Runway Study"
+          ],
+          "breakdown": [
+            {
+              "title": "Raw-Edge Jacket",
+              "meta": "Bonded Wool • Graphite",
+              "note": "Editorial anchor"
+            },
+            {
+              "title": "Fluid Skirt Pant",
+              "meta": "Matte Satin • Coal",
+              "note": "Motion contrast"
+            },
+            {
+              "title": "Square Heel Pump",
+              "meta": "Patent Leather • Black",
+              "note": "Sharper finish"
+            }
+          ]
+        },
+        {
+          "id": "atelier-notes",
+          "tag": "Material Study",
+          "title": "Atelier Notes",
+          "description": "Texture-forward curation built around wool, brushed cotton, and controlled matte shine.",
+          "image": "./images/home/atelier-notes.jpg",
+          "openLabel": "Open Atelier Notes",
+          "detailSerial": "Recommendation ID: CT-9138",
+          "detailTags": [
+            "Materiality",
+            "Studio Notes"
+          ],
+          "breakdown": [
+            {
+              "title": "Wool Overshirt",
+              "meta": "Brushed Wool • Moss",
+              "note": "Texture lead"
+            },
+            {
+              "title": "Column Trouser",
+              "meta": "Cotton Blend • Flint",
+              "note": "Studio staple"
+            },
+            {
+              "title": "Leather Belt",
+              "meta": "Vegetable Tan • Espresso",
+              "note": "Controlled contrast"
+            }
+          ]
+        }
+      ]
+    },
+    "zh-CN": {
+      "weather": {
+        "condition": "未知",
+        "temperature": {
+          "current": "未知",
+          "low": "未知",
+          "high": "未知"
+        },
+        "location": {
+          "label": "未知",
+          "precision": "unknown"
+        },
+        "summary": "未知"
+      },
+      "schedule": {
+        "label": "即将到来的日程",
+        "actionText": "查看全部",
+        "actionHref": "schedule.html",
+        "title": "产品评审",
+        "time": "10:00",
+        "location": "SoHo 工作室"
+      },
+      "tabs": [
+        {
+          "key": "recommend",
+          "label": "推荐",
+          "active": true
+        },
+        {
+          "key": "featured",
+          "label": "精选",
+          "active": false
+        }
+      ],
+      "recommendLooks": [
+        {
+          "id": "urban-commute",
+          "tag": "日常仪式",
+          "title": "都市通勤",
+          "description": "为换季天气与长距离城市移动准备的结构化叠穿方案。",
+          "image": "./images/shared/copenhagen-minimalist.jpg",
+          "openLabel": "打开 都市通勤",
+          "detailSerial": "推荐编号：CT-9001",
+          "detailTags": [
+            "城市叠穿",
+            "通勤核心"
+          ],
+          "breakdown": [
+            {
+              "title": "利落风衣",
+              "meta": "斜纹棉 • 沙色",
+              "note": "天气防护层"
+            },
+            {
+              "title": "柔软针织内搭",
+              "meta": "美丽诺羊毛 • 石色",
+              "note": "基础保暖层"
+            },
+            {
+              "title": "结构手提包",
+              "meta": "粒面皮革 • 墨色",
+              "note": "日常携带"
+            }
+          ]
+        },
+        {
+          "id": "midnight-formalism",
+          "tag": "夜间仪式",
+          "title": "午夜正装感",
+          "description": "以柔和剪裁和克制气场塑造出的纯黑秩序感。",
+          "image": "./images/shared/editorial-look-01.jpg",
+          "openLabel": "打开 午夜正装感",
+          "detailSerial": "推荐编号：CT-9021",
+          "detailTags": [
+            "极简",
+            "24秋季"
+          ],
+          "breakdown": [
+            {
+              "title": "结构西装外套",
+              "meta": "初剪羊毛 • 午夜黑",
+              "note": "2023 入柜"
+            },
+            {
+              "title": "松弛长裤",
+              "meta": "科技绉布 • 石板灰",
+              "note": "定制打版"
+            },
+            {
+              "title": "切尔西短靴",
+              "meta": "抛光小牛皮 • 缟玛瑙",
+              "note": "核心常备"
+            }
+          ]
+        },
+        {
+          "id": "weekend-minimal",
+          "tag": "休闲时刻",
+          "title": "周末极简",
+          "description": "以触感中性色和松弛结构组织出的画廊日常造型。",
+          "image": "./images/shared/editorial-look-02.jpg",
+          "openLabel": "打开 周末极简",
+          "detailSerial": "推荐编号：CT-9044",
+          "detailTags": [
+            "周末选集",
+            "画廊日"
+          ],
+          "breakdown": [
+            {
+              "title": "盒型衬衫",
+              "meta": "水洗棉 • 粉笔白",
+              "note": "松弛比例"
+            },
+            {
+              "title": "直筒牛仔裤",
+              "meta": "硬挺丹宁 • 骨白",
+              "note": "安静结构"
+            },
+            {
+              "title": "平底乐福鞋",
+              "meta": "磨砂皮革 • 浅褐",
+              "note": "柔和收尾"
+            }
+          ]
+        }
+      ],
+      "featuredLooks": [
+        {
+          "id": "runway-analysis",
+          "tag": "秀场观察",
+          "title": "秀场解析",
+          "description": "聚焦解构西装、同色层次与雕塑式流动感的时装视角。",
+          "image": "./images/home/runway-analysis.jpg",
+          "openLabel": "打开 秀场解析",
+          "detailSerial": "推荐编号：CT-9102",
+          "detailTags": [
+            "编辑视角",
+            "秀场研究"
+          ],
+          "breakdown": [
+            {
+              "title": "毛边外套",
+              "meta": "复合羊毛 • 石墨黑",
+              "note": "编辑锚点"
+            },
+            {
+              "title": "流动裙裤",
+              "meta": "哑光缎面 • 炭灰",
+              "note": "动态对比"
+            },
+            {
+              "title": "方跟高跟鞋",
+              "meta": "漆皮 • 黑色",
+              "note": "锐利收尾"
+            }
+          ]
+        },
+        {
+          "id": "atelier-notes",
+          "tag": "材质研究",
+          "title": "工坊笔记",
+          "description": "围绕羊毛、磨毛棉与克制哑光光泽搭建的材质策展。",
+          "image": "./images/home/atelier-notes.jpg",
+          "openLabel": "打开 工坊笔记",
+          "detailSerial": "推荐编号：CT-9138",
+          "detailTags": [
+            "材质性",
+            "工坊记录"
+          ],
+          "breakdown": [
+            {
+              "title": "羊毛罩衫",
+              "meta": "磨毛羊毛 • 苔绿色",
+              "note": "触感主角"
+            },
+            {
+              "title": "柱形长裤",
+              "meta": "混纺棉 • 燧石灰",
+              "note": "工坊常备"
+            },
+            {
+              "title": "皮革腰带",
+              "meta": "植鞣皮 • 深咖",
+              "note": "克制反差"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "media": {
+    "records": {},
+    "uploads": {}
+  }
 }

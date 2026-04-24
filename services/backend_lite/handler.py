@@ -1,3 +1,4 @@
+import base64
 import json
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler
@@ -45,6 +46,13 @@ def create_handler(database, directory):
             body = json.dumps(payload or {}, ensure_ascii=False).encode('utf-8')
             self.send_response(status)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def respond_bytes(self, status=200, content_type='application/octet-stream', body=b''):
+            self.send_response(status)
+            self.send_header('Content-Type', content_type)
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -122,6 +130,55 @@ def create_handler(database, directory):
                 if method == 'DELETE' and path.startswith('/api/favorites/'):
                     _, _, _, favorite_type, item_id = path.split('/', 4)
                     self.respond(200, {'favorites': database.remove_favorite(user_id, favorite_type, item_id)})
+                    return
+
+                if method == 'GET' and path == '/api/discovery/social':
+                    self.respond(200, {'social': database.get_discovery_social(user_id)})
+                    return
+                if method == 'POST' and path.startswith('/api/discovery/social/posts/') and path.endswith('/like'):
+                    segments = path.split('/')
+                    post_id = segments[5]
+                    self.respond(200, {'social': database.set_discovery_post_like(user_id, post_id, payload.get('liked'))})
+                    return
+                if method == 'POST' and path.startswith('/api/discovery/social/authors/') and path.endswith('/follow'):
+                    segments = path.split('/')
+                    author_id = segments[5]
+                    self.respond(200, {'social': database.set_discovery_author_follow(user_id, author_id, payload.get('followed'))})
+                    return
+
+                if method == 'GET' and path == '/api/discovery/content':
+                    locale = parse_qs(parsed.query).get('locale', ['en-US'])[0]
+                    self.respond(200, database.get_discovery_content(locale))
+                    return
+
+                if method == 'GET' and path == '/api/home/content':
+                    locale = parse_qs(parsed.query).get('locale', ['en-US'])[0]
+                    self.respond(200, database.get_home_content(locale))
+                    return
+
+                if method == 'GET' and path == '/api/discovery/comments':
+                    self.respond(200, {'comments': database.get_discovery_comments(user_id)})
+                    return
+                if method == 'POST' and path.startswith('/api/discovery/comments/posts/'):
+                    post_id = path.split('/')[-1]
+                    self.respond(201, {'comment': database.create_discovery_comment(user_id, post_id, payload)})
+                    return
+
+                if method == 'POST' and path == '/api/media/prepare':
+                    self.respond(201, {'upload': database.prepare_media_upload(user_id, payload)})
+                    return
+                if method == 'POST' and path.startswith('/api/media/upload/'):
+                    token = path.split('/')[-1]
+                    self.respond(201, {'media': database.upload_media_content(user_id, token, payload)})
+                    return
+                if method == 'GET' and path.startswith('/api/media/files/'):
+                    media_id = path.split('/')[-1]
+                    media_file = database.get_media_file(media_id)
+                    self.respond_bytes(
+                        200,
+                        media_file['mimeType'],
+                        base64.b64decode(media_file['contentBase64'])
+                    )
                     return
 
                 if method == 'GET' and path == '/api/wardrobe':
