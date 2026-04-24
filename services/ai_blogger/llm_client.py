@@ -21,9 +21,9 @@ class UniversalLLMClient:
                         k, v = line.split("=", 1)
                         os.environ[k.strip()] = v.strip()
 
-        self.api_key = api_key or os.getenv("LLM_API_KEY", "sk-WuyAyUSSGvPK7HF0K9uuMUN1vprN6mGepo6bugQDgmaJ4oT0")
-        self.base_url = base_url or os.getenv("LLM_BASE_URL", "https://api.newcoin.top")
-        self.model = model or os.getenv("LLM_MODEL_NAME", "qwen3-max")
+        self.api_key = api_key or os.getenv("LLM_API_KEY")
+        self.base_url = base_url or os.getenv("LLM_BASE_URL", "https://api.deepseek.com")
+        self.model = model or os.getenv("LLM_MODEL_NAME", "deepseek-chat")
         self.history = []
         
         if not self.api_key:
