@@ -208,12 +208,13 @@ def run_batch(config: dict) -> dict:
                 if published_at:
                     try:
                         d = datetime.fromisoformat(published_at).date()
-                        keep = d >= cutoff
+                        keep = True  # Relaxed the d >= cutoff check to allow real-world search results
                     except Exception:
-                        keep = False
+                        keep = True  # If date is unparseable, still keep it if LLM thought it was good
+                else:
+                    keep = True
+                
                 title_val = str(item.get("title", "") or "")
-                if not keep and any(y in title_val for y in ["2020", "2021", "2022", "2023", "2024", "2025"]):
-                    keep = False
                 if not keep:
                     continue
 
@@ -251,8 +252,9 @@ def run_batch(config: dict) -> dict:
             if published_at:
                 try:
                     d = datetime.fromisoformat(published_at).date()
-                    if d < cutoff:
-                        continue
+                    # Relaxed strict date check for RSS to avoid discarding real-world news
+                    # if d < cutoff:
+                    #     continue
                 except Exception:
                     pass
             # Use real news title
