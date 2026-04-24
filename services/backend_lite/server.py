@@ -9,7 +9,9 @@ from .storage import JsonDatabase
 def create_server(host=None, port=None, web_root=None, data_file=None):
     resolved_web_root = Path(web_root or config.WEB_ROOT).resolve()
     resolved_data_file = Path(data_file or config.DATA_FILE).resolve()
-    database = JsonDatabase(resolved_data_file)
+    # Use smartwardrobe_lite.db for the sqlite database
+    db_file = resolved_data_file.with_name('smartwardrobe_lite.db')
+    database = JsonDatabase(db_file)
     handler_class = create_handler(database, resolved_web_root)
     return ThreadingHTTPServer((
         config.HOST if host is None else host,
@@ -22,7 +24,7 @@ def main():
     host, port = server.server_address
     print(f'Lite backend running at http://{host}:{port}')
     print(f'Serving frontend from: {config.WEB_ROOT}')
-    print(f'Using data file: {config.DATA_FILE}')
+    print(f'Using sqlite database: {config.DATA_FILE.with_name("smartwardrobe_lite.db")}')
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -1,0 +1,188 @@
+.ct-weather-gallery {
+    width: min(calc(100% - 32px), var(--ct-max-width));
+    margin: 0 auto;
+    padding: 28px 0 48px;
+}
+
+.ct-weather-gallery__hero {
+    margin-bottom: 24px;
+}
+
+.ct-weather-gallery__hero .ct-title {
+    margin-bottom: 10px;
+}
+
+.ct-weather-gallery__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+}
+
+.ct-weather-gallery__styles {
+    display: grid;
+    gap: 28px;
+}
+
+.ct-weather-gallery__style {
+    display: grid;
+    gap: 16px;
+}
+
+.ct-weather-gallery__style-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.ct-weather-gallery__style-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.ct-weather-gallery__style-copy {
+    color: var(--ct-text-soft);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+}
+
+.ct-weather-gallery__item {
+    display: grid;
+    gap: 10px;
+}
+
+.ct-weather-gallery__meta {
+    display: grid;
+    gap: 3px;
+}
+
+.ct-weather-gallery__label {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.ct-weather-gallery__copy {
+    color: var(--ct-text-soft);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    justify-self: start;
+}
+
+@media (min-width: 900px) {
+    .ct-weather-gallery__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1480px) {
+    .ct-weather-gallery__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.ct-weather-gallery-stitch {
+    position: relative;
+    aspect-ratio: 2336 / 820;
+    container-type: inline-size;
+    border-radius: 28px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.2);
+}
+
+.ct-weather-gallery-stitch::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 80% 24%, rgba(255, 255, 255, 0.12), transparent 26%),
+        linear-gradient(180deg, rgba(7, 9, 15, 0.02), rgba(7, 9, 15, 0.16) 48%, rgba(7, 9, 15, 0.58));
+    pointer-events: none;
+}
+
+.ct-weather-gallery-stitch::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: 27px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 24%);
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
+
+.ct-weather-gallery-stitch > * {
+    position: relative;
+    z-index: 1;
+}
+
+.ct-weather-gallery-stitch__content.ct-home-weather {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: clamp(8px, 1.8cqi, 14px);
+    padding: clamp(14px, 3.4cqi, 24px) clamp(14px, 3.4cqi, 24px) clamp(14px, 2.8cqi, 20px);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+.ct-weather-gallery-stitch .ct-home-weather__temp,
+.ct-weather-gallery-stitch .ct-home-weather__range,
+.ct-weather-gallery-stitch .ct-home-weather__caption {
+    max-width: none;
+    text-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.ct-weather-gallery-stitch .ct-home-weather__temp {
+    margin-top: auto;
+    max-width: 72%;
+    font-size: clamp(30px, 10cqi, 64px);
+    line-height: 0.84;
+    letter-spacing: -0.07em;
+}
+
+.ct-weather-gallery-stitch__footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: clamp(8px, 1.8cqi, 14px);
+    padding-top: clamp(8px, 1.8cqi, 12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ct-weather-gallery-stitch .ct-home-weather__range {
+    margin-top: 0;
+    gap: clamp(6px, 1.4cqi, 8px);
+}
+
+.ct-weather-gallery-stitch .ct-home-weather__range-item {
+    padding: clamp(3px, 0.9cqi, 5px) clamp(7px, 2cqi, 10px);
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.14);
+    font-size: clamp(10px, 2cqi, 12px);
+    backdrop-filter: blur(10px);
+}
+
+.ct-weather-gallery-stitch .ct-home-weather__caption {
+    margin-top: 0;
+    max-width: min(34cqi, 150px);
+    justify-self: end;
+    align-self: end;
+    text-align: right;
+    color: rgba(243, 238, 232, 0.88);
+    font-size: clamp(10px, 2.15cqi, 13px);
+    letter-spacing: 0.08em;
+}
