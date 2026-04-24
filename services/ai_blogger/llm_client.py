@@ -24,6 +24,9 @@ class UniversalLLMClient:
         self.api_key = api_key or os.getenv("LLM_API_KEY")
         self.base_url = base_url or os.getenv("LLM_BASE_URL", "https://api.deepseek.com")
         self.model = model or os.getenv("LLM_MODEL_NAME", "deepseek-chat")
+        
+        # Log the current configuration for debugging
+        logging.info(f"Initialized LLMClient with Model: {self.model}, Base URL: {self.base_url}")
         self.history = []
         
         if not self.api_key:
@@ -65,21 +68,21 @@ class UniversalLLMClient:
             "temperature": 0.7
         }
         
-        if enable_search and "qwen" in self.model.lower():
-            # Will be added inside the retry loop so we can disable it on error
-            pass
-        
+        if enable_search:
+            payload["enable_search"] = True
+            
         # Only some models support response_format strict json
         if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
             payload["response_format"] = {"type": "json_object"}
         
         max_retries = 3
-        allow_search = enable_search and "qwen" in self.model.lower()
+        allow_search = enable_search
+
         for attempt in range(max_retries):
             try:
                 payload_local = dict(payload)
-                if allow_search:
-                    payload_local["enable_search"] = True
+                if not allow_search and "enable_search" in payload_local:
+                    del payload_local["enable_search"]
                 
                 data = json.dumps(payload_local).encode("utf-8")
                 req = urllib.request.Request(url, data=data, headers=headers, method="POST")
