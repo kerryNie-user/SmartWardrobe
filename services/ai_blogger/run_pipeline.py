@@ -2,12 +2,133 @@ import os
 import json
 import logging
 import requests
-from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 from services.ai_blogger.chain_runner import PromptChainRunner
 from services.ai_blogger.topic.topic_sourcer import TopicSourcer
 from services.ai_blogger.image_sourcer import get_image_candidates
 from services.ai_blogger.metrics.image_dedupe import ImageDedupe
 from services.ai_blogger.llm_client import UniversalLLMClient
+
+class ImageTracker:
+    def __init__(self, images_dir: str, max_images_total: int, download_images: bool):
+        self.images_dir = images_dir
+        self.max_images_total = max_images_total
+        self.download_images = download_images
+        
+        self.dedupe = ImageDedupe()
+        self.used_urls = set()
+        
+        self.downloaded_images = 0
+        self.attempted_images = 0
+        self.failed_images = 0
+        self.duplicate_hashes = 0
+        self.skipped_used_url = 0
+        self.image_details = []
+        
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=0.5,
+            status_forcelist=[500, 502, 503, 504],
+            allowed_methods=["GET"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+
+    def render_media_block(self, q: dict | str, idx: int, p_idx: int, layout_name: str, layout_type: str = "portrait_4_3") -> str:
+        if not q:
+            return ""
+        
+        direct_url = None
+        if isinstance(q, dict):
+            search_q = q.get("search_keyword", "")
+            alt_text = q.get("image_caption", search_q)
+            direct_url = q.get("_direct_url")
+        else:
+            search_q = str(q)
+            alt_text = search_q
+            
+        if not search_q and not direct_url:
+            return ""
+        
+        if self.download_images and self.downloaded_images < self.max_images_total:
+            current_img_config = {"image_size": layout_type}
+                
+            if direct_url:
+                candidates = [{"original_url": direct_url, "source_type": "News RSS", "search_query": search_q or "REAL_NEWS_IMAGE"}]
+            else:
+                is_hero = (layout_name == "hero_full_bleed" or p_idx == 0)
+                if is_hero:
+                    current_img_config["image_size"] = "landscape_16_9"
+                    
+                candidates = get_image_candidates(search_q, current_img_config, per_page=3, force_ai=False)
+            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+            local_img_filename = f"chain_{idx}_img_{p_idx + 1}_{abs(hash(search_q or direct_url)) % 10000}.jpg"
+            local_img_path = os.path.join(self.images_dir, local_img_filename)
+            rel_img_path = f"images/{local_img_filename}"
+
+            for attempt, cand in enumerate(candidates):
+                url = cand.get("original_url", "")
+                source_type = cand.get("source_type", "Unknown")
+                cand_search_query = cand["search_query"]
+
+                if url in self.used_urls:
+                    self.skipped_used_url += 1
+                    continue
+                    
+                if "coresg-normal.trae.ai" in url or source_type == "trae_ai":
+                    self.attempted_images += 1
+                    self.downloaded_images += 1
+                    self.used_urls.add(url)
+                    self.image_details.append({
+                        "source_type": source_type,
+                        "original_url": url,
+                        "search_query": cand_search_query,
+                        "local_path": url,
+                        "layout_name": layout_name,
+                        "paragraph_index": p_idx
+                    })
+                    return f'<img src="{url}" alt="{alt_text}" loading="lazy">'
+                    
+                try:
+                    self.attempted_images += 1
+                    timeout_val = 15
+                    res = self.session.get(url, headers=headers, timeout=timeout_val)
+                    
+                    if res.status_code == 200:
+                        content_type = res.headers.get("Content-Type", "")
+                        if not content_type.startswith("image/"):
+                            continue
+                            
+                        if not self.dedupe.register(res.content):
+                            self.duplicate_hashes += 1
+                            continue
+                            
+                        with open(local_img_path, "wb") as f:
+                            f.write(res.content)
+                        self.downloaded_images += 1
+                        self.used_urls.add(url)
+                        self.image_details.append({
+                            "source_type": source_type,
+                            "original_url": url,
+                            "search_query": cand_search_query,
+                            "local_path": rel_img_path,
+                            "layout_name": layout_name,
+                            "paragraph_index": p_idx
+                        })
+                        return f'<img src="{rel_img_path}" alt="{alt_text}" loading="lazy">'
+                except Exception as e:
+                    logging.warning(f"Failed to fetch real image {url}: {e}")
+                    continue
+                    
+            self.failed_images += 1
+            logging.error(f"All attempts failed to fetch an image for: {search_q}")
+        
+        return f'<div class="image-caption">{alt_text}</div>'
+
 
 def _load_html_template() -> str:
     template_path = os.path.join(os.path.dirname(__file__), "templates", "editorial_layout.html")
@@ -19,19 +140,24 @@ def _load_html_template() -> str:
 
 def run_batch(config: dict) -> dict:
     count = int(config.get("count", 10))
-    llm_provider = str(config.get("llm_provider", "real"))
     download_images = bool(config.get("download_images", True))
     output_dir = str(config.get("output_dir", "services/ai_blogger/output"))
     rng_seed = config.get("rng_seed", None)
     max_images_total = int(config.get("max_images_total", 0 if not download_images else count * 50))
+    profile_name = config.get("profile", "editorial_styling")
 
-    runner = PromptChainRunner(prompts_dir="services/ai_blogger/prompts")
+    runner = PromptChainRunner(
+        prompts_dir="services/ai_blogger/agents",
+        profile_name=profile_name
+    )
     sourcer = TopicSourcer(rng_seed=rng_seed)
 
     os.makedirs(output_dir, exist_ok=True)
     images_dir = os.path.join(output_dir, "images")
     os.makedirs(images_dir, exist_ok=True)
 
+    import time
+    from datetime import datetime
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     html_basename = f"chain_blogs_{ts}.html"
     report_json_basename = f"report_{ts}.json"
@@ -45,47 +171,171 @@ def run_batch(config: dict) -> dict:
 
     html_content = ""
     report_articles = []
-    used_urls: set[str] = set()
-    dedupe = ImageDedupe()
-    downloaded_images = 0
-    attempted_images = 0
-    failed_images = 0
-    duplicate_hashes = 0
-    skipped_used_url = 0
-    image_details = []
-
-    image_config = {}
+    
+    tracker = ImageTracker(images_dir=images_dir, max_images_total=max_images_total, download_images=download_images)
 
     # Generate topics autonomously if LLM is enabled
-    llm_client = UniversalLLMClient() if llm_provider != "none" else None
+    llm_client = UniversalLLMClient()
+    
+    # Initialize the core orchestrator with the specified profile FIRST
+    # So we can extract profile information for topic generation
+    runner = PromptChainRunner(
+        prompts_dir=os.path.join(os.path.dirname(__file__), "agents"),
+        profile_name=profile_name
+    )
     
     generated_titles = []
-    if llm_client:
-        logging.info("Autonomously generating blog topics via LLM...")
-        prompt = f"Please brainstorm {count} highly creative, editorial-style fashion blog post titles in Chinese. They should sound like Vogue or GQ editorials (e.g., '复古围巾的情绪价值：格纹如何制造记忆感'). Return a JSON object with a 'titles' array containing strings."
+    seed_materials = []
+    
+    if profile_name == "fashion_news":
+        logging.info("Profile 'fashion_news' selected. Scouting latest news via LLM web search...")
+        news_scout_path = os.path.join(os.path.dirname(__file__), "agents", "@agent_news_scout.md")
+        system_prompt = "You are a senior fashion journalist and editor."
+        user_prompt = f"Search the web for the latest fashion news within the last 7 days and return {count} items as JSON. Each item must include title, summary, source, link, published_at."
+        if os.path.exists(news_scout_path):
+            with open(news_scout_path, "r", encoding="utf-8") as f:
+                user_prompt = f.read().replace("{count}", str(count))
         try:
-            res = llm_client.generate_json("You are an elite fashion editor.", prompt)
+            res = llm_client.generate_json(system_prompt, user_prompt, enable_search=True)
+            from datetime import datetime, timedelta
+            now = datetime.now().date()
+            cutoff = now - timedelta(days=7)
+            for item in res.get("news", []):
+                if len(generated_titles) >= count:
+                    break
+                published_at = str(item.get("published_at", "") or "").strip()
+                keep = False
+                if published_at:
+                    try:
+                        d = datetime.fromisoformat(published_at).date()
+                        keep = True  # Relaxed the d >= cutoff check to allow real-world search results
+                    except Exception:
+                        keep = True  # If date is unparseable, still keep it if LLM thought it was good
+                else:
+                    keep = True
+                
+                title_val = str(item.get("title", "") or "")
+                if not keep:
+                    continue
+
+                generated_titles.append(title_val or "最新时尚新闻")
+                seed_materials.append({
+                    "source": item.get("source", "Web Search"),
+                    "summary": item.get("summary", ""),
+                    "link": item.get("link", ""),
+                    "published_at": published_at,
+                    "image_urls": []
+                })
+        except Exception as e:
+            logging.error(f"Failed to scout latest news via LLM search: {e}")
+        
+        if generated_titles:
+            logging.info(f"LLM news scout returned {len(generated_titles)} items. Skipping RSS scraping.")
+        else:
+            logging.warning("LLM news scout returned empty results. Falling back to RSS scraping...")
+        
+    if profile_name == "fashion_news" and not generated_titles:
+        logging.info("Falling back to RSS scraping for fashion_news...")
+        from services.ai_blogger.trend_scraper import get_latest_trends
+        from services.ai_blogger.utils.config import load_config
+        
+        config_data = load_config()
+        trends = get_latest_trends(config_data)
+        
+        from datetime import datetime, timedelta
+        now = datetime.now().date()
+        cutoff = now - timedelta(days=7)
+        for t in trends:
+            if len(generated_titles) >= count:
+                break
+            published_at = str(t.get("published_at", "") or "").strip()
+            if published_at:
+                try:
+                    d = datetime.fromisoformat(published_at).date()
+                    # Relaxed strict date check for RSS to avoid discarding real-world news
+                    # if d < cutoff:
+                    #     continue
+                except Exception:
+                    pass
+            # Use real news title
+            generated_titles.append(t["title"])
+            # Save real news context and image for later injection
+            seed_materials.append({
+                "source": t["source"],
+                "summary": t["summary"],
+                "link": t.get("link", ""),
+                "published_at": published_at,
+                "image_urls": t.get("image_urls", []) or ([t["image_url"]] if t.get("image_url") else [])
+            })
+            
+        if not generated_titles:
+            logging.warning("RSS scraping returned empty results. Falling back to LLM brainstorming.")
+
+    if llm_client and not generated_titles:
+        logging.info(f"Autonomously generating blog topics via LLM (Profile: {profile_name})...")
+        topic_agent_path = os.path.join(os.path.dirname(__file__), "agents", "@agent_topic_generator.md")
+        
+        p_name = runner.profile.get("name", "高级时尚编辑")
+        p_visual = runner.profile.get("visual_strategy", "时尚、高级、专业")
+        
+        system_prompt = "You are an elite editor."
+        user_prompt = f"Please brainstorm {count} highly creative blog post titles in Chinese for profile: {p_name}. Visual strategy: {p_visual}. Return a JSON object with a 'titles' array containing strings."
+        
+        if os.path.exists(topic_agent_path):
+            with open(topic_agent_path, "r", encoding="utf-8") as f:
+                user_prompt = f.read()
+                user_prompt = user_prompt.replace("{count}", str(count))
+                user_prompt = user_prompt.replace("{profile_name}", p_name)
+                user_prompt = user_prompt.replace("{visual_strategy}", p_visual)
+                
+        try:
+            res = llm_client.generate_json(system_prompt, user_prompt)
             generated_titles = res.get("titles", [])
             if len(generated_titles) > count:
                 generated_titles = generated_titles[:count]
         except Exception as e:
-            logging.error(f"Failed to generate topics via LLM: {e}")
+            logging.error(f"Failed to generate topics autonomously: {e}")
             
-    # Fallback to static sourcer if LLM failed
+    # Fallback to test topics if autonomous generation failed or disabled
     if not generated_titles:
-        topics = sourcer.get_topics(count=count)
-        generated_titles = [t.title_zh for t in topics]
+        generated_titles = [f"Autumn Minimalist Look {i}" for i in range(1, count + 1)]
+        
+    logging.info(f"Generated {len(generated_titles)} topics. Starting generation pipeline...")
 
-    for idx, title in enumerate(generated_titles):
+    # Remove the outer redundant for loop that was mistakenly left around the executor logic
+    def _process_topic(idx, title):
         try:
-            post = runner.run_chain(raw_topic=title, llm_provider=llm_provider)
+            # Find the corresponding seed material if any
+            seed = seed_materials[idx] if idx < len(seed_materials) else None
+            post = runner.run_chain(raw_topic=title, seed_material=seed)
+            return idx, title, post, None
         except Exception as e:
             logging.error(f"Failed to generate article for topic '{title}': {e}")
+            return idx, title, None, e
+
+    # Using ThreadPoolExecutor for concurrent execution
+    futures = []
+    # Create a thread pool with max 5 workers
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        for idx, title in enumerate(generated_titles):
+            futures.append(executor.submit(_process_topic, idx, title))
+
+        # Wait for all futures to complete and gather results
+        # To maintain order, we can sort by idx later or just process as completed
+        results = []
+        for future in as_completed(futures):
+            results.append(future.result())
+
+    # Sort results by original idx to maintain output order
+    results.sort(key=lambda x: x[0])
+
+    for idx, title, post, error in results:
+        if error is not None:
             report_articles.append({
                 "topic_id": f"auto_{idx}",
                 "title": title,
                 "status": "failed",
-                "error": str(e)
+                "error": str(error)
             })
             continue
 
@@ -126,102 +376,9 @@ def run_batch(config: dict) -> dict:
 
             post_html += f'<div class="paragraph-block clearfix" data-layout="{layout_name}">'
 
-            def render_media_block(q: dict | str, layout_type: str = "portrait_4_3") -> str:
-                nonlocal downloaded_images
-                nonlocal attempted_images
-                nonlocal failed_images
-                nonlocal duplicate_hashes
-                nonlocal skipped_used_url
-                nonlocal image_details
-                if not q:
-                    return ""
-                
-                # Handle dict or string
-                if isinstance(q, dict):
-                    search_q = q.get("search_keyword", "")
-                    alt_text = q.get("image_caption", search_q)
-                else:
-                    search_q = str(q)
-                    alt_text = search_q
-                    
-                if not search_q:
-                    return ""
-                
-                if download_images and downloaded_images < max_images_total:
-                    current_img_config = image_config.copy()
-                    current_img_config["image_size"] = layout_type
-                        
-                    candidates = get_image_candidates(search_q, current_img_config, per_page=3)
-                    
-                    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
-                    local_img_filename = f"chain_{idx}_img_{p_idx + 1}_{abs(hash(search_q)) % 10000}.jpg"
-                    local_img_path = os.path.join(images_dir, local_img_filename)
-                    rel_img_path = f"images/{local_img_filename}"
-
-                    for attempt, cand in enumerate(candidates):
-                        url = cand["original_url"]
-                        source_type = cand["source_type"]
-                        cand_search_query = cand["search_query"]
-
-                        if url in used_urls:
-                            skipped_used_url += 1
-                            continue
-                            
-                        # If it's a Trae AI URL, just embed it directly to save time
-                        if "coresg-normal.trae.ai" in url or source_type == "trae_ai":
-                            attempted_images += 1
-                            downloaded_images += 1
-                            used_urls.add(url)
-                            image_details.append({
-                                "source_type": source_type,
-                                "original_url": url,
-                                "search_query": cand_search_query,
-                                "local_path": url,
-                                "layout_name": layout_name,
-                                "paragraph_index": p_idx
-                            })
-                            return f'<img src="{url}" alt="{alt_text}" loading="lazy">'
-                            
-                        # Otherwise it's a real image library URL, try downloading it
-                        try:
-                            attempted_images += 1
-                            timeout_val = 15
-                            res = requests.get(url, headers=headers, timeout=timeout_val)
-                            
-                            if res.status_code == 200:
-                                content_type = res.headers.get("Content-Type", "")
-                                if not content_type.startswith("image/"):
-                                    continue
-                                    
-                                if not dedupe.register(res.content):
-                                    duplicate_hashes += 1
-                                    continue
-                                    
-                                with open(local_img_path, "wb") as f:
-                                    f.write(res.content)
-                                downloaded_images += 1
-                                used_urls.add(url)
-                                image_details.append({
-                                    "source_type": source_type,
-                                    "original_url": url,
-                                    "search_query": cand_search_query,
-                                    "local_path": rel_img_path,
-                                    "layout_name": layout_name,
-                                    "paragraph_index": p_idx
-                                })
-                                return f'<img src="{rel_img_path}" alt="{alt_text}" loading="lazy">'
-                        except Exception as e:
-                            logging.warning(f"Failed to fetch real image {url}: {e}")
-                            continue
-                            
-                    failed_images += 1
-                    logging.error(f"All attempts failed to fetch an image for: {search_q}")
-                
-                return f'<div class="image-caption">{alt_text}</div>'
-
             if layout_name == "split_image_text":
                 q = image_queries[0] if image_queries else ""
-                media = render_media_block(q, layout_type="portrait_4_3")
+                media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="portrait_4_3")
                 post_html += f"""
                 <div class="layout-split">
                     <div class="split-media">{media}</div>
@@ -233,7 +390,7 @@ def run_batch(config: dict) -> dict:
 
             if layout_name == "float_left_photo":
                 q = image_queries[0] if image_queries else ""
-                media = render_media_block(q, layout_type="portrait_4_3")
+                media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="portrait_4_3")
                 post_html += f'<div class="layout-float-left">{media}</div>'
                 post_html += f'<div class="text-content">{safe_text}</div>'
                 post_html += "</div>"
@@ -241,7 +398,7 @@ def run_batch(config: dict) -> dict:
 
             if layout_name == "float_right_photo":
                 q = image_queries[0] if image_queries else ""
-                media = render_media_block(q, layout_type="portrait_4_3")
+                media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="portrait_4_3")
                 post_html += f'<div class="layout-float-right">{media}</div>'
                 post_html += f'<div class="text-content">{safe_text}</div>'
                 post_html += "</div>"
@@ -251,7 +408,7 @@ def run_batch(config: dict) -> dict:
                 qs = (image_queries + ["", "", ""])[:3]
                 cards = []
                 for i, q in enumerate(qs):
-                    media = render_media_block(q, layout_type="portrait_4_3")
+                    media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="portrait_4_3")
                     cards.append(
                         f"""
                         <div class="look-card">
@@ -269,14 +426,14 @@ def run_batch(config: dict) -> dict:
                 qs = (image_queries + ["", "", ""])[:3]
                 items = []
                 for q in qs:
-                    items.append(f'<div class="mosaic-item">{render_media_block(q, layout_type="square")}</div>')
+                    items.append(f'<div class="mosaic-item">{tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="square")}</div>')
                 post_html += f'<div class="layout-mosaic">{"".join(items)}</div>'
                 post_html += f'<div class="text-content">{safe_text}</div>'
                 post_html += "</div>"
                 continue
 
             q = image_queries[0] if image_queries else ""
-            media = render_media_block(q, layout_type="landscape_16_9")
+            media = tracker.render_media_block(q, idx=idx, p_idx=p_idx, layout_name=layout_name, layout_type="landscape_16_9")
             if media:
                 post_html += f'<div class="layout-hero">{media}</div>'
 
@@ -290,7 +447,7 @@ def run_batch(config: dict) -> dict:
         html_content += post_html
 
     html_template_str = _load_html_template()
-    final_html = html_template_str.format(content=html_content)
+    final_html = html_template_str.replace("{content}", html_content)
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(final_html)
 
@@ -300,12 +457,12 @@ def run_batch(config: dict) -> dict:
         "images": {
             "download_enabled": download_images,
             "max_images_total": max_images_total,
-            "attempted": attempted_images,
-            "downloaded": downloaded_images,
-            "failed": failed_images,
-            "duplicate_hashes": duplicate_hashes,
-            "skipped_used_url": skipped_used_url,
-            "details": image_details
+            "attempted": tracker.attempted_images,
+            "downloaded": tracker.downloaded_images,
+            "failed": tracker.failed_images,
+            "duplicate_hashes": tracker.duplicate_hashes,
+            "skipped_used_url": tracker.skipped_used_url,
+            "details": tracker.image_details
         }
     }
     with open(report_json_path, "w", encoding="utf-8") as f:
@@ -317,7 +474,10 @@ def run_batch(config: dict) -> dict:
         f"- article_count: {len(report_articles)}"
     ]
     for a in report_articles:
-        md_lines.append(f"- {a['topic_id']} | {a['title']} | paragraphs={a['paragraph_count']} | unique_layouts={a['unique_layouts']}")
+        if a.get("status") == "success":
+            md_lines.append(f"- {a['topic_id']} | {a['title']} | paragraphs={a.get('paragraph_count', 0)} | unique_layouts={a.get('unique_layouts', 0)}")
+        else:
+            md_lines.append(f"- {a['topic_id']} | {a['title']} | FAILED | error={a.get('error', 'Unknown')}")
     with open(report_md_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines) + "\n")
 
@@ -329,12 +489,13 @@ def run():
     parser = argparse.ArgumentParser()
     parser.add_argument("--count", type=int, default=1, help="Number of articles to generate")
     parser.add_argument("--llm", type=str, default="real", help="LLM Provider ('real' or 'none' to skip LLM)")
+    parser.add_argument("--profile", type=str, default="editorial_styling", help="Topic profile (e.g. editorial_styling, fashion_news)")
     args = parser.parse_args()
 
     print("Initializing Prompt Chain Runner (Agentic Pipeline)...")
     result = run_batch({
         "count": args.count,
-        "llm_provider": args.llm,
+        "profile": args.profile,
         "download_images": True,  # Keep true for layout realism
         "output_dir": "services/ai_blogger/output",
         "max_images_total": args.count * 50

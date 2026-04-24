@@ -7,14 +7,27 @@ from typing import Dict, List
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class PromptChainRunner:
-    def __init__(self, prompts_dir: str = "services/ai_blogger/agents"):
+    def __init__(self, prompts_dir: str = "services/ai_blogger/agents", profile_name: str = "editorial_styling"):
         self.prompts_dir = prompts_dir
+        self.profile_name = profile_name
+        self.profile = self._load_profile(profile_name)
         self.prompts = self._load_prompts()
-        self._mock_layout_registry = None
+        self._layout_registry = None
         self._llm_client = None
         
+    def _load_profile(self, profile_name: str) -> dict:
+        import json
+        profile_path = os.path.join(os.path.dirname(__file__), "profiles", f"{profile_name}.json")
+        if not os.path.exists(profile_path):
+            logging.warning(f"Profile '{profile_name}' not found, falling back to 'editorial_styling'")
+            profile_path = os.path.join(os.path.dirname(__file__), "profiles", "editorial_styling.json")
+            
+        with open(profile_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
     def _load_prompts(self) -> Dict[str, str]:
-        """Loads the prompt templates from the filesystem."""
+        """Loads the prompt templates and their knowledge base dependencies from the filesystem."""
+        import re
         prompts = {}
         # Map phase keys to the new agent markdown files
         phase_map = {
@@ -26,33 +39,90 @@ class PromptChainRunner:
             path = os.path.join(self.prompts_dir, filename)
             if os.path.exists(path):
                 with open(path, 'r', encoding='utf-8') as f:
-                    prompts[phase_key] = f.read()
+                    content = f.read()
+                
+                # Inject dynamic knowledge base from profile instead of prompt tags
+                kb_files = self.profile.get("kb_files", [])
+                context_blocks = []
+                
+                for kb_file in kb_files:
+                    abs_path = kb_file
+                    if not os.path.isabs(kb_file):
+                        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+                        candidate = os.path.join(project_root, kb_file)
+                        if os.path.exists(candidate):
+                            abs_path = candidate
+                            
+                    if os.path.exists(abs_path):
+                        try:
+                            with open(abs_path, 'r', encoding='utf-8') as f_kb:
+                                kb_content = f_kb.read()
+                                context_blocks.append(f"--- BEGIN CONTEXT: {kb_file} ---\n{kb_content}\n--- END CONTEXT: {kb_file} ---")
+                        except Exception as e:
+                            logging.warning(f"Failed to read knowledge base file {kb_file}: {e}")
+                    else:
+                        logging.warning(f"Knowledge base file not found: {kb_file}")
+                
+                if context_blocks:
+                    context_str = "\n\n<context>\n" + "\n\n".join(context_blocks) + "\n</context>\n"
+                    content += context_str
+                
+                # Interpolate profile constraints into prompt
+                constraints = self.profile.get("constraints", {})
+                allowed_sections_str = "\n   - ".join(constraints.get("allowed_sections", []))
+                if allowed_sections_str:
+                    allowed_sections_str = "   - " + allowed_sections_str
+                    
+                layout_pool_str = "\n   - ".join([f"`{l}`" for l in self.profile.get("layout_pool", [])])
+                if layout_pool_str:
+                    layout_pool_str = "   - " + layout_pool_str
+                    
+                visual_strategy = self.profile.get("visual_strategy", "")
+                
+                content = content.replace("{paragraph_count_rules}", constraints.get("paragraph_count_rules", ""))
+                content = content.replace("{allowed_sections}", allowed_sections_str)
+                content = content.replace("{layout_pool}", layout_pool_str)
+                content = content.replace("{visual_strategy}", visual_strategy)
+
+                prompts[phase_key] = content
             else:
                 logging.warning(f"Agent prompt file not found: {path}")
         return prompts
         
-    def run_chain(self, raw_topic: str, llm_provider: str = "real") -> Dict:
+    def run_chain(self, raw_topic: str, seed_material: dict = None) -> Dict:
         """
         Executes the 3-step prompt chain based on the blogger_experience docs.
         """
         logging.info(f"Starting Prompt Chain for topic: '{raw_topic}'")
         
+        # Inject seed material if provided
+        angle_input = f"Topic: {raw_topic}"
+        if seed_material:
+            logging.info("Injecting real news seed material into Phase 1...")
+            angle_input += f"\n\nContext/Source: {seed_material.get('source', '')}\nLink: {seed_material.get('link', '')}\nSummary: {seed_material.get('summary', '')}"
+            angle_input += "\n\nCRITICAL INSTRUCTION: You must base your angle and thesis strictly on the real news context provided above. Do not invent unrelated stories."
+        
         # Step 1: Angle Generation
         logging.info("Executing Phase 1: Angle & Thesis Generation...")
         angle_result = self._call_llm(
             system_prompt=self.prompts.get("phase1_angle", ""),
-            user_input=f"Topic: {raw_topic}",
-            provider=llm_provider,
+            user_input=angle_input,
             phase="1"
         )
-        
+
+        real_image_urls = []
+        if seed_material:
+            if seed_material.get("image_urls"):
+                real_image_urls = list(seed_material.get("image_urls") or [])
+            elif seed_material.get("image_url"):
+                real_image_urls = [seed_material.get("image_url")]
+            
         # Step 2: Outline & Visual Strategy
         logging.info("Executing Phase 2: Structural Outline & Image Queries...")
         outline_input = json.dumps(angle_result, ensure_ascii=False)
         outline_result = self._call_llm(
             system_prompt=self.prompts.get("phase2_outline", ""),
             user_input=outline_input,
-            provider=llm_provider,
             phase="2"
         )
         
@@ -62,18 +132,36 @@ class PromptChainRunner:
         final_post = self._call_llm(
             system_prompt=self.prompts.get("phase3_drafting", ""),
             user_input=draft_input,
-            provider=llm_provider,
             phase="3"
         )
         
-        # Assemble final artifact
+        if real_image_urls:
+            queue = list(real_image_urls)
+            for i, p in enumerate(final_post.get("paragraphs", [])):
+                queries = p.get("image_queries", [])
+                     
+                if not queries or not queue:
+                    continue
+                new_queries = []
+                for q in queries:
+                    if not queue:
+                        new_queries.append(q)
+                        continue
+                    if isinstance(q, dict):
+                        q2 = dict(q)
+                        q2["_direct_url"] = queue.pop(0)
+                        new_queries.append(q2)
+                    else:
+                        new_queries.append({"search_keyword": str(q), "_direct_url": queue.pop(0)})
+                p["image_queries"] = new_queries
+                    
         return {
             "metadata": angle_result,
             "title": angle_result.get("angle_title", "Untitled Editorial"),
             "paragraphs": final_post.get("paragraphs", [])
         }
 
-    def _call_llm(self, system_prompt: str, user_input: str, provider: str, phase: str) -> Dict:
+    def _call_llm(self, system_prompt: str, user_input: str, phase: str) -> Dict:
         """
         Wrapper to call the LLM API.
         Uses UniversalLLMClient.
@@ -82,31 +170,39 @@ class PromptChainRunner:
             from services.ai_blogger.llm_client import UniversalLLMClient
             self._llm_client = UniversalLLMClient()
             
+        enable_search = self.profile_name == "fashion_news"
+        
         if phase == "1":
-            # Phase 1: Direct LLM Call
-            return self._llm_client.generate_json(system_prompt, user_input)
+            return self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
             
         if phase == "2":
             # Phase 2: Call LLM for outline, then validate layouts
-            outline_response = self._llm_client.generate_json(system_prompt, user_input)
-            
             angle = json.loads(user_input)
             style_en = angle.get("style_en", "street style")
             angle_title = angle.get("angle_title", "Untitled")
             
+            outline_response = self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
+            
             from services.ai_blogger.layouts.registry import LayoutRegistry
-            if self._mock_layout_registry is None:
-                self._mock_layout_registry = LayoutRegistry()
+            if self._layout_registry is None:
+                self._layout_registry = LayoutRegistry()
                 
             processed_paragraphs = []
             for p in outline_response.get("paragraphs", []):
                 layout_name = p.get("layout_name", "hero_full_bleed")
+                layout_pool = self.profile.get("layout_pool", [])
+                
+                if layout_pool and layout_name not in layout_pool:
+                    logging.warning(f"LLM suggested layout '{layout_name}' not in profile pool, falling back to '{layout_pool[0]}'")
+                    layout_name = layout_pool[0]
+                    
                 try:
-                    layout = self._mock_layout_registry.get_layout(layout_name)
+                    layout = self._layout_registry.get_layout(layout_name)
                 except KeyError:
-                    logging.warning(f"LLM suggested invalid layout '{layout_name}', falling back to 'hero_full_bleed'")
-                    layout_name = "hero_full_bleed"
-                    layout = self._mock_layout_registry.get_layout(layout_name)
+                    fallback = layout_pool[0] if layout_pool else "hero_full_bleed"
+                    logging.warning(f"LLM suggested invalid layout '{layout_name}', falling back to '{fallback}'")
+                    layout_name = fallback
+                    layout = self._layout_registry.get_layout(layout_name)
                 
                 processed_paragraphs.append({
                     "section_name": p.get("section_name", "段落"),
@@ -114,6 +210,11 @@ class PromptChainRunner:
                     "layout_name": layout_name,
                     "images_required": layout.images_required
                 })
+            
+            # Post-processing: Ensure the last paragraph of the outline is marked as "结语" if required
+            if self.profile.get("constraints", {}).get("conclusion_required", False):
+                if processed_paragraphs and processed_paragraphs[-1].get("section_name") != "结语":
+                    processed_paragraphs[-1]["section_name"] = "结语"
                 
             return {
                 "angle_title": angle_title,
@@ -125,16 +226,28 @@ class PromptChainRunner:
             # Phase 3: Call LLM for final draft
             outline_json = json.loads(user_input)
             style_en = outline_json.get("style_en", "street style")
+            outline_paras = outline_json.get("paragraphs", [])
             
-            draft_response = self._llm_client.generate_json(system_prompt, user_input)
+            draft_response = None
+            draft_paras = []
+            
+            for attempt in range(2):
+                draft_response = self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
+                draft_paras = draft_response.get("paragraphs", [])
+                if len(draft_paras) >= len(outline_paras):
+                    break
+                if attempt == 0:
+                    logging.warning(f"LLM output truncation detected ({len(draft_paras)}/{len(outline_paras)}). Retrying phase 3...")
+            
+            if len(draft_paras) < len(outline_paras):
+                logging.warning(f"LLM truncation persists after retry. Truncating outline from {len(outline_paras)} to {len(draft_paras)} paragraphs.")
+                outline_paras = outline_paras[:len(draft_paras)]
             
             final_paragraphs = []
-            draft_paras = draft_response.get("paragraphs", [])
-            outline_paras = outline_json.get("paragraphs", [])
             
             for i in range(len(outline_paras)):
                 out_p = outline_paras[i]
-                draft_p = draft_paras[i] if i < len(draft_paras) else {}
+                draft_p = draft_paras[i]
                 
                 final_paragraphs.append({
                     "section_name": draft_p.get("section_name", out_p.get("section_name", "")),
@@ -142,6 +255,11 @@ class PromptChainRunner:
                     "layout_name": out_p.get("layout_name", "hero_full_bleed"),
                     "image_queries": draft_p.get("image_queries", [])
                 })
+            
+            # Post-processing: Ensure the last paragraph is explicitly marked as "结语" if required by profile
+            if self.profile.get("constraints", {}).get("conclusion_required", False):
+                if final_paragraphs and final_paragraphs[-1].get("section_name") != "结语":
+                    final_paragraphs[-1]["section_name"] = "结语"
                 
             return {
                 "paragraphs": final_paragraphs,

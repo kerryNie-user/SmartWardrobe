@@ -1,0 +1,22 @@
+{
+  "article_count": 1,
+  "articles": [
+    {
+      "topic_id": "auto_0",
+      "title": "测试新闻摘要中的品牌与系列：廓形、情绪与地点的三重变奏",
+      "paragraph_count": 4,
+      "unique_layouts": 4,
+      "status": "success"
+    }
+  ],
+  "images": {
+    "download_enabled": false,
+    "max_images_total": 0,
+    "attempted": 0,
+    "downloaded": 0,
+    "failed": 0,
+    "duplicate_hashes": 0,
+    "skipped_used_url": 0,
+    "details": []
+  }
+}

@@ -1,0 +1,1140 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.11.14, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/kerry-mac/SmartWardrobe/worktrees/ai_blogger
+plugins: anyio-4.12.0
+collected 30 items
+
+services/ai_blogger/tests/test_article_length_and_structure.py FF        [  6%]
+services/ai_blogger/tests/test_batch_pipeline_10.py .                    [ 10%]
+services/ai_blogger/tests/test_chain_runner_truncation.py ..             [ 16%]
+services/ai_blogger/tests/test_duckduckgo_image.py E                     [ 20%]
+services/ai_blogger/tests/test_dynamic_topic_generation.py F             [ 23%]
+services/ai_blogger/tests/test_html_image_sizing_rules.py F              [ 26%]
+services/ai_blogger/tests/test_html_layout_rendering.py .                [ 30%]
+services/ai_blogger/tests/test_html_no_duplicate_section_heading.py .    [ 33%]
+services/ai_blogger/tests/test_image_dedupe.py ..                        [ 40%]
+services/ai_blogger/tests/test_image_sourcer_bing.py .                   [ 43%]
+services/ai_blogger/tests/test_image_sourcer_hero.py .                   [ 46%]
+services/ai_blogger/tests/test_latest_news_scout.py .                    [ 50%]
+services/ai_blogger/tests/test_layout_registry.py ..                     [ 56%]
+services/ai_blogger/tests/test_llm_client.py ...                         [ 66%]
+services/ai_blogger/tests/test_profile_loading.py ...                    [ 76%]
+services/ai_blogger/tests/test_prompt_chain.py FF                        [ 83%]
+services/ai_blogger/tests/test_real_llm_chain.py s                       [ 86%]
+services/ai_blogger/tests/test_topic_sourcer.py ..                       [ 93%]
+services/ai_blogger/tests/test_trend_scraper_image.py ..                 [100%]
+
+==================================== ERRORS ====================================
+________________ ERROR at setup of test_duckduckgo_image_search ________________
+file /Users/kerry-mac/SmartWardrobe/worktrees/ai_blogger/services/ai_blogger/tests/test_duckduckgo_image.py, line 4
+  def test_duckduckgo_image_search(query: str, max_results: int = 5):
+E       fixture 'query' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/kerry-mac/SmartWardrobe/worktrees/ai_blogger/services/ai_blogger/tests/test_duckduckgo_image.py:4
+=================================== FAILURES ===================================
+_______________ test_article_has_min_10_paragraphs_and_sections ________________
+
+self = <services.ai_blogger.llm_client.UniversalLLMClient object at 0x1033d1f50>
+system_prompt = '', user_prompt = 'Topic: 测试选题', use_memory = False
+enable_search = False
+
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
+        """
+        Sends a request to the LLM and strictly expects a JSON object back.
+        If use_memory is True, the system will append to self.history and send the full history.
+        """
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+    
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+        messages = []
+    
+        if use_memory:
+            if not self.history:
+                self.history.append({"role": "system", "content": system_prompt})
+            self.history.append({"role": "user", "content": user_prompt})
+            messages = self.history
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+    
+        # Build payload. We ask the model to reply in JSON format.
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+    
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+    
+        # Only some models support response_format strict json
+        if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
+            payload["response_format"] = {"type": "json_object"}
+    
+        max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
+        for attempt in range(max_retries):
+            try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
+                    content = result['choices'][0]['message']['content']
+    
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+    
+                    # Try to parse the content as JSON
+                    try:
+>                       return json.loads(content)
+                               ^^^^^^^^^^^^^^^^^^^
+
+services/ai_blogger/llm_client.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../miniconda3/envs/SmartWardrobe/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../miniconda3/envs/SmartWardrobe/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.decoder.JSONDecoder object at 0x101b09710>
+s = '好的，请问您希望测试选题的具体方向或内容是什么？例如：技术、文化、生活、科技趋势等。', idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+            obj, end = self.scan_once(s, idx)
+        except StopIteration as err:
+>           raise JSONDecodeError("Expecting value", s, err.value) from None
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+../../../miniconda3/envs/SmartWardrobe/lib/python3.11/json/decoder.py:355: JSONDecodeError
+
+During handling of the above exception, another exception occurred:
+
+self = <services.ai_blogger.llm_client.UniversalLLMClient object at 0x1033d1f50>
+system_prompt = '', user_prompt = 'Topic: 测试选题', use_memory = False
+enable_search = False
+
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
+        """
+        Sends a request to the LLM and strictly expects a JSON object back.
+        If use_memory is True, the system will append to self.history and send the full history.
+        """
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+    
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+        messages = []
+    
+        if use_memory:
+            if not self.history:
+                self.history.append({"role": "system", "content": system_prompt})
+            self.history.append({"role": "user", "content": user_prompt})
+            messages = self.history
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+    
+        # Build payload. We ask the model to reply in JSON format.
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+    
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+    
+        # Only some models support response_format strict json
+        if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
+            payload["response_format"] = {"type": "json_object"}
+    
+        max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
+        for attempt in range(max_retries):
+            try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
+                    content = result['choices'][0]['message']['content']
+    
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+    
+                    # Try to parse the content as JSON
+                    try:
+                        return json.loads(content)
+                    except json.JSONDecodeError:
+                        # Sometime the model wraps JSON in markdown block ```json ... ```
+                        if "```json" in content:
+                            clean_content = content.split("```json")[1].split("```")[0].strip()
+                            return json.loads(clean_content)
+                        # Fallback: extract anything between { and } or [ and ]
+                        import re
+                        match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+                        if match:
+                            try:
+                                return json.loads(match.group(0))
+                            except:
+                                pass
+    
+                        # Sometimes LLM truncates the JSON. We could try a very basic recovery, but for now just fail.
+>                       raise ValueError(f"Failed to parse JSON from LLM response: {content}")
+E                       ValueError: Failed to parse JSON from LLM response: 好的，请问您希望测试选题的具体方向或内容是什么？例如：技术、文化、生活、科技趋势等。
+
+services/ai_blogger/llm_client.py:114: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_article_has_min_10_paragraphs_and_sections():
+        runner = PromptChainRunner(prompts_dir="services/ai_blogger_new/prompts")
+>       result = runner.run_chain(raw_topic="测试选题")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+services/ai_blogger/tests/test_article_length_and_structure.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+services/ai_blogger/chain_runner.py:107: in run_chain
+    angle_result = self._call_llm(
+services/ai_blogger/chain_runner.py:176: in _call_llm
+    return self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <services.ai_blogger.llm_client.UniversalLLMClient object at 0x1033d1f50>
+system_prompt = '', user_prompt = 'Topic: 测试选题', use_memory = False
+enable_search = False
+
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
+        """
+        Sends a request to the LLM and strictly expects a JSON object back.
+        If use_memory is True, the system will append to self.history and send the full history.
+        """
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+    
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+        messages = []
+    
+        if use_memory:
+            if not self.history:
+                self.history.append({"role": "system", "content": system_prompt})
+            self.history.append({"role": "user", "content": user_prompt})
+            messages = self.history
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+    
+        # Build payload. We ask the model to reply in JSON format.
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+    
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+    
+        # Only some models support response_format strict json
+        if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
+            payload["response_format"] = {"type": "json_object"}
+    
+        max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
+        for attempt in range(max_retries):
+            try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
+                    content = result['choices'][0]['message']['content']
+    
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+    
+                    # Try to parse the content as JSON
+                    try:
+                        return json.loads(content)
+                    except json.JSONDecodeError:
+                        # Sometime the model wraps JSON in markdown block ```json ... ```
+                        if "```json" in content:
+                            clean_content = content.split("```json")[1].split("```")[0].strip()
+                            return json.loads(clean_content)
+                        # Fallback: extract anything between { and } or [ and ]
+                        import re
+                        match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+                        if match:
+                            try:
+                                return json.loads(match.group(0))
+                            except:
+                                pass
+    
+                        # Sometimes LLM truncates the JSON. We could try a very basic recovery, but for now just fail.
+                        raise ValueError(f"Failed to parse JSON from LLM response: {content}")
+    
+            except urllib.error.HTTPError as e:
+                error_body = e.read().decode('utf-8')
+                logging.error(f"LLM API HTTPError {e.code}: {error_body}")
+                if allow_search and e.code in (400, 422):
+                    allow_search = False
+                    continue
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"LLM API Error: {e.code} - {error_body}")
+            except Exception as e:
+                logging.error(f"LLM request failed (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt == max_retries - 1:
+>                   raise RuntimeError(f"LLM request completely failed after {max_retries} attempts: {e}")
+E                   RuntimeError: LLM request completely failed after 3 attempts: Failed to parse JSON from LLM response: 好的，请问您希望测试选题的具体方向或内容是什么？例如：技术、文化、生活、科技趋势等。
+
+services/ai_blogger/llm_client.py:127: RuntimeError
+------------------------------ Captured log call -------------------------------
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_angle_editor.md
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_outline_planner.md
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_draft_writer.md
+ERROR    root:llm_client.py:125 LLM request failed (attempt 1/3): Failed to parse JSON from LLM response: 您好！看起来您想进行“测试选题”。为了更好地协助您，请告诉我：
+
+1. 您希望测试的**具体领域或主题**是什么？（例如：科技、教育、文化、健康等）
+2. 您需要的**测试类型**是？（例如：知识问答、逻辑推理、创意写作、数据分析等）
+3. 是否有特定的**目标受众**或**使用场景**？（例如：学生考试、企业培训、娱乐互动等）
+4. 需要我提供**题目示例**、**完整测试方案**，还是其他帮助？
+
+请补充细节，我会为您定制合适的测试内容！ 😊
+ERROR    root:llm_client.py:125 LLM request failed (attempt 2/3): Failed to parse JSON from LLM response: 好的，请问您想测试哪个具体的选题方向？例如：科技、文化、生活、教育还是其他领域？或者您有特定的主题想法需要我协助展开吗？
+ERROR    root:llm_client.py:125 LLM request failed (attempt 3/3): Failed to parse JSON from LLM response: 好的，请问您希望测试选题的具体方向或内容是什么？例如：技术、文化、生活、科技趋势等。
+____________ test_each_paragraph_has_min_length_and_layout_contract ____________
+
+self = <services.ai_blogger.llm_client.UniversalLLMClient object at 0x103e45e90>
+system_prompt = '', user_prompt = 'Topic: 测试选题', use_memory = False
+enable_search = False
+
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
+        """
+        Sends a request to the LLM and strictly expects a JSON object back.
+        If use_memory is True, the system will append to self.history and send the full history.
+        """
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+    
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+        messages = []
+    
+        if use_memory:
+            if not self.history:
+                self.history.append({"role": "system", "content": system_prompt})
+            self.history.append({"role": "user", "content": user_prompt})
+            messages = self.history
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+    
+        # Build payload. We ask the model to reply in JSON format.
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+    
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+    
+        # Only some models support response_format strict json
+        if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
+            payload["response_format"] = {"type": "json_object"}
+    
+        max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
+        for attempt in range(max_retries):
+            try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
+                    content = result['choices'][0]['message']['content']
+    
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+    
+                    # Try to parse the content as JSON
+                    try:
+>                       return json.loads(content)
+                               ^^^^^^^^^^^^^^^^^^^
+
+services/ai_blogger/llm_client.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../miniconda3/envs/SmartWardrobe/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../miniconda3/envs/SmartWardrobe/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.decoder.JSONDecoder object at 0x101b09710>
+s = '好的，请问您想测试哪个具体选题？或者需要我提供几个备选方向供您参考吗？', idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+            obj, end = self.scan_once(s, idx)
+        except StopIteration as err:
+>           raise JSONDecodeError("Expecting value", s, err.value) from None
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+../../../miniconda3/envs/SmartWardrobe/lib/python3.11/json/decoder.py:355: JSONDecodeError
+
+During handling of the above exception, another exception occurred:
+
+self = <services.ai_blogger.llm_client.UniversalLLMClient object at 0x103e45e90>
+system_prompt = '', user_prompt = 'Topic: 测试选题', use_memory = False
+enable_search = False
+
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
+        """
+        Sends a request to the LLM and strictly expects a JSON object back.
+        If use_memory is True, the system will append to self.history and send the full history.
+        """
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+    
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+        messages = []
+    
+        if use_memory:
+            if not self.history:
+                self.history.append({"role": "system", "content": system_prompt})
+            self.history.append({"role": "user", "content": user_prompt})
+            messages = self.history
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+    
+        # Build payload. We ask the model to reply in JSON format.
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+    
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+    
+        # Only some models support response_format strict json
+        if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
+            payload["response_format"] = {"type": "json_object"}
+    
+        max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
+        for attempt in range(max_retries):
+            try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
+                    content = result['choices'][0]['message']['content']
+    
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+    
+                    # Try to parse the content as JSON
+                    try:
+                        return json.loads(content)
+                    except json.JSONDecodeError:
+                        # Sometime the model wraps JSON in markdown block ```json ... ```
+                        if "```json" in content:
+                            clean_content = content.split("```json")[1].split("```")[0].strip()
+                            return json.loads(clean_content)
+                        # Fallback: extract anything between { and } or [ and ]
+                        import re
+                        match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+                        if match:
+                            try:
+                                return json.loads(match.group(0))
+                            except:
+                                pass
+    
+                        # Sometimes LLM truncates the JSON. We could try a very basic recovery, but for now just fail.
+>                       raise ValueError(f"Failed to parse JSON from LLM response: {content}")
+E                       ValueError: Failed to parse JSON from LLM response: 好的，请问您想测试哪个具体选题？或者需要我提供几个备选方向供您参考吗？
+
+services/ai_blogger/llm_client.py:114: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_each_paragraph_has_min_length_and_layout_contract():
+        runner = PromptChainRunner(prompts_dir="services/ai_blogger_new/prompts")
+>       result = runner.run_chain(raw_topic="测试选题")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+services/ai_blogger/tests/test_article_length_and_structure.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+services/ai_blogger/chain_runner.py:107: in run_chain
+    angle_result = self._call_llm(
+services/ai_blogger/chain_runner.py:176: in _call_llm
+    return self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <services.ai_blogger.llm_client.UniversalLLMClient object at 0x103e45e90>
+system_prompt = '', user_prompt = 'Topic: 测试选题', use_memory = False
+enable_search = False
+
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
+        """
+        Sends a request to the LLM and strictly expects a JSON object back.
+        If use_memory is True, the system will append to self.history and send the full history.
+        """
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+    
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+        messages = []
+    
+        if use_memory:
+            if not self.history:
+                self.history.append({"role": "system", "content": system_prompt})
+            self.history.append({"role": "user", "content": user_prompt})
+            messages = self.history
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+    
+        # Build payload. We ask the model to reply in JSON format.
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+    
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+    
+        # Only some models support response_format strict json
+        if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
+            payload["response_format"] = {"type": "json_object"}
+    
+        max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
+        for attempt in range(max_retries):
+            try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
+                    content = result['choices'][0]['message']['content']
+    
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+    
+                    # Try to parse the content as JSON
+                    try:
+                        return json.loads(content)
+                    except json.JSONDecodeError:
+                        # Sometime the model wraps JSON in markdown block ```json ... ```
+                        if "```json" in content:
+                            clean_content = content.split("```json")[1].split("```")[0].strip()
+                            return json.loads(clean_content)
+                        # Fallback: extract anything between { and } or [ and ]
+                        import re
+                        match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+                        if match:
+                            try:
+                                return json.loads(match.group(0))
+                            except:
+                                pass
+    
+                        # Sometimes LLM truncates the JSON. We could try a very basic recovery, but for now just fail.
+                        raise ValueError(f"Failed to parse JSON from LLM response: {content}")
+    
+            except urllib.error.HTTPError as e:
+                error_body = e.read().decode('utf-8')
+                logging.error(f"LLM API HTTPError {e.code}: {error_body}")
+                if allow_search and e.code in (400, 422):
+                    allow_search = False
+                    continue
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"LLM API Error: {e.code} - {error_body}")
+            except Exception as e:
+                logging.error(f"LLM request failed (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt == max_retries - 1:
+>                   raise RuntimeError(f"LLM request completely failed after {max_retries} attempts: {e}")
+E                   RuntimeError: LLM request completely failed after 3 attempts: Failed to parse JSON from LLM response: 好的，请问您想测试哪个具体选题？或者需要我提供几个备选方向供您参考吗？
+
+services/ai_blogger/llm_client.py:127: RuntimeError
+------------------------------ Captured log call -------------------------------
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_angle_editor.md
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_outline_planner.md
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_draft_writer.md
+ERROR    root:llm_client.py:125 LLM request failed (attempt 1/3): Failed to parse JSON from LLM response: 收到，已记录选题主题“测试选题”。请问您希望我如何协助？例如：
+1. 提供选题方向建议（如科技、文化、生活等）
+2. 生成具体的选题标题示例
+3. 分析选题的可行性或受众定位
+4. 其他定制需求？
+ERROR    root:llm_client.py:125 LLM request failed (attempt 2/3): Failed to parse JSON from LLM response: 收到，已记录选题“测试选题”。请问您具体需要我协助完成哪一步？例如：
+
+1. **头脑风暴**：生成多个具体的测试选题方向（如技术、产品、用户体验等）。
+2. **方案细化**：针对某个选题设计测试目标、范围、方法和预期产出。
+3. **风险评估**：分析该选题可能遇到的难点或风险点。
+4. **资源规划**：估算所需的人力、时间或工具支持。
+
+请告诉我您的下一步需求！
+ERROR    root:llm_client.py:125 LLM request failed (attempt 3/3): Failed to parse JSON from LLM response: 好的，请问您想测试哪个具体选题？或者需要我提供几个备选方向供您参考吗？
+______ TestDynamicTopicGeneration.test_topic_prompt_contains_profile_info ______
+
+self = <services.ai_blogger.tests.test_dynamic_topic_generation.TestDynamicTopicGeneration testMethod=test_topic_prompt_contains_profile_info>
+mock_sourcer_class = <MagicMock name='TopicSourcer' id='4349115088'>
+mock_llm_client_class = <MagicMock name='UniversalLLMClient' id='4360903056'>
+
+    @patch('services.ai_blogger.run_pipeline.UniversalLLMClient')
+    @patch('services.ai_blogger.run_pipeline.TopicSourcer')
+    def test_topic_prompt_contains_profile_info(self, mock_sourcer_class, mock_llm_client_class):
+        # Setup Mock LLM Client
+        mock_llm_instance = MagicMock()
+        mock_llm_client_class.return_value = mock_llm_instance
+        # Mock generate_json to return a valid dummy title so it doesn't fail
+        mock_llm_instance.generate_json.return_value = {"titles": ["Test Fashion News"]}
+    
+        # Run pipeline with fashion_news profile
+        config = {
+            "count": 1,
+            "profile": "fashion_news",
+            "download_images": False,
+            "output_dir": "test_output",
+            "rng_seed": 0
+        }
+    
+        # In run_pipeline, it should call llm_client.generate_json(system_prompt, user_prompt)
+        run_batch(config)
+    
+        # Verify the call was made
+        self.assertTrue(mock_llm_instance.generate_json.called)
+    
+        # Get the arguments passed to generate_json
+        args, kwargs = mock_llm_instance.generate_json.call_args
+        system_prompt = args[0]
+        user_prompt = args[1]
+    
+        # Verify the user_prompt contains the profile name and visual strategy
+        # Expecting "时尚新闻与趋势解读" and its visual strategy (e.g., runway, SS25)
+>       self.assertIn("时尚新闻与趋势解读", user_prompt, "Profile name not injected into topic generation prompt")
+E       AssertionError: '时尚新闻与趋势解读' not found in '<role>\n你是资深时尚记者与编辑（Senior fashion journalist & editor）。\n你的任务是使用联网搜索能力，找到近期（过去 7 天内）最值得报道的时尚新闻事件，并把它们整理为可直接用于写稿的“新闻种子物料”。\n</role>\n\n<rules>\n1. 必须返回指定数量（1 条）的新闻条目。\n2. 每条新闻必须是过去 7 天内发生或发布的事件；如果无法确认日期，宁可换一条也不要返回旧闻。\n3. 新闻类型优先级：高定/时装周、奢侈品牌重大事件（创意总监/CEO 变动、联名发布、争议事件）、重要展览与文化事件（与时尚相关）。\n4. 每条新闻必须包含可核验的来源和链接，summary 必须写到具体品牌/人物/地点/系列名，禁止抽象空话。\n5. 输出必须是严格 JSON，对象顶层键为 news，不能包含任何额外文字。\n</rules>\n\n<output_format>\n{\n  "news": [\n    {\n      "title": "中文标题（可直接用作文章标题）",\n      "summary": "中文摘要（至少 5 句，包含品牌/人物/地点/系列名/关键造型或核心信息）",\n      "source": "媒体/网站名称",\n      "link": "https://example.com/article",\n      "published_at": "2026-04-16"\n    }\n  ]\n}\n</output_format>\n' : Profile name not injected into topic generation prompt
+
+services/ai_blogger/tests/test_dynamic_topic_generation.py:37: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  root:run_pipeline.py:234 LLM news scout returned empty results. Falling back to RSS scraping...
+_________________________ test_html_image_sizing_rules _________________________
+
+tmp_path = PosixPath('/private/var/folders/lb/bkxl5_sd1t99n80wwm0n1xrc0000gn/T/pytest-of-kerry-mac/pytest-49/test_html_image_sizing_rules0')
+
+    def test_html_image_sizing_rules(tmp_path):
+        result = run_batch(
+            {
+                "count": 1,
+                "download_images": False,
+                "output_dir": str(tmp_path),
+                "rng_seed": 0,
+            }
+        )
+    
+        html = tmp_path.joinpath(result["html_file"]).read_text(encoding="utf-8")
+>       assert ".layout-split img" in html
+E       assert '.layout-split img' in '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n    <meta charset="UTF-8">\n    <title>SmartWardrobe - AI Prompt Chain ...外界如何变幻莫测，我们依然拥有定义自己空间的权利，依然可以在身体的褶皱里，找到那份属于自我的、不可侵犯的尊严与自由。这不仅是时尚的突围，更是精神的归乡。</div></div>\n    </div>\n</body>\n</html>'
+
+services/ai_blogger/tests/test_html_image_sizing_rules.py:15: AssertionError
+__________________________ test_prompt_chain_loading ___________________________
+
+    def test_prompt_chain_loading():
+        runner = PromptChainRunner(prompts_dir="services/ai_blogger_new/prompts")
+>       assert "phase1_angle" in runner.prompts
+E       AssertionError: assert 'phase1_angle' in {}
+E        +  where {} = <services.ai_blogger.chain_runner.PromptChainRunner object at 0x103e91190>.prompts
+
+services/ai_blogger/tests/test_prompt_chain.py:6: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_angle_editor.md
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_outline_planner.md
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_draft_writer.md
+_________________________ test_prompt_chain_execution __________________________
+
+self = <services.ai_blogger.llm_client.UniversalLLMClient object at 0x103e61e90>
+system_prompt = '', user_prompt = 'Topic: 极简风', use_memory = False
+enable_search = False
+
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
+        """
+        Sends a request to the LLM and strictly expects a JSON object back.
+        If use_memory is True, the system will append to self.history and send the full history.
+        """
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+    
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+        messages = []
+    
+        if use_memory:
+            if not self.history:
+                self.history.append({"role": "system", "content": system_prompt})
+            self.history.append({"role": "user", "content": user_prompt})
+            messages = self.history
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+    
+        # Build payload. We ask the model to reply in JSON format.
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+    
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+    
+        # Only some models support response_format strict json
+        if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
+            payload["response_format"] = {"type": "json_object"}
+    
+        max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
+        for attempt in range(max_retries):
+            try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
+                    content = result['choices'][0]['message']['content']
+    
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+    
+                    # Try to parse the content as JSON
+                    try:
+>                       return json.loads(content)
+                               ^^^^^^^^^^^^^^^^^^^
+
+services/ai_blogger/llm_client.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../miniconda3/envs/SmartWardrobe/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../miniconda3/envs/SmartWardrobe/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.decoder.JSONDecoder object at 0x101b09710>
+s = '极简风（Minimalism）是一种“少即是多”的设计理念，强调通过去除冗余元素，突出核心功能与本质美感。它常见于建筑、室内设计、平面设计及生活方式中，具有以下特点：\n\n- **简洁的线条与形状**：避免复杂装饰，多用几何形态。\...\n- **材质真实表达**：展现木材、石材、金属等天然材质的质感。\n\n在快节奏生活中，极简风不仅是一种审美选择，更是一种追求内心平静与生活效率的生活方式。你是在考虑装修、产品设计，还是想探索极简生活理念呢？我可以提供更具体的建议。'
+idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+            obj, end = self.scan_once(s, idx)
+        except StopIteration as err:
+>           raise JSONDecodeError("Expecting value", s, err.value) from None
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+../../../miniconda3/envs/SmartWardrobe/lib/python3.11/json/decoder.py:355: JSONDecodeError
+
+During handling of the above exception, another exception occurred:
+
+self = <services.ai_blogger.llm_client.UniversalLLMClient object at 0x103e61e90>
+system_prompt = '', user_prompt = 'Topic: 极简风', use_memory = False
+enable_search = False
+
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
+        """
+        Sends a request to the LLM and strictly expects a JSON object back.
+        If use_memory is True, the system will append to self.history and send the full history.
+        """
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+    
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+        messages = []
+    
+        if use_memory:
+            if not self.history:
+                self.history.append({"role": "system", "content": system_prompt})
+            self.history.append({"role": "user", "content": user_prompt})
+            messages = self.history
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+    
+        # Build payload. We ask the model to reply in JSON format.
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+    
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+    
+        # Only some models support response_format strict json
+        if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
+            payload["response_format"] = {"type": "json_object"}
+    
+        max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
+        for attempt in range(max_retries):
+            try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
+                    content = result['choices'][0]['message']['content']
+    
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+    
+                    # Try to parse the content as JSON
+                    try:
+                        return json.loads(content)
+                    except json.JSONDecodeError:
+                        # Sometime the model wraps JSON in markdown block ```json ... ```
+                        if "```json" in content:
+                            clean_content = content.split("```json")[1].split("```")[0].strip()
+                            return json.loads(clean_content)
+                        # Fallback: extract anything between { and } or [ and ]
+                        import re
+                        match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+                        if match:
+                            try:
+                                return json.loads(match.group(0))
+                            except:
+                                pass
+    
+                        # Sometimes LLM truncates the JSON. We could try a very basic recovery, but for now just fail.
+>                       raise ValueError(f"Failed to parse JSON from LLM response: {content}")
+E                       ValueError: Failed to parse JSON from LLM response: 极简风（Minimalism）是一种“少即是多”的设计理念，强调通过去除冗余元素，突出核心功能与本质美感。它常见于建筑、室内设计、平面设计及生活方式中，具有以下特点：
+E                       
+E                       - **简洁的线条与形状**：避免复杂装饰，多用几何形态。
+E                       - **中性色调为主**：常使用黑、白、灰及自然材质原色，营造宁静氛围。
+E                       - **留白艺术**：通过空间留白引导视觉焦点，提升呼吸感。
+E                       - **功能性优先**：每一件物品或设计都需有明确用途，拒绝无意义堆砌。
+E                       - **材质真实表达**：展现木材、石材、金属等天然材质的质感。
+E                       
+E                       在快节奏生活中，极简风不仅是一种审美选择，更是一种追求内心平静与生活效率的生活方式。你是在考虑装修、产品设计，还是想探索极简生活理念呢？我可以提供更具体的建议。
+
+services/ai_blogger/llm_client.py:114: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_prompt_chain_execution():
+        runner = PromptChainRunner(prompts_dir="services/ai_blogger_new/prompts")
+>       result = runner.run_chain(raw_topic="极简风")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+services/ai_blogger/tests/test_prompt_chain.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+services/ai_blogger/chain_runner.py:107: in run_chain
+    angle_result = self._call_llm(
+services/ai_blogger/chain_runner.py:176: in _call_llm
+    return self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <services.ai_blogger.llm_client.UniversalLLMClient object at 0x103e61e90>
+system_prompt = '', user_prompt = 'Topic: 极简风', use_memory = False
+enable_search = False
+
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
+        """
+        Sends a request to the LLM and strictly expects a JSON object back.
+        If use_memory is True, the system will append to self.history and send the full history.
+        """
+        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+    
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+        messages = []
+    
+        if use_memory:
+            if not self.history:
+                self.history.append({"role": "system", "content": system_prompt})
+            self.history.append({"role": "user", "content": user_prompt})
+            messages = self.history
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+    
+        # Build payload. We ask the model to reply in JSON format.
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+    
+        if enable_search and "qwen" in self.model.lower():
+            payload["enable_search"] = True
+    
+        # Only some models support response_format strict json
+        if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
+            payload["response_format"] = {"type": "json_object"}
+    
+        max_retries = 3
+        allow_search = enable_search and "qwen" in self.model.lower()
+        for attempt in range(max_retries):
+            try:
+                payload_local = dict(payload)
+                if not allow_search:
+                    payload_local.pop("enable_search", None)
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    response_text = response.read().decode('utf-8')
+                    try:
+                        result = json.loads(response_text)
+                    except json.JSONDecodeError:
+                        logging.error(f"Raw response from LLM API: {response_text}")
+                        raise
+                    content = result['choices'][0]['message']['content']
+    
+                    if use_memory:
+                        self.history.append({"role": "assistant", "content": content})
+    
+                    # Try to parse the content as JSON
+                    try:
+                        return json.loads(content)
+                    except json.JSONDecodeError:
+                        # Sometime the model wraps JSON in markdown block ```json ... ```
+                        if "```json" in content:
+                            clean_content = content.split("```json")[1].split("```")[0].strip()
+                            return json.loads(clean_content)
+                        # Fallback: extract anything between { and } or [ and ]
+                        import re
+                        match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+                        if match:
+                            try:
+                                return json.loads(match.group(0))
+                            except:
+                                pass
+    
+                        # Sometimes LLM truncates the JSON. We could try a very basic recovery, but for now just fail.
+                        raise ValueError(f"Failed to parse JSON from LLM response: {content}")
+    
+            except urllib.error.HTTPError as e:
+                error_body = e.read().decode('utf-8')
+                logging.error(f"LLM API HTTPError {e.code}: {error_body}")
+                if allow_search and e.code in (400, 422):
+                    allow_search = False
+                    continue
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"LLM API Error: {e.code} - {error_body}")
+            except Exception as e:
+                logging.error(f"LLM request failed (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt == max_retries - 1:
+>                   raise RuntimeError(f"LLM request completely failed after {max_retries} attempts: {e}")
+E                   RuntimeError: LLM request completely failed after 3 attempts: Failed to parse JSON from LLM response: 极简风（Minimalism）是一种“少即是多”的设计理念，强调通过去除冗余元素，突出核心功能与本质美感。它常见于建筑、室内设计、平面设计及生活方式中，具有以下特点：
+E                   
+E                   - **简洁的线条与形状**：避免复杂装饰，多用几何形态。
+E                   - **中性色调为主**：常使用黑、白、灰及自然材质原色，营造宁静氛围。
+E                   - **留白艺术**：通过空间留白引导视觉焦点，提升呼吸感。
+E                   - **功能性优先**：每一件物品或设计都需有明确用途，拒绝无意义堆砌。
+E                   - **材质真实表达**：展现木材、石材、金属等天然材质的质感。
+E                   
+E                   在快节奏生活中，极简风不仅是一种审美选择，更是一种追求内心平静与生活效率的生活方式。你是在考虑装修、产品设计，还是想探索极简生活理念呢？我可以提供更具体的建议。
+
+services/ai_blogger/llm_client.py:127: RuntimeError
+------------------------------ Captured log call -------------------------------
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_angle_editor.md
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_outline_planner.md
+WARNING  root:chain_runner.py:89 Agent prompt file not found: services/ai_blogger_new/prompts/@agent_draft_writer.md
+ERROR    root:llm_client.py:125 LLM request failed (attempt 1/3): Failed to parse JSON from LLM response: 极简风（Minimalism）是一种追求“少即是多”的设计理念，强调通过去除多余元素来突出核心功能与本质。它常见于室内设计、平面设计、服装时尚及数字产品界面中。
+
+**核心特点：**
+- **简洁的形态**：线条干净利落，避免复杂装饰。
+- **中性色调**：常以黑、白、灰为主，辅以少量自然色或低饱和度色彩。
+- **功能性优先**：每件物品或设计元素都需有明确用途，拒绝冗余。
+- **留白艺术**：利用大量空白空间营造呼吸感与视觉焦点。
+- **材质真实**：注重材料本身的质感，如原木、金属、混凝土等。
+
+**应用场景举例：**
+- 室内：无主灯设计、隐藏式收纳、开放式布局。
+- 平面：极简排版、单字海报、留白突出的品牌标识。
+- 科技：苹果（Apple）的产品设计是典型代表。
+- 生活：断舍离、胶囊衣橱等生活方式实践。
+
+极简并非简单或贫乏，而是经过深思熟虑后的精炼，旨在提升效率、美感与内心的宁静。你是在寻找设计灵感，还是想了解如何打造极简风格的空间？
+ERROR    root:llm_client.py:125 LLM request failed (attempt 2/3): Failed to parse JSON from LLM response: 极简风（Minimalism）是一种强调“少即是多”的设计与生活哲学。它主张通过剔除多余的元素，只保留最核心、最必要的部分，从而突出本质、提升功能性与美感。
+
+**核心特点：**
+- **简洁的线条与形态**：避免繁复的装饰，追求几何感和流畅感。
+- **中性色调为主**：常用黑、白、灰、米色等低饱和度色彩，营造宁静氛围。
+- **注重留白**：通过空间布局的呼吸感，让视觉焦点更集中。
+- **功能优先**：每一件物品或设计元素都需有明确用途，拒绝无意义的堆砌。
+- **材质真实**：偏好天然材料（如原木、石材、棉麻），展现质感而非修饰。
+
+**应用领域：**
+- **室内设计**：开放式布局、隐藏式收纳、无主灯设计。
+- **产品设计**：苹果（Apple）是典型代表，强调一体化与易用性。
+- **时尚穿搭**：基础款叠穿、剪裁利落、色彩统一。
+- **数字界面**：扁平化设计、减少干扰信息、提升操作效率。
+
+极简不仅是风格，更是一种生活态度——在信息过载的时代，主动选择专注与清晰。你是在寻找设计灵感，还是想了解如何实践极简生活？
+ERROR    root:llm_client.py:125 LLM request failed (attempt 3/3): Failed to parse JSON from LLM response: 极简风（Minimalism）是一种“少即是多”的设计理念，强调通过去除冗余元素，突出核心功能与本质美感。它常见于建筑、室内设计、平面设计及生活方式中，具有以下特点：
+
+- **简洁的线条与形状**：避免复杂装饰，多用几何形态。
+- **中性色调为主**：常使用黑、白、灰及自然材质原色，营造宁静氛围。
+- **留白艺术**：通过空间留白引导视觉焦点，提升呼吸感。
+- **功能性优先**：每一件物品或设计都需有明确用途，拒绝无意义堆砌。
+- **材质真实表达**：展现木材、石材、金属等天然材质的质感。
+
+在快节奏生活中，极简风不仅是一种审美选择，更是一种追求内心平静与生活效率的生活方式。你是在考虑装修、产品设计，还是想探索极简生活理念呢？我可以提供更具体的建议。
+=========================== short test summary info ============================
+FAILED services/ai_blogger/tests/test_article_length_and_structure.py::test_article_has_min_10_paragraphs_and_sections - RuntimeError: LLM request completely failed after 3 attempts: Failed to parse JSON from LLM response: 好的，请问您希望测试选题的具体方向或内容是什么？例如：技术、文化、生活、科技趋势等。
+FAILED services/ai_blogger/tests/test_article_length_and_structure.py::test_each_paragraph_has_min_length_and_layout_contract - RuntimeError: LLM request completely failed after 3 attempts: Failed to parse JSON from LLM response: 好的，请问您想测试哪个具体选题？或者需要我提供几个备选方向供您参考吗？
+FAILED services/ai_blogger/tests/test_dynamic_topic_generation.py::TestDynamicTopicGeneration::test_topic_prompt_contains_profile_info - AssertionError: '时尚新闻与趋势解读' not found in '<role>\n你是资深时尚记者与编辑（Senior fashion journalist & editor）。\n你的任务是使用联网搜索能力，找到近期（过去 7 天内）最值得报道的时尚新闻事件，并把它们整理为可直接用于写稿的“新闻种子物料”。\n</role>\n\n<rules>\n1. 必须返回指定数量（1 条）的新闻条目。\n2. 每条新闻必须是过去 7 天内发生或发布的事件；如果无法确认日期，宁可换一条也不要返回旧闻。\n3. 新闻类型优先级：高定/时装周、奢侈品牌重大事件（创意总监/CEO 变动、联名发布、争议事件）、重要展览与文化事件（与时尚相关）。\n4. 每条新闻必须包含可核验的来源和链接，summary 必须写到具体品牌/人物/地点/系列名，禁止抽象空话。\n5. 输出必须是严格 JSON，对象顶层键为 news，不能包含任何额外文字。\n</rules>\n\n<output_format>\n{\n  "news": [\n    {\n      "title": "中文标题（可直接用作文章标题）",\n      "summary": "中文摘要（至少 5 句，包含品牌/人物/地点/系列名/关键造型或核心信息）",\n      "source": "媒体/网站名称",\n      "link": "https://example.com/article",\n      "published_at": "2026-04-16"\n    }\n  ]\n}\n</output_format>\n' : Profile name not injected into topic generation prompt
+FAILED services/ai_blogger/tests/test_html_image_sizing_rules.py::test_html_image_sizing_rules - assert '.layout-split img' in '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n    <meta charset="UTF-8">\n    <title>SmartWardrobe - AI Prompt Chain ...外界如何变幻莫测，我们依然拥有定义自己空间的权利，依然可以在身体的褶皱里，找到那份属于自我的、不可侵犯的尊严与自由。这不仅是时尚的突围，更是精神的归乡。</div></div>\n    </div>\n</body>\n</html>'
+FAILED services/ai_blogger/tests/test_prompt_chain.py::test_prompt_chain_loading - AssertionError: assert 'phase1_angle' in {}
+ +  where {} = <services.ai_blogger.chain_runner.PromptChainRunner object at 0x103e91190>.prompts
+FAILED services/ai_blogger/tests/test_prompt_chain.py::test_prompt_chain_execution - RuntimeError: LLM request completely failed after 3 attempts: Failed to parse JSON from LLM response: 极简风（Minimalism）是一种“少即是多”的设计理念，强调通过去除冗余元素，突出核心功能与本质美感。它常见于建筑、室内设计、平面设计及生活方式中，具有以下特点：
+
+- **简洁的线条与形状**：避免复杂装饰，多用几何形态。
+- **中性色调为主**：常使用黑、白、灰及自然材质原色，营造宁静氛围。
+- **留白艺术**：通过空间留白引导视觉焦点，提升呼吸感。
+- **功能性优先**：每一件物品或设计都需有明确用途，拒绝无意义堆砌。
+- **材质真实表达**：展现木材、石材、金属等天然材质的质感。
+
+在快节奏生活中，极简风不仅是一种审美选择，更是一种追求内心平静与生活效率的生活方式。你是在考虑装修、产品设计，还是想探索极简生活理念呢？我可以提供更具体的建议。
+ERROR services/ai_blogger/tests/test_duckduckgo_image.py::test_duckduckgo_image_search
+========= 6 failed, 22 passed, 1 skipped, 1 error in 315.92s (0:05:15) =========
+ERROR conda.cli.main_run:execute(125): `conda run pytest services/ai_blogger/tests/` failed. (See above for error)
+

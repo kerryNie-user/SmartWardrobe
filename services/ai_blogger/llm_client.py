@@ -24,6 +24,9 @@ class UniversalLLMClient:
         self.api_key = api_key or os.getenv("LLM_API_KEY")
         self.base_url = base_url or os.getenv("LLM_BASE_URL", "https://api.deepseek.com")
         self.model = model or os.getenv("LLM_MODEL_NAME", "deepseek-chat")
+        
+        # Log the current configuration for debugging
+        logging.info(f"Initialized LLMClient with Model: {self.model}, Base URL: {self.base_url}")
         self.history = []
         
         if not self.api_key:
@@ -33,7 +36,7 @@ class UniversalLLMClient:
         """Clears the conversation history."""
         self.history = []
 
-    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False) -> dict:
+    def generate_json(self, system_prompt: str, user_prompt: str, use_memory: bool = False, enable_search: bool = False) -> dict:
         """
         Sends a request to the LLM and strictly expects a JSON object back.
         If use_memory is True, the system will append to self.history and send the full history.
@@ -65,16 +68,24 @@ class UniversalLLMClient:
             "temperature": 0.7
         }
         
+        if enable_search:
+            payload["enable_search"] = True
+            
         # Only some models support response_format strict json
         if "deepseek" in self.model.lower() or "gpt" in self.model.lower():
             payload["response_format"] = {"type": "json_object"}
         
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-        
         max_retries = 3
+        allow_search = enable_search
+
         for attempt in range(max_retries):
             try:
+                payload_local = dict(payload)
+                if not allow_search and "enable_search" in payload_local:
+                    del payload_local["enable_search"]
+                
+                data = json.dumps(payload_local).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers=headers, method="POST")
                 with urllib.request.urlopen(req, timeout=120) as response:
                     response_text = response.read().decode('utf-8')
                     try:
@@ -95,11 +106,35 @@ class UniversalLLMClient:
                         if "```json" in content:
                             clean_content = content.split("```json")[1].split("```")[0].strip()
                             return json.loads(clean_content)
+                        # Fallback: extract anything between { and } or [ and ]
+                        import re
+                        match = re.search(r'(\{.*\}|\[.*\])', content, re.DOTALL)
+                        if match:
+                            try:
+                                return json.loads(match.group(0))
+                            except:
+                                pass
+                        
+                        # Sometimes LLM truncates the JSON. We could try a very basic recovery, but for now just fail.
                         raise ValueError(f"Failed to parse JSON from LLM response: {content}")
                         
+            except ValueError as ve:
+                logging.error(f"JSON Parse Error (attempt {attempt + 1}/{max_retries}): {ve}")
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"LLM response JSON parsing completely failed: {ve}")
+                
             except urllib.error.HTTPError as e:
                 error_body = e.read().decode('utf-8')
                 logging.error(f"LLM API HTTPError {e.code}: {error_body}")
+                
+                # Token limit exceeded or rate limited
+                if e.code == 401 or e.code == 429:
+                    logging.warning("API Quota/Rate Limit hit. Pausing for 5 seconds...")
+                    time.sleep(5)
+                
+                if allow_search and e.code in (400, 422):
+                    allow_search = False
+                    continue
                 if attempt == max_retries - 1:
                     raise RuntimeError(f"LLM API Error: {e.code} - {error_body}")
             except Exception as e:

@@ -1,0 +1,30 @@
+{
+  "id": "editorial_styling",
+  "name": "实用穿搭指南",
+  "constraints": {
+    "paragraph_count_rules": "严格要求必须是 **10** 个段落。",
+    "allowed_sections": [
+      "\"导语\" (Introduction)",
+      "\"深度解析\" (Deep Dive)",
+      "\"穿搭实操\" (Styling Tips)",
+      "\"穿搭误区\" (Common Mistakes)",
+      "\"结语\" (Conclusion)"
+    ],
+    "conclusion_required": true
+  },
+  "layout_pool": [
+    "hero_full_bleed",
+    "split_image_text",
+    "float_left_photo",
+    "float_right_photo",
+    "pull_quote_center",
+    "tip_box_rules",
+    "lookbook_cards_3",
+    "image_mosaic_3"
+  ],
+  "visual_strategy": "使用诸如 'minimalist white shirt street style' 这样具体的街拍关键词。",
+  "kb_files": [
+    "services/ai_blogger/experience/04_article_structures_templates.md",
+    "services/ai_blogger/experience/06_typography_layout_checklist.md"
+  ]
+}
