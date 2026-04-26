@@ -118,7 +118,7 @@ runTest('New Wardrobe 页面应支持添加并删除衣物', async () => {
   dom.window.document.querySelector('[name="size"]').value = 'L';
   dom.window.document.querySelector('[name="color"]').value = 'Graphite';
   dom.window.document.querySelector('[name="material"]').value = 'Nylon';
-  dom.window.document.querySelector('[name="image"]').value = './images/wardrobe/wool-trench.jpg';
+  dom.window.document.querySelector('[name="image"]').value = '/uploads/wardrobe/wool-trench.jpg';
   dom.window.document.querySelector('[name="favorite"]').checked = true;
 
   const form = dom.window.document.querySelector('[data-ct-wardrobe-form]');
@@ -426,7 +426,7 @@ runTest('New Wardrobe 删除最后一件单品后刷新应保持空衣橱', asyn
       size: 'M',
       color: 'Ink',
       material: 'Wool',
-      image: './images/wardrobe/wool-trench.jpg',
+      image: '/uploads/wardrobe/wool-trench.jpg',
       filter: 'outerwear',
       favorite: false
     }

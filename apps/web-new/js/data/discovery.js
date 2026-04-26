@@ -16,14 +16,14 @@ let DISCOVERY_COPY = {
                     tag: 'International Styling Analysis',
                     title: 'The Copenhagen Minimalist Phenomenon',
                     description: 'A cleaner study of quiet tailoring, softened monochrome, and directional silhouettes across Scandinavia.',
-                    image: './images/shared/copenhagen-minimalist.jpg'
+                    image: '/uploads/shared/copenhagen-minimalist.jpg'
                 },
                 {
                     id: 'parisian-tweed',
                     tag: 'Fashion Week Trends',
                     title: 'Parisian Streets: The Rebirth of Tweed',
                     description: 'Sharper proportion, tactile heritage fabric, and elevated restraint define the current Paris mood.',
-                    image: './images/shared/editorial-look-01.jpg'
+                    image: '/uploads/shared/editorial-look-01.jpg'
                 }
             ]
         },
@@ -37,14 +37,14 @@ let DISCOVERY_COPY = {
                     tag: 'SS24 / Paris',
                     title: 'The Deconstructed Blazer',
                     description: 'Fluid tailoring and broken lines continue to overtake rigid executive dressing.',
-                    image: './images/shared/copenhagen-minimalist.jpg'
+                    image: '/uploads/shared/copenhagen-minimalist.jpg'
                 },
                 {
                     id: 'sustainable-silk',
                     tag: 'Materiality',
                     title: 'Sustainable Silk Synthetics',
                     description: 'Biotech textiles are redefining luxury hand-feel without losing performance.',
-                    image: './images/shared/editorial-look-02.jpg'
+                    image: '/uploads/shared/editorial-look-02.jpg'
                 }
             ]
         },
@@ -55,7 +55,7 @@ let DISCOVERY_COPY = {
                 meta: 'Architectural Tailoring',
                 title: 'Structural Silhouettes in Urban Landscapes',
                 description: 'Seoul designers sharpen executive dressing through sculpted shoulders, technical textiles, and metropolitan precision.',
-                image: './images/shared/editorial-look-02.jpg'
+                image: '/uploads/shared/editorial-look-02.jpg'
             },
             {
                 id: 'monochrome-saturation',
@@ -63,7 +63,7 @@ let DISCOVERY_COPY = {
                 meta: 'Tokyo Shift',
                 title: 'The Monochrome Saturation',
                 description: 'Single-hue dressing continues to dominate city wardrobes with confidence, clarity, and graphic impact.',
-                image: './images/discovery/monochrome-saturation.jpg'
+                image: '/uploads/discovery/monochrome-saturation.jpg'
             },
             {
                 id: 'milan-leather',
@@ -71,7 +71,7 @@ let DISCOVERY_COPY = {
                 meta: 'Craft Focus',
                 title: 'Leather Craftsmanship 2.0',
                 description: 'Lombardy ateliers merge artisanal finishing and sustainable material innovation into a sharper luxury code.',
-                image: './images/shared/leather-craft-fabric.jpg'
+                image: '/uploads/shared/leather-craft-fabric.jpg'
             }
         ],
         communityPosts: [
@@ -82,7 +82,7 @@ let DISCOVERY_COPY = {
                 title: 'The Modern Uniform: Brutalist Basics',
                 description: 'Heavy wool against technical silk creates a silhouette that feels grounded, controlled, and editorial without excess.',
                 stats: { likes: '1.2K', comments: '84' },
-                heroImage: './images/shared/travel-look.jpg',
+                heroImage: '/uploads/shared/travel-look.jpg',
                 body: [
                     'This season marks a return to structure. The deconstructed blazer becomes the anchor of a sharper silhouette that claims space instead of apologizing for it.',
                     'Exposed construction, heavier cloth, and controlled drape turn the look into a study of intention. It is less about volume and more about architectural presence.'
@@ -93,8 +93,8 @@ let DISCOVERY_COPY = {
                     { author: 'Nova_Studio', time: '45M AGO', body: 'Is this from the new archive drop? The lapel stitching looks extremely distinct.' }
                 ],
                 images: [
-                    './images/shared/travel-look.jpg',
-                    './images/discovery/brutalist-basics-02.jpg'
+                    '/uploads/shared/travel-look.jpg',
+                    '/uploads/discovery/brutalist-basics-02.jpg'
                 ]
             },
             {
@@ -104,7 +104,7 @@ let DISCOVERY_COPY = {
                 title: 'Shadow Play & Structural Silk',
                 description: 'Function-led eveningwear turns every seam into geometry and every fold into motion for the next limited drop.',
                 stats: { likes: '2.5K', comments: '142' },
-                heroImage: './images/shared/editorial-look-01.jpg',
+                heroImage: '/uploads/shared/editorial-look-01.jpg',
                 body: [
                     'Evening dressing is shifting toward utility-led elegance. Every seam is drafted to describe movement rather than decoration.',
                     'The result is a quieter glamour: controlled shine, sharp folds, and a body line that feels engineered instead of embellished.'
@@ -115,7 +115,7 @@ let DISCOVERY_COPY = {
                     { author: 'Lune_Form', time: '52M AGO', body: 'Would love to see the back view of this drape.' }
                 ],
                 images: [
-                    './images/shared/editorial-look-01.jpg'
+                    '/uploads/shared/editorial-look-01.jpg'
                 ]
             }
         ],
@@ -139,14 +139,14 @@ let DISCOVERY_COPY = {
                     tag: '国际风格观察',
                     title: '哥本哈根极简现象',
                     description: '从北欧城市中提炼更安静的剪裁、柔化的同色层次与方向感轮廓。',
-                    image: './images/shared/copenhagen-minimalist.jpg'
+                    image: '/uploads/shared/copenhagen-minimalist.jpg'
                 },
                 {
                     id: 'parisian-tweed',
                     tag: '时装周趋势',
                     title: '巴黎街头：粗花呢回归',
                     description: '更利落的比例、带触感的传统面料与克制高级感定义当下巴黎气氛。',
-                    image: './images/shared/editorial-look-01.jpg'
+                    image: '/uploads/shared/editorial-look-01.jpg'
                 }
             ]
         },
@@ -160,14 +160,14 @@ let DISCOVERY_COPY = {
                     tag: 'SS24 / 巴黎',
                     title: '解构西装外套',
                     description: '流动剪裁和断裂线条正在取代僵硬的传统通勤正装。',
-                    image: './images/shared/copenhagen-minimalist.jpg'
+                    image: '/uploads/shared/copenhagen-minimalist.jpg'
                 },
                 {
                     id: 'sustainable-silk',
                     tag: '材质研究',
                     title: '可持续丝感合成材',
                     description: '生物科技面料正在重新定义兼顾性能与高级手感的奢华体验。',
-                    image: './images/shared/editorial-look-02.jpg'
+                    image: '/uploads/shared/editorial-look-02.jpg'
                 }
             ]
         },
@@ -178,7 +178,7 @@ let DISCOVERY_COPY = {
                 meta: '建筑感剪裁',
                 title: '都市中的结构化轮廓',
                 description: '首尔设计师用雕塑肩线、技术面料与都市精度重塑新一代通勤着装。',
-                image: './images/shared/editorial-look-02.jpg'
+                image: '/uploads/shared/editorial-look-02.jpg'
             },
             {
                 id: 'monochrome-saturation',
@@ -186,7 +186,7 @@ let DISCOVERY_COPY = {
                 meta: '东京动向',
                 title: '单色饱和穿搭',
                 description: '单一色系造型正以更清晰、更有图形感的方式占领城市衣橱。',
-                image: './images/discovery/monochrome-saturation.jpg'
+                image: '/uploads/discovery/monochrome-saturation.jpg'
             },
             {
                 id: 'milan-leather',
@@ -194,7 +194,7 @@ let DISCOVERY_COPY = {
                 meta: '工艺聚焦',
                 title: '皮革工艺 2.0',
                 description: '伦巴第工坊正把手工收尾与可持续材质创新融合成更锐利的奢华语言。',
-                image: './images/shared/leather-craft-fabric.jpg'
+                image: '/uploads/shared/leather-craft-fabric.jpg'
             }
         ],
         communityPosts: [
@@ -205,7 +205,7 @@ let DISCOVERY_COPY = {
                 title: '现代制服：粗野主义基础款',
                 description: '厚羊毛与技术丝面料叠加出稳定、克制且具有编辑感的轮廓。',
                 stats: { likes: '1.2K', comments: '84' },
-                heroImage: './images/shared/travel-look.jpg',
+                heroImage: '/uploads/shared/travel-look.jpg',
                 body: [
                     '这一季，结构感重新回到中心。解构式西装外套不再只是造型单品，而成为明确占据空间的轮廓核心。',
                     '当内里与结构被适度暴露，厚重面料与克制垂坠一起把这套造型变成一种建筑式存在，而不只是穿着。'
@@ -216,8 +216,8 @@ let DISCOVERY_COPY = {
                     { author: 'Nova_Studio', time: '45分钟前', body: '这是新档案系列吗？领驳缝线很有辨识度。' }
                 ],
                 images: [
-                    './images/shared/travel-look.jpg',
-                    './images/discovery/brutalist-basics-02.jpg'
+                    '/uploads/shared/travel-look.jpg',
+                    '/uploads/discovery/brutalist-basics-02.jpg'
                 ]
             },
             {
@@ -227,7 +227,7 @@ let DISCOVERY_COPY = {
                 title: '阴影游戏与结构丝感',
                 description: '功能导向的晚装让每一道缝线都变成几何，让每一道褶皱都充满运动感。',
                 stats: { likes: '2.5K', comments: '142' },
-                heroImage: './images/shared/editorial-look-01.jpg',
+                heroImage: '/uploads/shared/editorial-look-01.jpg',
                 body: [
                     '晚装正在转向更具功能逻辑的优雅。每一道缝线都在描述运动，而不是单纯装饰。',
                     '这种变化带来更安静的戏剧性：克制光泽、锐利褶线，以及被精确计算过的身体线条。'
@@ -238,7 +238,7 @@ let DISCOVERY_COPY = {
                     { author: 'Lune_Form', time: '52分钟前', body: '很想看看这套背面的垂坠。' }
                 ],
                 images: [
-                    './images/shared/editorial-look-01.jpg'
+                    '/uploads/shared/editorial-look-01.jpg'
                 ]
             }
         ],

@@ -249,7 +249,7 @@ runTest('New Me Schedule 摘要应读取持久化日程统计与下一条事件'
                   time: '08:30 AM — 09:30 AM',
                   title: 'Atelier Review',
                   location: 'Lower East Studio',
-                  image: './images/shared/editorial-look-02.jpg',
+                  image: '/uploads/shared/editorial-look-02.jpg',
                   tags: ['Outerwear']
                 },
                 {
@@ -257,7 +257,7 @@ runTest('New Me Schedule 摘要应读取持久化日程统计与下一条事件'
                   time: '02:00 PM — 03:00 PM',
                   title: 'Fabric Pull',
                   location: 'Canal Archive',
-                  image: './images/shared/leather-craft-fabric.jpg',
+                  image: '/uploads/shared/leather-craft-fabric.jpg',
                   tags: ['Material']
                 }
               ]
@@ -275,7 +275,7 @@ runTest('New Me Schedule 摘要应读取持久化日程统计与下一条事件'
                   time: '09:00 AM — 01:00 PM',
                   title: 'Buyer Trip',
                   location: 'CDG Terminal 2',
-                  image: './images/shared/travel-look.jpg',
+                  image: '/uploads/shared/travel-look.jpg',
                   tags: ['Travel']
                 }
               ]
@@ -318,7 +318,7 @@ runTest('New Me Wardrobe 模块应读取真实衣橱数据并进入完整模块�
       size: 'M',
       color: 'Ink',
       material: 'Wool',
-      image: './images/wardrobe/wool-trench.jpg',
+      image: '/uploads/wardrobe/wool-trench.jpg',
       filter: 'outerwear',
       favorite: true
     },
@@ -329,7 +329,7 @@ runTest('New Me Wardrobe 模块应读取真实衣橱数据并进入完整模块�
       size: 'S',
       color: 'Bone',
       material: 'Cotton',
-      image: './images/wardrobe/studio-shirt.jpg',
+      image: '/uploads/wardrobe/studio-shirt.jpg',
       filter: 'essentials',
       favorite: false
     }
@@ -362,10 +362,10 @@ runTest('New Me Wardrobe 模块应统计全量收藏单品而不是仅最近条�
   const dom = new JSDOM(html, { url: 'http://localhost/me.html' });
 
   dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify([
-    { id: 'item-1', category: 'Outerwear', title: 'Item 1', size: 'M', color: 'Ink', material: 'Wool', image: './images/wardrobe/wool-trench.jpg', filter: 'outerwear', favorite: false },
-    { id: 'item-2', category: 'Evening', title: 'Item 2', size: 'S', color: 'Bone', material: 'Silk', image: './images/wardrobe/silk-slip.jpg', filter: 'evening', favorite: false },
-    { id: 'item-3', category: 'Essentials', title: 'Item 3', size: 'L', color: 'Stone', material: 'Cotton', image: './images/wardrobe/studio-shirt.jpg', filter: 'essentials', favorite: false },
-    { id: 'item-4', category: 'Outerwear', title: 'Item 4', size: 'M', color: 'Black', material: 'Leather', image: './images/wardrobe/wool-trench.jpg', filter: 'outerwear', favorite: true }
+    { id: 'item-1', category: 'Outerwear', title: 'Item 1', size: 'M', color: 'Ink', material: 'Wool', image: '/uploads/wardrobe/wool-trench.jpg', filter: 'outerwear', favorite: false },
+    { id: 'item-2', category: 'Evening', title: 'Item 2', size: 'S', color: 'Bone', material: 'Silk', image: '/uploads/wardrobe/silk-slip.jpg', filter: 'evening', favorite: false },
+    { id: 'item-3', category: 'Essentials', title: 'Item 3', size: 'L', color: 'Stone', material: 'Cotton', image: '/uploads/wardrobe/studio-shirt.jpg', filter: 'essentials', favorite: false },
+    { id: 'item-4', category: 'Outerwear', title: 'Item 4', size: 'M', color: 'Black', material: 'Leather', image: '/uploads/wardrobe/wool-trench.jpg', filter: 'outerwear', favorite: true }
   ]));
 
   global.window = dom.window;
@@ -429,7 +429,7 @@ runTest('New Me 页面应在相关 store 写入后同步更新模块内容', asy
   const { setSetting } = await import(settingsModulePath);
 
   renderMePage();
-  saveProfile({ name: 'Nova Updated', bio: 'Updated bio', avatar: './images/profile/elara-vance.jpg' });
+  saveProfile({ name: 'Nova Updated', bio: 'Updated bio', avatar: '/uploads/profile/elara-vance.jpg' });
   assert.ok(/Nova Updated/.test(dom.window.document.querySelector('[data-ct-profile-hero]').textContent), 'Me hero should update after profile store write');
 
   dom.window.document.querySelector('[data-tab-key="favorites"]').click();
@@ -443,7 +443,7 @@ runTest('New Me 页面应在相关 store 写入后同步更新模块内容', asy
     size: 'M',
     color: 'Ink',
     material: 'Wool',
-    image: './images/wardrobe/wool-trench.jpg',
+    image: '/uploads/wardrobe/wool-trench.jpg',
     filter: 'outerwear',
     favorite: false
   });

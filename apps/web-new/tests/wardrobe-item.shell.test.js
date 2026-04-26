@@ -105,7 +105,7 @@ async function main() {
     dom.window.document.querySelector('[name="size"]').value = 'L';
     dom.window.document.querySelector('[name="color"]').value = 'Ink';
     dom.window.document.querySelector('[name="material"]').value = 'Wool';
-    dom.window.document.querySelector('[name="image"]').value = './images/wardrobe/wool-trench.jpg';
+    dom.window.document.querySelector('[name="image"]').value = '/uploads/wardrobe/wool-trench.jpg';
     dom.window.document.querySelector('form[data-ct-wardrobe-item-form]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
 
     const stored = JSON.parse(dom.window.localStorage.getItem('ct_wardrobe'));
@@ -126,7 +126,7 @@ async function main() {
         size: 'M',
         color: 'Camel',
         material: 'Wool',
-        image: './images/wardrobe/wool-trench.jpg',
+        image: '/uploads/wardrobe/wool-trench.jpg',
         filter: 'outerwear',
         favorite: true
       }

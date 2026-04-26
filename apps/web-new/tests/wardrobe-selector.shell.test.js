@@ -42,7 +42,7 @@ runTest('wardrobeSelectors 应处理搜索过滤与表单 payload 组装', async
       color: 'Black',
       material: 'Technical twill'
     },
-    defaultImage: './images/wardrobe/wool-trench.jpg',
+    defaultImage: '/uploads/wardrobe/wool-trench.jpg',
     now: 123
   });
 

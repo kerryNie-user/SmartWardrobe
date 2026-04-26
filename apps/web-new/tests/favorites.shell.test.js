@@ -41,10 +41,10 @@ async function main() {
 
     dom.window.localStorage.setItem('ct_favorites', JSON.stringify({
       looks: [
-        { id: 'urban-commute', title: 'Urban Commute', subtitle: 'Graphite layers for a precise city rhythm', image: './images/shared/travel-look.jpg' }
+        { id: 'urban-commute', title: 'Urban Commute', subtitle: 'Graphite layers for a precise city rhythm', image: '/uploads/shared/travel-look.jpg' }
       ],
       posts: [
-        { id: 'brutalist-basics', title: 'The Modern Uniform: Brutalist Basics', subtitle: 'ELIAS.VAULT · 2H AGO', image: './images/shared/travel-look.jpg' }
+        { id: 'brutalist-basics', title: 'The Modern Uniform: Brutalist Basics', subtitle: 'ELIAS.VAULT · 2H AGO', image: '/uploads/shared/travel-look.jpg' }
       ]
     }));
 
@@ -73,7 +73,7 @@ async function main() {
     dom.window.localStorage.setItem('app_locale', 'zh-CN');
     dom.window.localStorage.setItem('ct_favorites', JSON.stringify({
       looks: [
-        { id: 'urban-commute', title: 'Urban Commute', subtitle: 'Graphite layers for a precise city rhythm', image: './images/shared/travel-look.jpg' }
+        { id: 'urban-commute', title: 'Urban Commute', subtitle: 'Graphite layers for a precise city rhythm', image: '/uploads/shared/travel-look.jpg' }
       ],
       posts: []
     }));

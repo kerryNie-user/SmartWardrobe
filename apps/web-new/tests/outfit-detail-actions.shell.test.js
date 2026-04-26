@@ -32,7 +32,7 @@ async function main() {
       id: 'midnight-formalism',
       title: 'Midnight Formalism',
       description: 'Structured tailoring with quiet sheen.',
-      image: './images/shared/travel-look.jpg'
+      image: '/uploads/shared/travel-look.jpg'
     };
 
     const saveAction = actions.buildToggleSaveLookAction(look);
@@ -84,14 +84,14 @@ async function main() {
       id: 'midnight-formalism',
       title: 'Midnight Formalism',
       description: 'Structured tailoring with quiet sheen.',
-      image: './images/shared/travel-look.jpg'
+      image: '/uploads/shared/travel-look.jpg'
     }), context);
 
     dispatchAction(actions.buildAddOutfitToScheduleAction({
       id: 'midnight-formalism',
       title: 'Midnight Formalism',
       description: 'Structured tailoring with quiet sheen.',
-      image: './images/shared/travel-look.jpg'
+      image: '/uploads/shared/travel-look.jpg'
     }, {
       locale: 'en-US',
       reminderEnabled: false

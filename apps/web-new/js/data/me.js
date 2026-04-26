@@ -4,7 +4,7 @@ const ME_COPY = {
             name: 'Elara Vance',
             label: 'Vogue Guild Member',
             bio: 'Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies.',
-            avatar: './images/profile/elara-vance.jpg'
+            avatar: '/uploads/profile/elara-vance.jpg'
         },
         tabs: [
             { key: 'schedule', label: 'Schedule', active: true },
@@ -99,7 +99,7 @@ const ME_COPY = {
             name: 'Elara Vance',
             label: 'Vogue 社群成员',
             bio: '持续整理建筑感轮廓、中性色剪裁与克制材质实验的数字风格档案。',
-            avatar: './images/profile/elara-vance.jpg'
+            avatar: '/uploads/profile/elara-vance.jpg'
         },
         tabs: [
             { key: 'schedule', label: '日程', active: true },

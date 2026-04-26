@@ -340,7 +340,7 @@ runTest('New Schedule 应容忍旧存储中缺失 tags 的事件', async () => {
                   time: '09:00 AM — 10:00 AM',
                   title: 'Legacy Event',
                   location: 'Archive Room',
-                  image: './images/shared/editorial-look-01.jpg'
+                  image: '/uploads/shared/editorial-look-01.jpg'
                 }
               ]
             }

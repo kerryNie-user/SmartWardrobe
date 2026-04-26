@@ -65,7 +65,7 @@ runTest('profile repositories 应归一 remote 结果并读写 local snapshot', 
   assert.strictEqual(persisted.name, 'Stored Nova');
   assert.strictEqual(localRepository.read().bio, 'Stored bio');
   assert.strictEqual(JSON.parse(dom.window.localStorage.getItem('ct_auth_session')).user.name, 'Stored Nova');
-  assert.strictEqual(getFallbackProfile('zh-CN').avatar, './images/profile/elara-vance.jpg');
+  assert.strictEqual(getFallbackProfile('zh-CN').avatar, '/uploads/profile/elara-vance.jpg');
 
   const fetched = await remoteRepository.fetch();
   const saved = await remoteRepository.save({

@@ -24,7 +24,48 @@ def create_handler(database, directory):
             if self.path.startswith('/api/'):
                 self.handle_api('GET')
                 return
+            
+            if self.path.startswith('/uploads/'):
+                self.serve_upload()
+                return
+
             super().do_GET()
+
+        def serve_upload(self):
+            import mimetypes
+            import os
+            
+            # Remove '/uploads/' prefix
+            file_path = self.path[9:]
+            
+            # Prevent directory traversal
+            if '..' in file_path or file_path.startswith('/'):
+                self.send_error(403, "Forbidden")
+                return
+                
+            full_path = os.path.join(os.path.dirname(__file__), 'uploads', file_path)
+            
+            if not os.path.exists(full_path) or not os.path.isfile(full_path):
+                self.send_error(404, "File not found")
+                return
+                
+            try:
+                with open(full_path, 'rb') as f:
+                    content = f.read()
+                
+                mime_type, _ = mimetypes.guess_type(full_path)
+                if not mime_type:
+                    mime_type = 'application/octet-stream'
+                    
+                self.send_response(200)
+                self.send_header('Content-Type', mime_type)
+                self.send_header('Content-Length', str(len(content)))
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Cache-Control', 'public, max-age=31536000')
+                self.end_headers()
+                self.wfile.write(content)
+            except Exception as e:
+                self.send_error(500, f"Internal server error: {str(e)}")
 
         def do_POST(self):
             self.handle_api('POST')

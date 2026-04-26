@@ -14,7 +14,7 @@ import { getFormFeedbackCopy, focusFirstInvalidField, setFormSubmitting, validat
 import { buildWardrobePageSelectorInput, buildWardrobeSavePayload } from '../lib/wardrobeSelectors.js';
 import { deleteWardrobeItem, getWardrobeItems, getWardrobeSyncState, hydrateWardrobe, retryWardrobeSync, saveWardrobeItem, subscribeWardrobeStore, subscribeWardrobeSyncState, toggleWardrobeFavorite } from '../lib/wardrobeStore.js';
 import { hydrateSettings, subscribeSettingsStore } from '../lib/settingsStore.js';
-const DEFAULT_WARDROBE_IMAGE = './images/wardrobe/wool-trench.jpg';
+const DEFAULT_WARDROBE_IMAGE = '/uploads/wardrobe/wool-trench.jpg';
 
 function renderWardrobeForm(isOpen, content, locale) {
     const sharedCopy = getSharedCopy(locale);

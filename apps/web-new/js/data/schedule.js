@@ -27,7 +27,7 @@ const SCHEDULE_COPY = {
                 title: 'Studio Breakfast',
                 location: 'Le Marais',
                 tags: 'Wool Coat, Notebook',
-                image: './images/shared/travel-look.jpg'
+                image: '/uploads/shared/travel-look.jpg'
             },
             actions: {
                 save: 'Save Event',
@@ -60,7 +60,7 @@ const SCHEDULE_COPY = {
                                 time: '10:00 AM — 01:00 PM',
                                 title: 'Product Review',
                                 location: 'SoHo Studio A, New York',
-                                image: './images/shared/editorial-look-02.jpg',
+                                image: '/uploads/shared/editorial-look-02.jpg',
                                 tags: ['Monolith Suit', 'Derby Shoes']
                             }
                         ]
@@ -74,7 +74,7 @@ const SCHEDULE_COPY = {
                                 time: '08:00 PM — Late',
                                 title: 'Archive Dinner',
                                 location: 'The Tribalist, Brooklyn',
-                                image: './images/shared/editorial-look-01.jpg',
+                                image: '/uploads/shared/editorial-look-01.jpg',
                                 tags: ['Archive Blazer', 'Silk Wrap']
                             }
                         ]
@@ -99,7 +99,7 @@ const SCHEDULE_COPY = {
                                 time: '11:45 PM — Overnight',
                                 title: 'Paris Fashion Week Departure',
                                 location: 'JFK Terminal 4',
-                                image: './images/shared/travel-look.jpg',
+                                image: '/uploads/shared/travel-look.jpg',
                                 tags: ['Travel Coat', 'Carry-On Edit']
                             }
                         ]
@@ -124,7 +124,7 @@ const SCHEDULE_COPY = {
                                 time: '03:00 PM — 05:00 PM',
                                 title: 'Fabric Sourcing Walkthrough',
                                 location: 'Canal Textile District',
-                                image: './images/shared/leather-craft-fabric.jpg',
+                                image: '/uploads/shared/leather-craft-fabric.jpg',
                                 tags: ['Wool Blend', 'Material Notes']
                             }
                         ]
@@ -158,7 +158,7 @@ const SCHEDULE_COPY = {
                                 time: '10:00 — 13:00',
                                 title: '产品评审',
                                 location: '纽约 SoHo Studio A',
-                                image: './images/shared/editorial-look-02.jpg',
+                                image: '/uploads/shared/editorial-look-02.jpg',
                                 tags: ['Monolith 西装', '德比鞋']
                             }
                         ]
@@ -172,7 +172,7 @@ const SCHEDULE_COPY = {
                                 time: '20:00 — 深夜',
                                 title: '档案晚餐',
                                 location: '布鲁克林 The Tribalist',
-                                image: './images/shared/editorial-look-01.jpg',
+                                image: '/uploads/shared/editorial-look-01.jpg',
                                 tags: ['档案西装外套', '丝质围裹']
                             }
                         ]
@@ -197,7 +197,7 @@ const SCHEDULE_COPY = {
                                 time: '23:45 — 通宵',
                                 title: '巴黎时装周出发',
                                 location: 'JFK T4',
-                                image: './images/shared/travel-look.jpg',
+                                image: '/uploads/shared/travel-look.jpg',
                                 tags: ['出行大衣', '随身胶囊']
                             }
                         ]
@@ -222,7 +222,7 @@ const SCHEDULE_COPY = {
                                 time: '15:00 — 17:00',
                                 title: '面料调研走访',
                                 location: 'Canal 面料区',
-                                image: './images/shared/leather-craft-fabric.jpg',
+                                image: '/uploads/shared/leather-craft-fabric.jpg',
                                 tags: ['羊毛混纺', '材质笔记']
                             }
                         ]
@@ -252,7 +252,7 @@ const SCHEDULE_COPY = {
                 title: '工作室早餐',
                 location: '玛黑区',
                 tags: '羊毛大衣, 笔记本',
-                image: './images/shared/travel-look.jpg'
+                image: '/uploads/shared/travel-look.jpg'
             },
             actions: {
                 cancel: '取消',

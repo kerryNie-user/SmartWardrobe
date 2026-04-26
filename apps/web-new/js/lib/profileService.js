@@ -1,4 +1,4 @@
-const FALLBACK_AVATAR = './images/profile/elara-vance.jpg'
+const FALLBACK_AVATAR = '/uploads/profile/elara-vance.jpg'
 
 const DEFAULT_PROFILE = {
     'en-US': {

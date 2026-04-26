@@ -7,7 +7,7 @@ const DEBUG_USER = {
     name: 'API Nova',
     emailOrMobile: 'api-nova@example.com',
     password: 'password123',
-    avatar: './images/profile/elara-vance.jpg',
+    avatar: '/uploads/profile/elara-vance.jpg',
     bio: 'Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies.'
 }
 
@@ -117,7 +117,7 @@ function normalizeUser(rawUser, payload) {
         id: rawUser?.id || `user-${Date.now()}`,
         name: rawUser?.name || payload.name || 'Closet Twin',
         emailOrMobile: rawUser?.emailOrMobile || payload.emailOrMobile,
-        avatar: rawUser?.avatar || './images/profile/elara-vance.jpg',
+        avatar: rawUser?.avatar || '/uploads/profile/elara-vance.jpg',
         bio: rawUser?.bio || '',
         password: rawUser?.password || payload.password || ''
     }

@@ -30,7 +30,7 @@ export function getProfilePageContent(locale) {
                     bio: '简介'
                 },
                 placeholders: {
-                    avatar: './images/profile/elara-vance.jpg',
+                    avatar: '/uploads/profile/elara-vance.jpg',
                     name: 'Elara Vance',
                     bio: '写一点你的轮廓偏好、城市气质与材质关注点。'
                 },
@@ -79,7 +79,7 @@ export function getProfilePageContent(locale) {
                 bio: 'Bio'
             },
             placeholders: {
-                avatar: './images/profile/elara-vance.jpg',
+                avatar: '/uploads/profile/elara-vance.jpg',
                 name: 'Elara Vance',
                 bio: 'Write a few lines about your silhouette bias, city mood, and material focus.'
             },

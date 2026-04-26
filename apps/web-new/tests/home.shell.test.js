@@ -518,7 +518,7 @@ runTest('New 首页日程卡片应读取持久化 Schedule 摘要', async () => 
                   time: '08:30 AM — 09:30 AM',
                   title: 'Atelier Review',
                   location: 'Lower East Studio',
-                  image: './images/shared/editorial-look-02.jpg',
+                  image: '/uploads/shared/editorial-look-02.jpg',
                   tags: ['Outerwear']
                 }
               ]
@@ -568,7 +568,7 @@ runTest('New 首页日程卡片应读取真实最近的跨 tab 事件', async ()
                   time: '11:00 AM — 12:00 PM',
                   title: 'Late Upcoming',
                   location: 'Studio West',
-                  image: './images/shared/editorial-look-02.jpg',
+                  image: '/uploads/shared/editorial-look-02.jpg',
                   tags: ['Review']
                 }
               ]
@@ -586,7 +586,7 @@ runTest('New 首页日程卡片应读取真实最近的跨 tab 事件', async ()
                   time: '07:30 AM — 09:00 AM',
                   title: 'Early Travel',
                   location: 'Terminal 1',
-                  image: './images/shared/travel-look.jpg',
+                  image: '/uploads/shared/travel-look.jpg',
                   tags: ['Travel']
                 }
               ]
@@ -627,7 +627,7 @@ runTest('New 首页推荐应统一接入 favorites、wardrobe、schedule、setti
             id: 'urban-commute',
             title: 'Urban Commute',
             subtitle: 'Saved already',
-            image: './images/shared/copenhagen-minimalist.jpg',
+            image: '/uploads/shared/copenhagen-minimalist.jpg',
             href: 'outfit-detail.html?id=urban-commute'
           }
         ],
@@ -645,7 +645,7 @@ runTest('New 首页推荐应统一接入 favorites、wardrobe、schedule、setti
           category: 'Outerwear',
           material: 'Virgin Wool',
           color: 'Black',
-          image: './images/shared/editorial-look-01.jpg',
+          image: '/uploads/shared/editorial-look-01.jpg',
           filter: 'essentials',
           favorite: true
         }

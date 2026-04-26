@@ -74,7 +74,7 @@ async function main() {
   const nameInput = dom.window.document.querySelector('#ct-profile-name');
   const bioInput = dom.window.document.querySelector('#ct-profile-bio');
 
-  avatarInput.value = './images/profile/elara-vance.jpg';
+  avatarInput.value = '/uploads/profile/elara-vance.jpg';
   nameInput.value = 'Astra Lin';
   bioInput.value = '偏好结构化轮廓与冷色面料。';
 
@@ -99,8 +99,8 @@ async function main() {
 
   dom.window.localStorage.setItem('app_locale', 'zh-CN');
   dom.window.localStorage.setItem('ct_favorites', JSON.stringify({
-    looks: [{ id: 'urban-commute', title: '都市通勤', subtitle: '结构化叠穿方案', image: './images/shared/copenhagen-minimalist.jpg' }],
-    posts: [{ id: 'brutalist-basics', title: '现代制服：粗野主义基础款', subtitle: 'ELIAS.VAULT · 2小时前', image: './images/shared/travel-look.jpg' }]
+    looks: [{ id: 'urban-commute', title: '都市通勤', subtitle: '结构化叠穿方案', image: '/uploads/shared/copenhagen-minimalist.jpg' }],
+    posts: [{ id: 'brutalist-basics', title: '现代制服：粗野主义基础款', subtitle: 'ELIAS.VAULT · 2小时前', image: '/uploads/shared/travel-look.jpg' }]
   }));
 
   global.window = dom.window;
@@ -239,7 +239,7 @@ async function main() {
   meDom.window.localStorage.setItem('ct_profile', JSON.stringify({
     name: 'Astra Lin',
     bio: '偏好结构化轮廓与冷色面料。',
-    avatar: './images/profile/elara-vance.jpg'
+    avatar: '/uploads/profile/elara-vance.jpg'
   }));
 
   global.window = meDom.window;
@@ -264,7 +264,7 @@ async function main() {
   settingsDom.window.localStorage.setItem('ct_profile', JSON.stringify({
     name: 'Astra Lin',
     bio: '偏好结构化轮廓与冷色面料。',
-    avatar: './images/profile/elara-vance.jpg'
+    avatar: '/uploads/profile/elara-vance.jpg'
   }));
 
   global.window = settingsDom.window;

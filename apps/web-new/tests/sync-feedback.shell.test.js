@@ -95,7 +95,7 @@ runTest('Settings 页面应展示 stale sync feedback 并支持 retry-all', asyn
         profile: {
           name: 'Remote Nova',
           bio: 'Remote bio',
-          avatar: './images/profile/elara-vance.jpg'
+          avatar: '/uploads/profile/elara-vance.jpg'
         }
       });
     }

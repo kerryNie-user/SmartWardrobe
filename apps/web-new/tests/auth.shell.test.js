@@ -55,7 +55,7 @@ async function main() {
             id: 'user-1',
             name: 'Nova Lane',
             emailOrMobile: 'nova@example.com',
-            avatar: './images/profile/elara-vance.jpg',
+            avatar: '/uploads/profile/elara-vance.jpg',
             bio: ''
           }
         };

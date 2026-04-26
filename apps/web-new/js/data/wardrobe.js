@@ -19,7 +19,7 @@ const WARDROBE_COPY = {
                 size: 'M',
                 color: 'Oatmeal',
                 material: 'Wool Blend',
-                image: './images/wardrobe/wool-trench.jpg',
+                image: '/uploads/wardrobe/wool-trench.jpg',
                 filter: 'outerwear',
                 favorite: true
             },
@@ -30,7 +30,7 @@ const WARDROBE_COPY = {
                 size: 'S',
                 color: 'Onyx',
                 material: '100% Silk',
-                image: './images/shared/editorial-look-01.jpg',
+                image: '/uploads/shared/editorial-look-01.jpg',
                 filter: 'evening',
                 favorite: false
             },
@@ -41,7 +41,7 @@ const WARDROBE_COPY = {
                 size: 'M',
                 color: 'Bone',
                 material: 'Cotton Poplin',
-                image: './images/wardrobe/studio-shirt.jpg',
+                image: '/uploads/wardrobe/studio-shirt.jpg',
                 filter: 'essentials',
                 favorite: false
             }
@@ -63,7 +63,7 @@ const WARDROBE_COPY = {
                 size: 'M',
                 color: 'Graphite',
                 material: 'Nylon',
-                image: './images/wardrobe/wool-trench.jpg'
+                image: '/uploads/wardrobe/wool-trench.jpg'
             },
             fallback: {
                 category: 'Essentials',
@@ -93,7 +93,7 @@ const WARDROBE_COPY = {
                 size: 'M',
                 color: '燕麦色',
                 material: '羊毛混纺',
-                image: './images/wardrobe/wool-trench.jpg',
+                image: '/uploads/wardrobe/wool-trench.jpg',
                 filter: 'outerwear',
                 favorite: true
             },
@@ -104,7 +104,7 @@ const WARDROBE_COPY = {
                 size: 'S',
                 color: '缟玛瑙黑',
                 material: '100% 真丝',
-                image: './images/shared/editorial-look-01.jpg',
+                image: '/uploads/shared/editorial-look-01.jpg',
                 filter: 'evening',
                 favorite: false
             },
@@ -115,7 +115,7 @@ const WARDROBE_COPY = {
                 size: 'M',
                 color: '骨白',
                 material: '棉府绸',
-                image: './images/wardrobe/studio-shirt.jpg',
+                image: '/uploads/wardrobe/studio-shirt.jpg',
                 filter: 'essentials',
                 favorite: false
             }
@@ -137,7 +137,7 @@ const WARDROBE_COPY = {
                 size: 'M',
                 color: '石墨灰',
                 material: '尼龙',
-                image: './images/wardrobe/wool-trench.jpg'
+                image: '/uploads/wardrobe/wool-trench.jpg'
             },
             fallback: {
                 category: '基础款',

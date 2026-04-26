@@ -76,7 +76,7 @@ const SETTINGS_ITEMS = [
 export const settingsProfile = {
     name: SETTINGS_COPY['en-US'].profile.name,
     bio: SETTINGS_COPY['en-US'].profile.bio,
-    avatar: './images/profile/elara-vance.jpg',
+    avatar: '/uploads/profile/elara-vance.jpg',
     eyebrow: SETTINGS_COPY['en-US'].profile.eyebrow
 };
 

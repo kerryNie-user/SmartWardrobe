@@ -37,7 +37,7 @@ function createFetchStub(config = {}) {
       'user-1': {
         name: 'Remote Nova',
         bio: 'Remote bio',
-        avatar: './images/profile/elara-vance.jpg'
+        avatar: '/uploads/profile/elara-vance.jpg'
       }
     },
     settings: {
@@ -89,7 +89,7 @@ function createFetchStub(config = {}) {
     }
 
     if (resolvedUrl === '/api/profile' && method === 'GET') {
-      return createJsonResponse({ profile: db.profile[userId] || { name: 'Closet Twin', bio: '', avatar: './images/profile/elara-vance.jpg' } });
+      return createJsonResponse({ profile: db.profile[userId] || { name: 'Closet Twin', bio: '', avatar: '/uploads/profile/elara-vance.jpg' } });
     }
     if (resolvedUrl === '/api/profile' && method === 'POST') {
       db.profile[userId] = { ...body };
@@ -189,7 +189,7 @@ async function main() {
     assert.strictEqual(getProfileSyncState().status, 'synced');
     assert.strictEqual(getSettingsSyncState().status, 'synced');
 
-    saveProfile({ name: 'Updated Nova', bio: 'Updated', avatar: './images/profile/elara-vance.jpg' }, 'en-US');
+    saveProfile({ name: 'Updated Nova', bio: 'Updated', avatar: '/uploads/profile/elara-vance.jpg' }, 'en-US');
     setSetting('display-mode', 'dark');
     await new Promise((resolve) => setTimeout(resolve, 0));
 
