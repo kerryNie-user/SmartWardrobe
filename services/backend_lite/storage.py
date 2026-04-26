@@ -9,7 +9,7 @@ from peewee import DoesNotExist
 from .models import (
     User, UserSetting, WardrobeItem, ScheduleItem,
     Favorite, SocialEngagement, DiscoveryComment,
-    MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem
+    MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem, RecommendLook
 )
 from .database import db
 
@@ -46,7 +46,7 @@ class JsonDatabase:
             db.create_tables([
                 User, UserSetting, WardrobeItem, ScheduleItem,
                 Favorite, SocialEngagement, DiscoveryComment,
-                MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem
+                MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem, RecommendLook
             ])
         self._ensure_debug_user()
         
@@ -389,6 +389,19 @@ class JsonDatabase:
             'image': t.image
         } for t in trend_items]
 
+        recommend_items = RecommendLook.select().where(RecommendLook.locale == normalized_locale)
+        recommend_looks = [{
+            'id': r.id,
+            'tag': r.tag,
+            'title': r.title,
+            'description': r.description,
+            'image': r.image,
+            'openLabel': r.open_label,
+            'detailSerial': r.detail_serial,
+            'detailTags': r.detail_tags_json or [],
+            'breakdown': r.breakdown_json or []
+        } for r in recommend_items]
+
         tabs = [
             {'key': 'recommend', 'label': 'Recommend' if normalized_locale == 'en-US' else '推荐', 'active': True},
             {'key': 'featured', 'label': 'Featured' if normalized_locale == 'en-US' else '精选', 'active': False}
@@ -401,6 +414,7 @@ class JsonDatabase:
         content = deepcopy(seed_data)
         content.update({
             'tabs': tabs,
+            'recommendLooks': recommend_looks if recommend_looks else seed_data.get('recommendLooks', []),
             'featuredLooks': featured_looks if featured_looks else seed_data.get('featuredLooks', [])
         })
 

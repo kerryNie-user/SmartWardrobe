@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from services.backend_lite.database import db
-from services.backend_lite.models import ContentPost, ContentStory, TrendStripItem
+from services.backend_lite.models import ContentPost, ContentStory, TrendStripItem, RecommendLook
 
 def load_json(filename):
     file_path = os.path.join(os.path.dirname(__file__), 'data', filename)
@@ -93,6 +93,25 @@ def migrate_content():
             for locale, content in home_data.items():
                 print(f"Migrating home content for locale: {locale}")
                 
+                # Migrate recommendLooks
+                recommends = content.get('recommendLooks', [])
+                for idx, item in enumerate(recommends):
+                    try:
+                        RecommendLook.get(RecommendLook.id == item['id'])
+                    except RecommendLook.DoesNotExist:
+                        RecommendLook.create(
+                            id=item['id'],
+                            tag=item.get('tag', ''),
+                            title=item.get('title', ''),
+                            description=item.get('description', ''),
+                            image=item.get('image', ''),
+                            open_label=item.get('openLabel', ''),
+                            detail_serial=item.get('detailSerial', ''),
+                            detail_tags_json=item.get('detailTags', []),
+                            breakdown_json=item.get('breakdown', []),
+                            locale=locale
+                        )
+
                 # Migrate featuredLooks as TrendStripItem
                 picks = content.get('featuredLooks', [])
                 for idx, item in enumerate(picks):

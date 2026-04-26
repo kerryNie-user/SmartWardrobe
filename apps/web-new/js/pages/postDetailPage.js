@@ -13,6 +13,7 @@ import { buildCanonicalHref, shareLink } from '../lib/shareAdapter.js'
 import { getDiscoveryCommentSyncState, getPostComments, hydrateDiscoveryComments, retryDiscoveryCommentSync, savePostComment, subscribeDiscoveryCommentStore, subscribeDiscoveryCommentSyncState } from '../lib/discoveryCommentStore.js'
 import { subscribeFavoritesStore } from '../lib/favoritesStore.js'
 import { getDiscoverySocialSyncState, getPostSocialState, hydrateDiscoverySocial, retryDiscoverySocialSync, subscribeDiscoverySocialStore, subscribeDiscoverySocialSyncState, toggleDiscoveryAuthorFollow, toggleDiscoveryPostLike, toggleDiscoveryPostSave } from '../lib/discoverySocialStore.js'
+import { hydrateDiscoveryContent, subscribeDiscoveryContent } from '../data/discovery.js'
 
 function getPostId() {
     return getQueryParam('id')
@@ -192,9 +193,11 @@ export function renderPostDetailPage() {
         subscriptions: [
             (listener) => subscribeDiscoverySocialStore(listener),
             (listener) => subscribeDiscoveryCommentStore(listener),
-            (listener) => subscribeFavoritesStore(listener)
+            (listener) => subscribeFavoritesStore(listener),
+            (listener) => subscribeDiscoveryContent(listener)
         ],
         hydrators: [
+            () => hydrateDiscoveryContent(getLocale()),
             () => hydrateDiscoverySocial(getLocale()),
             () => hydrateDiscoveryComments(getLocale())
         ],

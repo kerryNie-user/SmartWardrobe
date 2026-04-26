@@ -14,6 +14,7 @@ import { getFavoriteIds, getFavoritesSyncState, hydrateFavorites, retryFavorites
 import { getScheduleSummary, getScheduleSyncState, hydrateSchedule, retryScheduleSync, subscribeScheduleStore, subscribeScheduleSyncState } from '../lib/scheduleStore.js';
 import { getSettingsState, subscribeSettingsStore } from '../lib/settingsStore.js';
 import { getRecentWardrobeItems, getWardrobeCount, getWardrobeSyncState, hydrateWardrobe, retryWardrobeSync, subscribeWardrobeStore, subscribeWardrobeSyncState } from '../lib/wardrobeStore.js';
+import { hydrateHomeContent, subscribeHomeContent } from '../data/home.js';
 
 export function renderHomePage() {
     const topbarRoot = document.querySelector('[data-ct-topbar]');
@@ -81,12 +82,14 @@ export function renderHomePage() {
             (listener) => subscribeFavoritesStore(listener),
             (listener) => subscribeWardrobeStore(listener),
             (listener) => subscribeScheduleStore(listener),
-            (listener) => subscribeSettingsStore(listener)
+            (listener) => subscribeSettingsStore(listener),
+            (listener) => subscribeHomeContent(listener)
         ],
         hydrators: [
             () => hydrateFavorites(),
             () => hydrateWardrobe(getLocale()),
-            () => hydrateSchedule()
+            () => hydrateSchedule(),
+            () => hydrateHomeContent(getLocale())
         ],
         syncFeedback: {
             root: syncFeedbackRoot,

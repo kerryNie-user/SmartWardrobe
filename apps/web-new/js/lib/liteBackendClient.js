@@ -104,3 +104,15 @@ export async function requestLiteBackend(path, { method = 'GET', payload, userId
         }
     }
 }
+
+export async function getDiscoveryContent(locale = 'en-US') {
+    return requestLiteBackend(`/api/discovery/content?locale=${locale}`, { method: 'GET' })
+}
+
+export async function getHomeContent(locale = 'en-US') {
+    return requestLiteBackend(`/api/home/content?locale=${locale}`, { method: 'GET' })
+}
+
+export async function getDiscoverySocial() {
+    return requestLiteBackend('/api/discovery/social', { method: 'GET' })
+}

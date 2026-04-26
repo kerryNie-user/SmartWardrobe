@@ -134,3 +134,15 @@ class TrendStripItem(BaseModel):
     description = TextField()
     image = CharField(max_length=256)
     locale = CharField(max_length=16, index=True)
+
+class RecommendLook(BaseModel):
+    id = CharField(max_length=64, primary_key=True)
+    tag = CharField(max_length=64)
+    title = CharField(max_length=128)
+    description = TextField()
+    image = CharField(max_length=256)
+    open_label = CharField(max_length=128, null=True)
+    detail_serial = CharField(max_length=128, null=True)
+    detail_tags_json = JSONField(null=True)
+    breakdown_json = JSONField(null=True)
+    locale = CharField(max_length=16, index=True)

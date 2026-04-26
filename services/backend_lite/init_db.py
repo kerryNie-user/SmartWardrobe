@@ -8,7 +8,7 @@ from services.backend_lite.database import db
 from services.backend_lite.models import (
     User, UserSetting, WardrobeItem, ScheduleItem,
     Favorite, SocialEngagement, DiscoveryComment,
-    MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem
+    MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem, RecommendLook
 )
 
 def init_db():
@@ -18,7 +18,7 @@ def init_db():
     models = [
         User, UserSetting, WardrobeItem, ScheduleItem,
         Favorite, SocialEngagement, DiscoveryComment,
-        MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem
+        MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem, RecommendLook
     ]
     
     print("Creating tables...")

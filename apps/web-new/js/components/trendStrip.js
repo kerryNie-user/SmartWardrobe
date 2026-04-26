@@ -1,4 +1,5 @@
 export function renderTrendStrip(section) {
+    if (!section || !section.items || section.items.length === 0) return '';
     return `
         <section class="ct-trend-strip" aria-label="${section.title}">
             <div class="ct-trend-strip__header">

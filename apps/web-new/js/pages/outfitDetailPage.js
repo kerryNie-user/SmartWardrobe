@@ -17,6 +17,7 @@ import { getScheduleSummary, hydrateSchedule, subscribeScheduleStore } from '../
 import { saveScheduleDraft } from '../lib/scheduleDraft.js'
 import { getSettingsState, hydrateSettings, subscribeSettingsStore } from '../lib/settingsStore.js'
 import { getRecentWardrobeItems, getWardrobeCount, hydrateWardrobe, subscribeWardrobeStore } from '../lib/wardrobeStore.js'
+import { hydrateHomeContent, subscribeHomeContent } from '../data/home.js'
 
 function getLookId() {
     return getQueryParam('id')
@@ -75,13 +76,15 @@ export function renderOutfitDetailPage() {
             (listener) => subscribeFavoritesStore(listener),
             (listener) => subscribeWardrobeStore(listener),
             (listener) => subscribeScheduleStore(listener),
-            (listener) => subscribeSettingsStore(listener)
+            (listener) => subscribeSettingsStore(listener),
+            (listener) => subscribeHomeContent(listener)
         ],
         hydrators: [
             () => hydrateFavorites(),
             () => hydrateWardrobe(getLocale()),
             () => hydrateSchedule(getLocale()),
-            () => hydrateSettings()
+            () => hydrateSettings(),
+            () => hydrateHomeContent(getLocale())
         ]
     })
 

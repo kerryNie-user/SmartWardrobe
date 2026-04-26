@@ -1,4 +1,6 @@
 import { createSyncController } from './syncState.js'
+import { hydrateDiscoveryContent } from '../data/discovery.js'
+import { getLocale } from './locale.js'
 
 const DISCOVERY_VIEW_KEY = 'ct_discovery_view'
 const listeners = new Set()
@@ -79,8 +81,15 @@ export async function hydrateDiscoveryView() {
     }
 
     state = result.value
-    notify()
-    syncController.markSynced()
+    
+    try {
+        await hydrateDiscoveryContent(getLocale())
+        notify()
+        syncController.markSynced()
+    } catch (error) {
+        syncController.markFailed(error?.message || 'DISCOVERY_CONTENT_FETCH_FAILED')
+    }
+    
     return getDiscoveryViewSnapshot()
 }
 
