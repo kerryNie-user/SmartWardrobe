@@ -102,3 +102,35 @@ class MediaUpload(BaseModel):
     media_id = CharField(max_length=64)
     user_id = CharField(max_length=64)
     status = CharField(max_length=32)
+
+class ContentPost(BaseModel):
+    id = CharField(max_length=64, primary_key=True)
+    author = CharField(max_length=128)
+    time_str = CharField(max_length=64)
+    title = CharField(max_length=128)
+    description = TextField()
+    body_json = JSONField(null=True)
+    tags_json = JSONField(null=True)
+    hero_image = CharField(max_length=256)
+    images_json = JSONField(null=True)
+    stats_likes = CharField(max_length=64, null=True)
+    stats_comments = CharField(max_length=64, null=True)
+    locale = CharField(max_length=16, index=True)
+
+class ContentStory(BaseModel):
+    id = CharField(max_length=64, primary_key=True)
+    tag = CharField(max_length=64)
+    meta_info = CharField(max_length=64, null=True)
+    title = CharField(max_length=128)
+    description = TextField()
+    image = CharField(max_length=256)
+    locale = CharField(max_length=16, index=True)
+
+class TrendStripItem(BaseModel):
+    id = CharField(max_length=64, primary_key=True)
+    strip_type = CharField(max_length=32, index=True) # e.g. 'hotspot', 'post', 'home_picks'
+    tag = CharField(max_length=64)
+    title = CharField(max_length=128)
+    description = TextField()
+    image = CharField(max_length=256)
+    locale = CharField(max_length=16, index=True)

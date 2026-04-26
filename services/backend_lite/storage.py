@@ -9,7 +9,7 @@ from peewee import DoesNotExist
 from .models import (
     User, UserSetting, WardrobeItem, ScheduleItem,
     Favorite, SocialEngagement, DiscoveryComment,
-    MediaRecord, MediaUpload
+    MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem
 )
 from .database import db
 
@@ -46,7 +46,7 @@ class JsonDatabase:
             db.create_tables([
                 User, UserSetting, WardrobeItem, ScheduleItem,
                 Favorite, SocialEngagement, DiscoveryComment,
-                MediaRecord, MediaUpload
+                MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem
             ])
         self._ensure_debug_user()
         
@@ -312,21 +312,101 @@ class JsonDatabase:
         return self.get_favorites(user_id)
 
     def get_discovery_content(self, locale='en-US'):
-        discovery_content = load_json_seed('discovery_content_seed.json')
         normalized_locale = 'zh-CN' if locale == 'zh-CN' else 'en-US'
-        content = discovery_content.get(normalized_locale) or discovery_content.get('en-US') or {}
+        
+        stories = ContentStory.select().where(ContentStory.locale == normalized_locale)
+        hotspot_stories = [{
+            'id': s.id,
+            'tag': s.tag,
+            'meta': s.meta_info,
+            'title': s.title,
+            'description': s.description,
+            'image': s.image
+        } for s in stories]
+
+        trend_items = TrendStripItem.select().where((TrendStripItem.strip_type == 'hotspot') & (TrendStripItem.locale == normalized_locale))
+        trend_strip_items = [{
+            'tag': t.tag,
+            'title': t.title,
+            'description': t.description,
+            'image': t.image
+        } for t in trend_items]
+        
+        hotspot_trend_strip = {
+            'title': 'Trending' if normalized_locale == 'en-US' else '流行趋势',
+            'items': trend_strip_items
+        } if trend_strip_items else None
+
+        posts = ContentPost.select().where(ContentPost.locale == normalized_locale)
+        community_posts = [{
+            'id': p.id,
+            'author': p.author,
+            'time': p.time_str,
+            'title': p.title,
+            'description': p.description,
+            'body': p.body_json or [],
+            'tags': p.tags_json or [],
+            'heroImage': p.hero_image,
+            'images': p.images_json or [],
+            'stats': {
+                'likes': p.stats_likes or '0',
+                'comments': p.stats_comments or '0'
+            }
+        } for p in posts]
+
+        # Tabs are mostly static, we can hardcode them here or add them to DB later.
+        tabs = [
+            {'key': 'hotspots', 'label': 'Fashion Hotspots' if normalized_locale == 'en-US' else '热点趋势', 'active': True},
+            {'key': 'posts', 'label': 'Posts' if normalized_locale == 'en-US' else '帖子', 'active': False}
+        ]
+
+        # For static/seed data
+        discovery_content_seed = load_json_seed('discovery_content_seed.json')
+        seed_data = discovery_content_seed.get(normalized_locale) or discovery_content_seed.get('en-US') or {}
+
+        content = deepcopy(seed_data)
+        content.update({
+            'tabs': tabs,
+            'hotspotStories': hotspot_stories if hotspot_stories else seed_data.get('hotspotStories', []),
+            'hotspotTrendStrip': hotspot_trend_strip if hotspot_trend_strip else seed_data.get('hotspotTrendStrip', None),
+            'communityPosts': community_posts if community_posts else seed_data.get('communityPosts', [])
+        })
+        
         return {
             'locale': normalized_locale,
-            'content': deepcopy(content)
+            'content': content
         }
 
     def get_home_content(self, locale='en-US'):
-        home_content = load_json_seed('home_content_seed.json')
         normalized_locale = 'zh-CN' if locale == 'zh-CN' else 'en-US'
-        content = home_content.get(normalized_locale) or home_content.get('en-US') or {}
+        
+        trend_items = TrendStripItem.select().where((TrendStripItem.strip_type == 'home_picks') & (TrendStripItem.locale == normalized_locale))
+        featured_looks = [{
+            'id': t.id,
+            'tag': t.tag,
+            'title': t.title,
+            'description': t.description,
+            'image': t.image
+        } for t in trend_items]
+
+        tabs = [
+            {'key': 'recommend', 'label': 'Recommend' if normalized_locale == 'en-US' else '推荐', 'active': True},
+            {'key': 'featured', 'label': 'Featured' if normalized_locale == 'en-US' else '精选', 'active': False}
+        ]
+
+        # For static/seed data like recommendLooks, weather, schedule
+        home_content_seed = load_json_seed('home_content_seed.json')
+        seed_data = home_content_seed.get(normalized_locale) or home_content_seed.get('en-US') or {}
+
+        content = deepcopy(seed_data)
+        content.update({
+            'tabs': tabs,
+            'featuredLooks': featured_looks if featured_looks else seed_data.get('featuredLooks', [])
+        })
+
         return {
             'locale': normalized_locale,
-            'content': deepcopy(content)
+            'content': content
         }
 
     def get_discovery_social(self, user_id):
