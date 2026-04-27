@@ -47,6 +47,7 @@ class ScheduleItem(BaseModel):
     time = CharField(max_length=32, null=True)
     title = CharField(max_length=128, null=True)
     location = CharField(max_length=256, null=True)
+    image = CharField(max_length=256, null=True)
     tags_json = JSONField(null=True)
     reminderEnabled = BooleanField(default=False)
     version = IntegerField(default=1)

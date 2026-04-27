@@ -2,7 +2,7 @@ import base64
 import json
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import urlparse, parse_qs
 
 
 def create_handler(database, directory):
@@ -143,6 +143,13 @@ def create_handler(database, directory):
                     return
                 if method == 'POST' and path == '/api/settings':
                     self.respond(200, {'settings': database.save_settings(user_id, payload)})
+                    return
+
+                if method == 'GET' and path.startswith('/api/schedules/content'):
+                    parsed = urlparse(self.path)
+                    qs = parse_qs(parsed.query)
+                    locale = qs.get('locale', ['en-US'])[0]
+                    self.respond(200, database.get_schedule_content(user_id, locale))
                     return
 
                 if method == 'GET' and path == '/api/schedules':

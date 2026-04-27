@@ -9,7 +9,7 @@ export function renderScheduleOverview(overview, form = '') {
                     <span class="ct-eyebrow">${overview.eyebrow}</span>
                     <h1 class="ct-schedule-overview__title">${overview.title}</h1>
                 </div>
-                <a class="ct-schedule-overview__action" href="schedule-event.html">${sharedCopy.actions.addEvent}</a>
+                <a class="ct-schedule-overview__action" href="schedule-event.html" onclick="/* scheduleEvent */ location.href='schedule-event.html'">${sharedCopy.actions.addEvent}</a>
             </div>
             <div class="ct-schedule-overview__metric">
                 <span class="ct-schedule-overview__value">${overview.value}</span>

@@ -6,10 +6,9 @@ import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js'
 import { navigateTo } from '../lib/navigation.js';
 import { getQueryParam } from '../lib/navigationAdapter.js';
 import { getFormFeedbackCopy, focusFirstInvalidField, setFormSubmitting, validateRequired } from '../lib/formValidation.js';
-import { getScheduleContent } from '../data/schedule.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createScheduleEventPageContract } from '../lib/pageContracts.js';
-import { createScheduleEvent, getScheduleEventById, getScheduleSyncState, hydrateSchedule, retryScheduleSync, subscribeScheduleStore, subscribeScheduleSyncState, updateScheduleEvent } from '../lib/scheduleStore.js';
+import { getScheduleState, createScheduleEvent, getScheduleEventById, getScheduleSyncState, hydrateSchedule, retryScheduleSync, subscribeScheduleStore, subscribeScheduleSyncState, updateScheduleEvent } from '../lib/scheduleStore.js';
 import { clearScheduleDraft, getScheduleDraft } from '../lib/scheduleDraft.js';
 
 function getEventId() {
@@ -19,6 +18,7 @@ function getEventId() {
 function renderScheduleEventForm(content, locale, event) {
     const sharedCopy = getSharedCopy(locale);
     const isEditing = Boolean(event?.id);
+    const { form: formCopy = {}, tabs: tabsCopy = [] } = content;
 
     return `
         <section class="ct-schedule-event-shell">
@@ -94,7 +94,7 @@ export function renderScheduleEventPage() {
     
     const paint = () => {
         const locale = getLocale();
-        const content = getScheduleContent(locale);
+        const content = getScheduleState(locale);
         const scheduleDraft = eventId ? null : getScheduleDraft();
         const event = eventId ? getScheduleEventById(eventId, locale) : scheduleDraft;
         isInvalidEventId = Boolean(eventId) && !event;
@@ -180,13 +180,13 @@ export function renderScheduleEventPage() {
         }
     };
 
-    const handleSubmit = (submitEvent) => {
+    const handleSubmit = async (submitEvent) => {
         const form = submitEvent.target.closest('[data-ct-schedule-event-form]');
         if (!form) return;
         submitEvent.preventDefault();
 
         const locale = getLocale();
-        const content = getScheduleContent(locale);
+        const content = getScheduleState(locale);
         const copy = getFormFeedbackCopy(locale);
 
         if (isInvalidEventId) {
@@ -213,6 +213,7 @@ export function renderScheduleEventPage() {
 
         const title = String(formData.get('title') || '').trim();
 
+        const nextId = String(formData.get('eventId') || '').trim();
         const payload = {
             tab: String(formData.get('tab') || 'upcoming'),
             day: String(formData.get('day') || '').trim() || content.form.fallback.day,
@@ -226,6 +227,9 @@ export function renderScheduleEventPage() {
                 .filter(Boolean),
             reminderEnabled: formData.get('reminderEnabled') === 'on'
         };
+        if (nextId) {
+            payload.id = nextId;
+        }
 
         submissionActive = true;
         setFormSubmitting(form, true);
@@ -238,11 +242,10 @@ export function renderScheduleEventPage() {
         const noticeRoot = form.querySelector('[data-ct-form-notice]');
         if (noticeRoot) noticeRoot.innerHTML = renderFormNotice(formNotice);
 
-        const nextId = String(formData.get('eventId') || '').trim();
         if (nextId) {
-            updateScheduleEvent(nextId, payload, locale);
+            await updateScheduleEvent(nextId, payload, locale);
         } else {
-            createScheduleEvent(payload, locale);
+            await createScheduleEvent(payload, locale);
             clearScheduleDraft();
         }
 

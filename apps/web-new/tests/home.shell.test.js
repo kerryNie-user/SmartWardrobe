@@ -39,6 +39,7 @@ runTest('New 首页应默认渲染 Recommend 卡片并支持切换到 Featured',
   const dom = new JSDOM(html, { url: 'http://localhost/' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -48,6 +49,7 @@ runTest('New 首页应默认渲染 Recommend 卡片并支持切换到 Featured',
   const { renderHomePage } = await import(modulePath);
 
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const initialTitles = Array.from(dom.window.document.querySelectorAll('.ct-feed-card__title')).map((node) => node.textContent.trim());
   assert.ok(initialTitles.includes('Urban Commute'));
@@ -67,6 +69,7 @@ runTest('New 首页 tabs 与推荐流应具备语义结构且图片走本地资�
   const dom = new JSDOM(html, { url: 'http://localhost/' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -76,6 +79,7 @@ runTest('New 首页 tabs 与推荐流应具备语义结构且图片走本地资�
   const { renderHomePage } = await import(modulePath);
 
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const tablist = dom.window.document.querySelector('[data-ct-secondary-tabs] [role="tablist"]');
   assert.ok(tablist, 'Missing tablist role');
@@ -106,6 +110,7 @@ runTest('New 首页应跟随 app_locale 切换主要文案', async () => {
 
   dom.window.localStorage.setItem('app_locale', 'zh-CN');
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.navigator = dom.window.navigator;
@@ -117,6 +122,7 @@ runTest('New 首页应跟随 app_locale 切换主要文案', async () => {
   const { renderHomePage } = await import(modulePath);
 
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   assert.strictEqual(dom.window.document.documentElement.lang, 'zh-CN');
   assert.ok(/推荐/.test(dom.window.document.querySelector('[data-tab-key="recommend"]').textContent));
@@ -129,6 +135,7 @@ runTest('New 首页卡片应把详情阅读交给独立页入口', async () => {
   const dom = new JSDOM(html, { url: 'http://localhost/' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -138,6 +145,7 @@ runTest('New 首页卡片应把详情阅读交给独立页入口', async () => {
   const { renderHomePage } = await import(modulePath);
 
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const detailRoot = dom.window.document.querySelector('[data-ct-detail]');
   assert.ok(detailRoot, 'Missing legacy detail root');
@@ -154,6 +162,7 @@ runTest('New 首页卡片主体应提供 Outfit Detail 独立页入口', async (
   const dom = new JSDOM(html, { url: 'http://localhost/' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -162,6 +171,7 @@ runTest('New 首页卡片主体应提供 Outfit Detail 独立页入口', async (
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href;
   const { renderHomePage } = await import(modulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const firstLink = dom.window.document.querySelector('[data-ct-look-link]');
   assert.ok(firstLink, 'Missing outfit detail link');
@@ -174,6 +184,7 @@ runTest('New 首页应支持收藏推荐与精选穿搭', async () => {
   const dom = new JSDOM(html, { url: 'http://localhost/' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -183,6 +194,7 @@ runTest('New 首页应支持收藏推荐与精选穿搭', async () => {
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href;
   const { renderHomePage } = await import(modulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const favoriteButton = dom.window.document.querySelector('.ct-feed-card__favorite');
   assert.ok(favoriteButton, 'Missing look favorite button');
@@ -215,6 +227,7 @@ runTest('Home 顶部无菜单实现时应使用空占位壳', async () => {
   const dom = new JSDOM(html, { url: 'http://localhost/' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -224,6 +237,7 @@ runTest('Home 顶部无菜单实现时应使用空占位壳', async () => {
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?placeholder=1`;
   const { renderHomePage } = await import(modulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const placeholder = dom.window.document.querySelector('.ct-topbar .ct-icon-button.is-placeholder');
   assert.ok(placeholder, 'Home topbar should render placeholder shell');
@@ -246,6 +260,7 @@ runTest('New 首页温度展示应跟随 temperature_unit 偏好切换', async (
   const celsiusModulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?temp=1`;
   const { renderHomePage } = await import(celsiusModulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   assert.ok(/20°C/.test(celsiusDom.window.document.querySelector('.ct-home-weather__temp').textContent), 'Home should render celsius temperature');
   assert.ok(/▼/.test(celsiusDom.window.document.querySelector('[data-ct-weather]').textContent), 'Home should render low temperature arrow');
@@ -278,6 +293,7 @@ runTest('New 首页温度展示应跟随 temperature_unit 偏好切换', async (
   const fahrenheitModulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?temp=2`;
   const { renderHomePage: renderFahrenheitHomePage } = await import(fahrenheitModulePath);
   renderFahrenheitHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   assert.ok(/68°F/.test(fahrenheitDom.window.document.querySelector('.ct-home-weather__temp').textContent), 'Home should render fahrenheit temperature');
   assert.ok(/48°F/.test(fahrenheitDom.window.document.querySelector('[data-ct-weather]').textContent), 'Home should render fahrenheit low temperature');
@@ -342,6 +358,7 @@ runTest('New 首页应在定位成功后切换为解析出的范围天气摘要'
   dom.window.isSecureContext = true;
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.fetch = dom.window.fetch;
@@ -352,6 +369,7 @@ runTest('New 首页应在定位成功后切换为解析出的范围天气摘要'
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?location=1`;
   const { renderHomePage } = await import(modulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -404,6 +422,7 @@ runTest('New 首页在非安全上下文下应回退到 IP 城市天气摘要', 
   dom.window.isSecureContext = false;
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.fetch = dom.window.fetch;
@@ -414,6 +433,7 @@ runTest('New 首页在非安全上下文下应回退到 IP 城市天气摘要', 
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?location-ip-fallback=1`;
   const { renderHomePage } = await import(modulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -480,6 +500,7 @@ runTest('New 首页应把繁体地区名显示为简体范围文案', async () =
   dom.window.isSecureContext = true;
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.fetch = dom.window.fetch;
@@ -490,6 +511,7 @@ runTest('New 首页应把繁体地区名显示为简体范围文案', async () =
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?location-zh-normalize=1`;
   const { renderHomePage } = await import(modulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   await new Promise((resolve) => setTimeout(resolve, 0));
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -532,6 +554,7 @@ runTest('New 首页日程卡片应读取持久化 Schedule 摘要', async () => 
   }));
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -541,6 +564,7 @@ runTest('New 首页日程卡片应读取持久化 Schedule 摘要', async () => 
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?schedule-summary=1`;
   const { renderHomePage } = await import(modulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const scheduleText = dom.window.document.querySelector('[data-ct-schedule]').textContent;
   assert.ok(/Atelier Review/.test(scheduleText), 'Home schedule card should read persisted title');
@@ -599,6 +623,7 @@ runTest('New 首页日程卡片应读取真实最近的跨 tab 事件', async ()
   }));
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -608,6 +633,7 @@ runTest('New 首页日程卡片应读取真实最近的跨 tab 事件', async ()
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?schedule-order=1`;
   const { renderHomePage } = await import(modulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const scheduleText = dom.window.document.querySelector('[data-ct-schedule]').textContent;
   assert.ok(/Early Travel/.test(scheduleText), 'Home schedule card should prefer the nearest event across tabs');
@@ -693,6 +719,7 @@ runTest('New 首页推荐应统一接入 favorites、wardrobe、schedule、setti
   }));
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -702,6 +729,7 @@ runTest('New 首页推荐应统一接入 favorites、wardrobe、schedule、setti
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?recommendation-input=1`;
   const { renderHomePage } = await import(modulePath);
   renderHomePage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const titles = Array.from(dom.window.document.querySelectorAll('.ct-feed-card__title')).map((node) => node.textContent.trim());
   assert.strictEqual(titles[0], 'Midnight Formalism');

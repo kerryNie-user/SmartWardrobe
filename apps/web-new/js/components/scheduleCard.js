@@ -15,3 +15,5 @@ export function renderScheduleCard(schedule) {
         </div>
     `;
 }
+
+

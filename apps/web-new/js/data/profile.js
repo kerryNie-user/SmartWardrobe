@@ -35,8 +35,8 @@ export function getProfilePageContent(locale) {
                     bio: '写一点你的轮廓偏好、城市气质与材质关注点。'
                 },
                 fallback: {
-                    name: 'Elara Vance',
-                    bio: '持续整理建筑感轮廓、中性色剪裁与克制材质实验的数字风格档案。'
+                    name: '',
+                    bio: ''
                 },
                 actions: {
                     restore: '恢复默认',
@@ -79,14 +79,14 @@ export function getProfilePageContent(locale) {
                 bio: 'Bio'
             },
             placeholders: {
-                avatar: '/uploads/profile/elara-vance.jpg',
+                avatar: '/uploads/shared/elara-vance.jpg',
                 name: 'Elara Vance',
                 bio: 'Write a few lines about your silhouette bias, city mood, and material focus.'
             },
             fallback: {
-                name: 'Elara Vance',
-                bio: 'Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies.'
-            },
+                    name: '',
+                    bio: ''
+                },
             actions: {
                 restore: 'Restore Default',
                 save: 'Save Profile'

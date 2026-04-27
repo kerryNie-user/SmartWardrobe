@@ -25,7 +25,7 @@ function readBaseUrlOverride() {
     return ''
 }
 
-export function resolveLiteBackendBaseUrl(locationObject = typeof window !== 'undefined' ? window.location : null) {
+function resolveLiteBackendBaseUrl(locationObject = typeof window !== 'undefined' ? window.location : null) {
     const override = readBaseUrlOverride()
     if (override) return override
 
@@ -40,7 +40,7 @@ export function resolveLiteBackendBaseUrl(locationObject = typeof window !== 'un
     return `${protocol}//${locationObject.hostname}:8140`
 }
 
-export function buildLiteBackendUrl(path, locationObject = typeof window !== 'undefined' ? window.location : null) {
+function buildLiteBackendUrl(path, locationObject = typeof window !== 'undefined' ? window.location : null) {
     if (typeof path !== 'string' || !path) return path
     if (/^https?:\/\//i.test(path)) return path
 
@@ -49,7 +49,7 @@ export function buildLiteBackendUrl(path, locationObject = typeof window !== 'un
     return baseUrl ? `${baseUrl}${normalizedPath}` : normalizedPath
 }
 
-export function canUseLiteBackend() {
+function canUseLiteBackend() {
     return typeof window !== 'undefined' && typeof window.fetch === 'function'
 }
 
@@ -73,7 +73,6 @@ export async function requestLiteBackend(path, { method = 'GET', payload, userId
             },
             ...(payload === undefined ? {} : { body: JSON.stringify(payload) })
         })
-
         const contentType = response.headers.get('content-type') || ''
         const data = contentType.includes('application/json') ? await response.json().catch(() => null) : null
 
@@ -94,7 +93,7 @@ export async function requestLiteBackend(path, { method = 'GET', payload, userId
             error: null,
             kind: 'success'
         }
-    } catch {
+    } catch (err) {
         return {
             ok: false,
             status: 0,
@@ -111,6 +110,10 @@ export async function getDiscoveryContent(locale = 'en-US') {
 
 export async function getHomeContent(locale = 'en-US') {
     return requestLiteBackend(`/api/home/content?locale=${locale}`, { method: 'GET' })
+}
+
+export async function getScheduleContent(locale = 'en-US') {
+    return requestLiteBackend(`/api/schedules/content?locale=${locale}`, { method: 'GET' })
 }
 
 export async function getDiscoverySocial() {

@@ -1,14 +1,14 @@
-const FALLBACK_AVATAR = '/uploads/profile/elara-vance.jpg'
+const FALLBACK_AVATAR = ''
 
 const DEFAULT_PROFILE = {
     'en-US': {
-        name: 'Elara Vance',
-        bio: 'Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies.',
+        name: '',
+        bio: '',
         avatar: FALLBACK_AVATAR
     },
     'zh-CN': {
-        name: 'Elara Vance',
-        bio: '持续整理建筑感轮廓、中性色剪裁与克制材质实验的数字风格档案。',
+        name: '',
+        bio: '',
         avatar: FALLBACK_AVATAR
     }
 }

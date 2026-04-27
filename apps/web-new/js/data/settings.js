@@ -6,8 +6,8 @@ const SETTINGS_COPY = {
         },
         profile: {
             eyebrow: 'Personal Information',
-            name: 'ELARA_VANCE',
-            bio: 'Curating a digital archive of architectural silhouettes and neutral tones. Based in Tokyo.'
+            name: '',
+            bio: ''
         },
         heading: 'Preferences Console',
         items: {
@@ -37,8 +37,8 @@ const SETTINGS_COPY = {
         },
         profile: {
             eyebrow: '个人信息',
-            name: 'ELARA_VANCE',
-            bio: '持续整理建筑感轮廓与中性色调的数字衣橱档案，现居东京。'
+            name: '',
+            bio: ''
         },
         heading: '偏好控制台',
         items: {
@@ -76,7 +76,7 @@ const SETTINGS_ITEMS = [
 export const settingsProfile = {
     name: SETTINGS_COPY['en-US'].profile.name,
     bio: SETTINGS_COPY['en-US'].profile.bio,
-    avatar: '/uploads/profile/elara-vance.jpg',
+    avatar: '',
     eyebrow: SETTINGS_COPY['en-US'].profile.eyebrow
 };
 

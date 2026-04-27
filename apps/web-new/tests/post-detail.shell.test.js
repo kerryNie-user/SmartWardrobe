@@ -1,6 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const seedPath = path.join(__dirname, '..', '..', '..', 'services', 'backend_lite', 'data', 'discovery_content_seed.json');
+const seedData = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+
+global.fetch = async (url) => {
+  if (url.includes('/api/discovery/content')) {
+    const urlObj = new URL(url, 'http://localhost');
+    const locale = urlObj.searchParams.get('locale') || 'en-US';
+    return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ content: seedData[locale], locale }) };
+  }
+  return { ok: false, status: 404, headers: { get: () => null }, json: async () => null };
+};
 const { JSDOM } = require('jsdom');
 const { pathToFileURL } = require('url');
 
@@ -33,6 +44,7 @@ async function main() {
     const dom = new JSDOM(html, { url: 'http://localhost/post-detail.html?id=brutalist-basics' });
 
     global.window = dom.window;
+  global.window.fetch = global.fetch;
     global.document = dom.window.document;
     global.localStorage = dom.window.localStorage;
     global.CustomEvent = dom.window.CustomEvent;
@@ -42,6 +54,7 @@ async function main() {
     let modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href;
     let { renderPostDetailPage } = await import(modulePath);
     renderPostDetailPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
     assert.ok(/The Modern Uniform: Brutalist Basics/.test(dom.window.document.body.textContent));
     assert.ok(dom.window.document.querySelector('[data-ct-post-bookmark]'), 'Missing bookmark button');
@@ -57,6 +70,7 @@ async function main() {
     modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?fallback=1`;
     ({ renderPostDetailPage } = await import(modulePath));
     renderPostDetailPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
     const errorPanel = fallbackDom.window.document.querySelector('.ct-state-panel[data-state-kind="error"]');
     assert.ok(errorPanel, 'Missing post detail error panel');
@@ -69,6 +83,7 @@ async function main() {
     const dom = new JSDOM(html, { url: 'http://localhost/post-detail.html?id=brutalist-basics' });
 
     global.window = dom.window;
+  global.window.fetch = global.fetch;
     global.document = dom.window.document;
     global.localStorage = dom.window.localStorage;
     global.CustomEvent = dom.window.CustomEvent;
@@ -81,6 +96,7 @@ async function main() {
     const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?binding=1`;
     const { renderPostDetailPage } = await import(modulePath);
     const binding = renderPostDetailPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
     assert.ok(binding && typeof binding.teardown === 'function', 'Post detail page should return page binding');
 
@@ -109,6 +125,7 @@ async function main() {
     }));
 
     global.window = dom.window;
+  global.window.fetch = global.fetch;
     global.document = dom.window.document;
     global.localStorage = dom.window.localStorage;
     global.CustomEvent = dom.window.CustomEvent;
@@ -118,6 +135,7 @@ async function main() {
     const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?social=1`;
     const { renderPostDetailPage } = await import(modulePath);
     renderPostDetailPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
     const followButton = dom.window.document.querySelector('[data-ct-post-follow]');
     const likeButton = dom.window.document.querySelector('[data-ct-post-like]');
@@ -136,6 +154,7 @@ async function main() {
     const dom = new JSDOM(html, { url: 'http://localhost/post-detail.html?id=missing-post' });
 
     global.window = dom.window;
+  global.window.fetch = global.fetch;
     global.document = dom.window.document;
     global.localStorage = dom.window.localStorage;
     global.CustomEvent = dom.window.CustomEvent;
@@ -145,6 +164,7 @@ async function main() {
     const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?missing=1`;
     const { renderPostDetailPage } = await import(modulePath);
     renderPostDetailPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
     const errorPanel = dom.window.document.querySelector('.ct-state-panel[data-state-kind="error"]');
     assert.ok(errorPanel, 'Missing error state panel');
@@ -158,6 +178,7 @@ async function main() {
     const dom = new JSDOM(html, { url: 'http://localhost/post-detail.html?id=brutalist-basics' });
 
     global.window = dom.window;
+  global.window.fetch = global.fetch;
     global.document = dom.window.document;
     global.localStorage = dom.window.localStorage;
     global.CustomEvent = dom.window.CustomEvent;
@@ -168,6 +189,7 @@ async function main() {
     let modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?comment=1`;
     let { renderPostDetailPage } = await import(modulePath);
     renderPostDetailPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
     const beforeText = dom.window.document.querySelector('.ct-post-detail__actions').textContent;
     const commentInput = dom.window.document.querySelector('[name="commentBody"]');
@@ -195,6 +217,7 @@ async function main() {
     modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?comment=2`;
     ({ renderPostDetailPage } = await import(modulePath));
     renderPostDetailPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
     assert.ok(/Love the drape and the wool balance\./.test(reloadDom.window.document.body.textContent), 'Comment should survive page reload');
   });
@@ -211,6 +234,7 @@ async function main() {
     };
 
     global.window = dom.window;
+  global.window.fetch = global.fetch;
     global.document = dom.window.document;
     global.localStorage = dom.window.localStorage;
     global.navigator = dom.window.navigator;
@@ -221,6 +245,7 @@ async function main() {
     const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?share=1`;
     const { renderPostDetailPage } = await import(modulePath);
     renderPostDetailPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
     const shareButton = dom.window.document.querySelector('[data-ct-post-share]');
     assert.ok(shareButton, 'Missing post detail share button');

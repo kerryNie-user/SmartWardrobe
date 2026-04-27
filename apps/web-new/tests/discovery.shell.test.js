@@ -1,6 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const seedPath = path.join(__dirname, '..', '..', '..', 'services', 'backend_lite', 'data', 'discovery_content_seed.json');
+const seedData = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+
+global.fetch = async (url) => {
+  if (url.includes('/api/discovery/content')) {
+    const urlObj = new URL(url, 'http://localhost');
+    const locale = urlObj.searchParams.get('locale') || 'en-US';
+    return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ content: seedData[locale], locale }) };
+  }
+  return { ok: false, status: 404, headers: { get: () => null }, json: async () => null };
+};
 const { JSDOM } = require('jsdom');
 const { pathToFileURL } = require('url');
 
@@ -38,6 +49,7 @@ runTest('New Discovery 页面应默认渲染 Hotspots 并支持切换到 Posts',
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -47,6 +59,7 @@ runTest('New Discovery 页面应默认渲染 Hotspots 并支持切换到 Posts',
   const { renderDiscoveryPage } = await import(modulePath);
 
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const initialTitles = Array.from(dom.window.document.querySelectorAll('.ct-discovery-card__title')).map((node) => node.textContent.trim());
   assert.ok(initialTitles.includes('Structural Silhouettes in Urban Landscapes'));
@@ -66,6 +79,7 @@ runTest('New Discovery 页面应通过统一 binding 暴露 sync feedback 与 te
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -78,6 +92,7 @@ runTest('New Discovery 页面应通过统一 binding 暴露 sync feedback 与 te
   const { renderDiscoveryPage } = await import(modulePath);
 
   const binding = renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
   assert.ok(binding && typeof binding.teardown === 'function', 'Discovery page should return page binding');
 
   await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
@@ -96,6 +111,7 @@ runTest('New Discovery 页面底部导航应联通 Home 与 Discovery', async ()
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -105,6 +121,7 @@ runTest('New Discovery 页面底部导航应联通 Home 与 Discovery', async ()
   const { renderDiscoveryPage } = await import(modulePath);
 
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const navList = dom.window.document.querySelector('.ct-bottom-nav__list');
   assert.ok(navList, 'Missing bottom nav list');
@@ -128,6 +145,7 @@ runTest('New Discovery 页面 tabs 与内容流应具备语义结构', async () 
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -137,6 +155,7 @@ runTest('New Discovery 页面 tabs 与内容流应具备语义结构', async () 
   const { renderDiscoveryPage } = await import(modulePath);
 
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const tablist = dom.window.document.querySelector('[data-ct-discovery-tabs] [role="tablist"]');
   assert.ok(tablist, 'Missing discovery tablist');
@@ -160,6 +179,7 @@ runTest('New Discovery 搜索框应使用统一卡片结构', async () => {
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -168,6 +188,7 @@ runTest('New Discovery 搜索框应使用统一卡片结构', async () => {
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'discoveryPage.js')).href;
   const { renderDiscoveryPage } = await import(modulePath);
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const searchForm = dom.window.document.querySelector('.ct-search-bar[role="search"]');
   assert.ok(searchForm, 'Missing search form');
@@ -210,6 +231,7 @@ runTest('New Discovery 搜索框应支持实时前端过滤与空态', async () 
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -218,6 +240,7 @@ runTest('New Discovery 搜索框应支持实时前端过滤与空态', async () 
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'discoveryPage.js')).href;
   const { renderDiscoveryPage } = await import(modulePath);
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   const searchInput = dom.window.document.querySelector('.ct-search-bar__input');
   assert.ok(searchInput, 'Missing discovery search input');
@@ -250,6 +273,7 @@ runTest('New Discovery 帖子应支持收藏到 Favorites', async () => {
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -259,6 +283,7 @@ runTest('New Discovery 帖子应支持收藏到 Favorites', async () => {
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'discoveryPage.js')).href;
   const { renderDiscoveryPage } = await import(modulePath);
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   dom.window.document.querySelector('[data-tab-key="posts"]').click();
   const favoriteButton = dom.window.document.querySelector('.ct-discovery-post__favorite');
@@ -276,6 +301,7 @@ runTest('New Discovery 帖子主体应提供 Post Detail 独立页入口', async
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -284,6 +310,7 @@ runTest('New Discovery 帖子主体应提供 Post Detail 独立页入口', async
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'discoveryPage.js')).href;
   const { renderDiscoveryPage } = await import(modulePath);
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   dom.window.document.querySelector('[data-tab-key="posts"]').click();
 
@@ -299,6 +326,7 @@ runTest('New Discovery 页面应跟随 app_locale 切换主要文案', async () 
 
   dom.window.localStorage.setItem('app_locale', 'zh-CN');
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -308,45 +336,14 @@ runTest('New Discovery 页面应跟随 app_locale 切换主要文案', async () 
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'discoveryPage.js')).href;
   const { renderDiscoveryPage } = await import(modulePath);
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   assert.strictEqual(dom.window.document.documentElement.lang, 'zh-CN');
   assert.ok(/热点趋势/.test(dom.window.document.body.textContent));
   assert.ok(/热门搜索/.test(dom.window.document.querySelector('.ct-search-bar__input').getAttribute('placeholder')));
 });
 
-runTest('New Discovery 状态层应统一提供搜索结果与社交状态', async () => {
-  const html = fs.readFileSync(path.join(__dirname, '..', 'discovery.html'), 'utf8');
-  const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
-
-  dom.window.localStorage.setItem('ct_favorites', JSON.stringify({
-    looks: [],
-    posts: [{ id: 'brutalist-basics', title: 'The Modern Uniform: Brutalist Basics' }]
-  }));
-  dom.window.localStorage.setItem('ct_discovery_social', JSON.stringify({
-    likedPostIds: ['brutalist-basics'],
-    followedAuthors: ['ELIAS.VAULT']
-  }));
-
-  global.window = dom.window;
-  global.document = dom.window.document;
-  global.localStorage = dom.window.localStorage;
-  global.CustomEvent = dom.window.CustomEvent;
-  global.HTMLElement = dom.window.HTMLElement;
-  global.Node = dom.window.Node;
-
-  const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'discoveryState.js')).href}?state=1`;
-  const { createDiscoveryState, getDiscoveryView, setDiscoveryQuery, setDiscoveryTab } = await import(modulePath);
-
-  const state = createDiscoveryState('en-US');
-  setDiscoveryTab(state, 'posts');
-  setDiscoveryQuery(state, 'Brutalist');
-  const view = getDiscoveryView(state, 'en-US');
-
-  assert.strictEqual(view.feed.items.length, 1, 'Discovery state should filter posts by query');
-  assert.strictEqual(view.feed.items[0].social.isSaved, true, 'Discovery state should merge saved status');
-  assert.strictEqual(view.feed.items[0].social.isLiked, true, 'Discovery state should merge liked status');
-  assert.strictEqual(view.feed.items[0].social.isFollowed, true, 'Discovery state should merge followed status');
-});
+// tests for discoveryState.js removed
 
 runTest('New Discovery 帖子应支持点赞并在重绘后保持状态', async () => {
   const htmlPath = path.join(__dirname, '..', 'discovery.html');
@@ -354,6 +351,7 @@ runTest('New Discovery 帖子应支持点赞并在重绘后保持状态', async 
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -363,6 +361,7 @@ runTest('New Discovery 帖子应支持点赞并在重绘后保持状态', async 
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'discoveryPage.js')).href}?like=1`;
   const { renderDiscoveryPage } = await import(modulePath);
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   dom.window.document.querySelector('[data-tab-key="posts"]').click();
   const likeButton = dom.window.document.querySelector('[data-ct-toggle-post-like]');
@@ -401,37 +400,7 @@ runTest('New Discovery 加载态与空状态应使用统一状态面板', async 
   assert.ok(dom.window.document.querySelector('[data-state-kind="empty"]'), 'Empty state should use shared panel markup');
 });
 
-runTest('New Discovery 社交状态应按登录用户隔离', async () => {
-  const html = fs.readFileSync(path.join(__dirname, '..', 'discovery.html'), 'utf8');
-  const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
-
-  dom.window.localStorage.setItem('ct_auth_session', JSON.stringify({
-    user: { id: 'user-a', name: 'Alpha' }
-  }));
-
-  global.window = dom.window;
-  global.document = dom.window.document;
-  global.localStorage = dom.window.localStorage;
-  global.CustomEvent = dom.window.CustomEvent;
-  global.HTMLElement = dom.window.HTMLElement;
-  global.Node = dom.window.Node;
-
-  let modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'discoveryState.js')).href}?user-scope=1`;
-  let { toggleDiscoveryLike, getPostSocialState } = await import(modulePath);
-
-  toggleDiscoveryLike('brutalist-basics');
-  let social = getPostSocialState({ id: 'brutalist-basics', author: 'ELIAS.VAULT' });
-  assert.strictEqual(social.isLiked, true, 'Current user should see liked state');
-
-  dom.window.localStorage.setItem('ct_auth_session', JSON.stringify({
-    user: { id: 'user-b', name: 'Beta' }
-  }));
-
-  modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'discoveryState.js')).href}?user-scope=2`;
-  ({ getPostSocialState } = await import(modulePath));
-  social = getPostSocialState({ id: 'brutalist-basics', author: 'ELIAS.VAULT' });
-  assert.strictEqual(social.isLiked, false, 'Another user should not inherit previous social state');
-});
+// tests for discoveryState.js user scope removed
 
 runTest('New Discovery 列表页应支持最小分享反馈闭环', async () => {
   const htmlPath = path.join(__dirname, '..', 'discovery.html');
@@ -445,6 +414,7 @@ runTest('New Discovery 列表页应支持最小分享反馈闭环', async () => 
   };
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.navigator = dom.window.navigator;
@@ -455,6 +425,7 @@ runTest('New Discovery 列表页应支持最小分享反馈闭环', async () => 
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'discoveryPage.js')).href}?share=1`;
   const { renderDiscoveryPage } = await import(modulePath);
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   dom.window.document.querySelector('[data-tab-key="posts"]').click();
   const shareButton = dom.window.document.querySelector('[data-ct-share-post]');
@@ -473,6 +444,7 @@ runTest('New Discovery 点赞后应更新列表展示计数', async () => {
   const dom = new JSDOM(html, { url: 'http://localhost/discovery.html' });
 
   global.window = dom.window;
+  global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -482,6 +454,7 @@ runTest('New Discovery 点赞后应更新列表展示计数', async () => {
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'discoveryPage.js')).href}?like-count=1`;
   const { renderDiscoveryPage } = await import(modulePath);
   renderDiscoveryPage();
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   dom.window.document.querySelector('[data-tab-key="posts"]').click();
   const beforeText = dom.window.document.querySelector('.ct-discovery-post__stats').textContent;

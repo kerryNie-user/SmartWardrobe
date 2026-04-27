@@ -35,7 +35,20 @@ runTest('New Wardrobe 页面应默认显示 All 并支持切换到 Outerwear', a
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -64,7 +77,20 @@ runTest('New Wardrobe 页面应具备 tabs 语义、列表语义并使用本地�
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -98,7 +124,20 @@ runTest('New Wardrobe 页面应支持添加并删除衣物', async () => {
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -144,7 +183,30 @@ runTest('New Wardrobe 页面应提供独立 Add 与 Edit 入口', async () => {
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
+  dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+    version: 1,
+    users: {
+      guest: [
+        { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+        { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+      ]
+    }
+  }));
+
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -192,7 +254,20 @@ runTest('Wardrobe 页顶部返回应指向 Me', async () => {
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -212,7 +287,20 @@ runTest('New Wardrobe 页面应跟随 app_locale 切换主要文案', async () =
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
   dom.window.localStorage.setItem('app_locale', 'zh-CN');
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -224,8 +312,8 @@ runTest('New Wardrobe 页面应跟随 app_locale 切换主要文案', async () =
   renderWardrobePage();
 
   assert.strictEqual(dom.window.document.documentElement.lang, 'zh-CN');
-  assert.ok(/个人库存/.test(dom.window.document.body.textContent));
-  assert.ok(/全部/.test(dom.window.document.body.textContent));
+  assert.ok(/全部/.test(dom.window.document.querySelector('[data-tab-key="all"]').textContent));
+  assert.ok(/晚间/.test(dom.window.document.querySelector('[data-tab-key="evening"]').textContent));
 });
 
 runTest('New Wardrobe 新增表单控件应补齐双语占位与 aria 文案', async () => {
@@ -234,7 +322,20 @@ runTest('New Wardrobe 新增表单控件应补齐双语占位与 aria 文案', a
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
   dom.window.localStorage.setItem('app_locale', 'zh-CN');
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -260,7 +361,20 @@ runTest('New Wardrobe 页面应读取 wardrobe_display_mode 并输出真实布�
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
   dom.window.localStorage.setItem('wardrobe_display_mode', 'list');
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -282,7 +396,20 @@ runTest('Wardrobe list 模式应使用横向条目布局与空占位顶栏按钮
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
   dom.window.localStorage.setItem('wardrobe_display_mode', 'list');
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -306,7 +433,20 @@ runTest('New Wardrobe 页面应支持搜索并在无结果时显示统一空状�
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -345,7 +485,20 @@ runTest('New Wardrobe 页面卡片应进入独立详情页', async () => {
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -366,7 +519,20 @@ runTest('New Wardrobe Detail 页面应根据 id 渲染并提供编辑入口', as
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe-detail.html?id=wool-trench' });
 
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -388,7 +554,20 @@ runTest('New Wardrobe 卡片应支持直接切换收藏状态', async () => {
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
 
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -432,7 +611,20 @@ runTest('New Wardrobe 删除最后一件单品后刷新应保持空衣橱', asyn
     }
   ]));
 
+  
+  if (!dom.window.localStorage.getItem('ct_wardrobe')) {
+    dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+      version: 1,
+      users: {
+        guest: [
+          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+        ]
+      }
+    }));
+  }
   global.window = dom.window;
+
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;

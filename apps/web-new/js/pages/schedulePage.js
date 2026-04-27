@@ -1,4 +1,3 @@
-import { getScheduleContent } from '../data/schedule.js';
 import { renderTopbar } from '../components/topbar.js';
 import { renderSecondaryTabs } from '../components/secondaryTabs.js';
 import { renderBottomNav } from '../components/bottomNav.js';
@@ -9,7 +8,7 @@ import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
 import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createSchedulePageContract } from '../lib/pageContracts.js';
-import { buildSchedulePageSelectorInput, selectScheduleDeleteCandidate } from '../lib/scheduleSelectors.js';
+import { selectScheduleView, selectScheduleDeleteCandidate } from '../lib/scheduleSelectors.js';
 import { deleteScheduleEvent, getScheduleState, getScheduleSyncState, hydrateSchedule, retryScheduleSync, subscribeScheduleStore, subscribeScheduleSyncState, toggleScheduleReminder } from '../lib/scheduleStore.js';
 
 export function renderSchedulePage() {
@@ -29,7 +28,6 @@ export function renderSchedulePage() {
 
     const locale = getLocale();
     const sharedCopy = getSharedCopy(locale);
-    const content = getScheduleContent(locale);
     let activeTab = 'upcoming';
     let deleteCandidate = null;
 
@@ -47,32 +45,25 @@ export function renderSchedulePage() {
 
     const paint = () => {
         const scheduleState = getScheduleState(locale);
-        const selectorInput = buildSchedulePageSelectorInput({
+        const view = selectScheduleView({
             locale,
             activeTab,
-            content,
+            tabs: scheduleState.tabs || [],
+            views: scheduleState.views || {},
             scheduleState,
             deleteCandidate,
-            sharedCopy,
-            syncStates: {
-                schedule: getScheduleSyncState()
-            }
-        })
-        const contract = createSchedulePageContract(selectorInput);
-        const activeTabState = contract.derivedView.tabs.find((tab) => tab.active) || contract.derivedView.tabs[0];
+            sharedCopy
+        });
 
         if (overviewRoot) {
-            overviewRoot.innerHTML = renderScheduleOverview(contract.derivedView.overview);
+            overviewRoot.innerHTML = renderScheduleOverview(view.overview);
         }
-        if (tabsRoot) tabsRoot.innerHTML = renderSecondaryTabs(contract.derivedView.tabs, sharedCopy.tabs.schedule);
+        if (tabsRoot) tabsRoot.innerHTML = renderSecondaryTabs(view.tabs, sharedCopy.schedule?.tabsAria);
         if (timelineRoot) {
-            timelineRoot.id = activeTabState.panelId;
-            timelineRoot.setAttribute('role', 'tabpanel');
-            timelineRoot.setAttribute('aria-labelledby', activeTabState.tabId);
-            timelineRoot.innerHTML = renderScheduleTimeline(contract.derivedView.timelineGroups);
+            timelineRoot.innerHTML = renderScheduleTimeline(view.groups, view.emptyStateCopy);
         }
         if (dialogRoot) {
-            dialogRoot.innerHTML = contract.derivedView.deleteDialog.visible ? renderScheduleConfirmDialog(selectorInput.deleteDialogCopy) : '';
+            dialogRoot.innerHTML = renderScheduleConfirmDialog(view.deleteDialogCopy);
         }
     };
 
@@ -109,11 +100,11 @@ export function renderSchedulePage() {
     }
 
     if (timelineRoot) {
-        timelineRoot.addEventListener('click', (event) => {
+        timelineRoot.addEventListener('click', async (event) => {
             const reminderTarget = event.target.closest('[data-ct-toggle-schedule-reminder]');
             if (reminderTarget) {
                 const eventId = reminderTarget.getAttribute('data-ct-toggle-schedule-reminder');
-                toggleScheduleReminder(eventId, locale);
+                await toggleScheduleReminder(eventId, locale);
                 binding.paintNow();
                 return;
             }
@@ -129,17 +120,18 @@ export function renderSchedulePage() {
     }
 
     if (dialogRoot) {
-        dialogRoot.addEventListener('click', (event) => {
-            if (event.target.closest('[data-ct-cancel-schedule-delete]')) {
-                deleteCandidate = null;
-                binding.paintNow();
-                return;
+        dialogRoot.addEventListener('click', async (event) => {
+            if (event.target.closest('[data-ct-confirm-schedule-delete]')) {
+                await deleteScheduleEvent(activeTab, deleteCandidate?.id, locale)
+                deleteCandidate = null
+                binding.paintNow()
+                return
             }
 
-            if (!event.target.closest('[data-ct-confirm-schedule-delete]')) return;
-            deleteScheduleEvent(activeTab, deleteCandidate?.id, locale);
-            deleteCandidate = null;
-            binding.paintNow();
+            if (event.target.matches('[data-ct-cancel-schedule-delete]') || event.target.closest('[data-dialog-action="cancel"]')) {
+                deleteCandidate = null
+                binding.paintNow()
+            }
         });
     }
 

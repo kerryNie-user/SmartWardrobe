@@ -170,20 +170,6 @@ export function getWardrobeCount(locale = 'en-US') {
     return getWardrobeItems(locale).length
 }
 
-export function getWardrobeItemsByQuery(query = '', locale = 'en-US') {
-    const normalizedQuery = String(query || '').trim().toLowerCase()
-    const items = getWardrobeItems(locale)
-
-    if (!normalizedQuery) {
-        return items
-    }
-
-    return items.filter((item) => [item.title, item.category, item.material]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery))
-}
 
 export function getRecentWardrobeItems(limit = 3, locale = 'en-US') {
     return getWardrobeItems(locale).slice(0, limit)

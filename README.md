@@ -18,10 +18,10 @@ graph TD
 ### 📂 Directories
 
 - **`apps/web-new/`**: Current main web app under active development.
-- **`apps/web-legacy/`**: Legacy web app kept for comparison and fallback.
+- **`apps/web-legacy/`**: (Deprecated) Legacy web app kept for comparison and fallback.
 - **`apps/android/`**: Android client.
 - **`services/backend_lite/`**: Lightweight JSON-backed backend for frontend-first development.
-- **`services/backend_legacy/`**: Existing Python/MySQL backend.
+- **`services/backend_legacy/`**: (Deprecated) Existing Python/MySQL backend.
 - **`docs/product/`**: Product-facing documentation.
 - **`docs/superpowers/`**: Planning and spec documents.
 - **`scripts/dev/`**: Start scripts for local development.
@@ -39,7 +39,7 @@ zsh ./scripts/dev/start_lite_backend.sh
 
 Default port is `8140` (set `LITE_BACKEND_PORT` to change).
 
-Run the legacy integrated server for the previous stack:
+*(Deprecated)* Run the legacy integrated server for the previous stack:
 
 ```bash
 zsh ./scripts/dev/start_new_server.sh
@@ -61,16 +61,16 @@ zsh ./scripts/dev/start_new_server.sh
 ## 🚀 Quick Navigation
 
 - [New Web App](apps/web-new/)
-- [Legacy Web App Documentation](apps/web-legacy/README.md)
 - [Android Application Documentation](apps/android/README.md)
 - [User Guide](docs/product/USER_GUIDE.md)
 - [Server Setup](docs/product/SERVER_SETUP.md)
+- [Legacy Web App Documentation (Deprecated)](apps/web-legacy/README.md)
 
 ## 💻 Developer Guide
 
 ### Web Development
-For legacy web development tasks, including UI updates and logic changes:
-[Go to Web Development Guide](apps/web-legacy/README.md)
+For active web development tasks:
+[Go to New Web App](apps/web-new/README.md)
 
 ### Android Development
 For native feature implementation and APK building:

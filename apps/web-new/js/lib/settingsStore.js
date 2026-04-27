@@ -53,9 +53,6 @@ export function toggleSetting(key) {
     return setSetting(key, !getSettingsState()[key])
 }
 
-export function getThemePreference() {
-    return getSettingsState()['display-mode']
-}
 
 export function getWardrobeLayoutPreference() {
     return getSettingsState()['wardrobe-layout']

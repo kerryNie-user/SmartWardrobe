@@ -1,4 +1,10 @@
-# services/backend_legacy
+# ⚠️ DEPRECATED: services/backend_legacy
+
+> **注意 (Notice):**
+> 此目录下的旧版 Python + MySQL 后端已被正式废弃。当前的后端开发和本地联调已完全迁移至 [`services/backend_lite`](../backend_lite) 架构。
+> 此目录仅作为历史参考保留，不再接受任何更新。
+>
+> This directory is officially deprecated. All active backend development and local mocking have moved to [`services/backend_lite`](../backend_lite). This directory is kept for historical reference only.
 
 这是仓库里保留的历史 Python + MySQL 后端。
 

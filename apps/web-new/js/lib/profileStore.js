@@ -4,7 +4,7 @@ import { createProfileService } from './profileService.js';
 import { createSyncController } from './syncState.js';
 import { getCurrentUserScope } from './userScopedStorage.js';
 
-const FALLBACK_AVATAR = '/uploads/profile/elara-vance.jpg';
+const FALLBACK_AVATAR = '/uploads/shared/elara-vance.jpg';
 const profileListeners = new Set();
 const profileSyncController = createSyncController();
 

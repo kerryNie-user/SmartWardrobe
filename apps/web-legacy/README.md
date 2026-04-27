@@ -1,4 +1,10 @@
-# SmartWardrobe Web Application
+# ⚠️ DEPRECATED: SmartWardrobe Web Application (Legacy)
+
+> **注意 (Notice):**
+> 此目录（`apps/web-legacy`）下的旧版前端代码已被正式废弃。所有的活跃开发、功能迭代和维护均已迁移至 [`apps/web-new`](../web-new) 目录。
+> 此目录仅作为历史参考保留，不再接受任何更新。
+> 
+> This directory (`apps/web-legacy`) is officially deprecated. All active development has moved to [`apps/web-new`](../web-new). This directory is kept for historical reference only and will no longer be updated.
 
 SmartWardrobe 的 Web 端核心 UI 与前端逻辑（纯静态页面 + JavaScript）。
 

@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "test": "node apps/web-legacy/tests/i18n.unit.test.js"
+    "test": "ls apps/web-new/tests/*.test.js | xargs -n 1 node"
   },
   "dependencies": {
     "jsdom": "^28.1.0"

@@ -9,6 +9,7 @@ export function renderSecondaryTabs(tabs, label = 'Section Tabs') {
                         id="${tab.tabId || ''}"
                         role="tab"
                         data-tab-key="${tab.key}"
+                        data-tab="${tab.key}"
                         aria-selected="${tab.active ? 'true' : 'false'}"
                         aria-controls="${tab.panelId || ''}"
                         tabindex="${tab.active ? '0' : '-1'}"

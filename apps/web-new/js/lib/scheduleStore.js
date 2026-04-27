@@ -1,25 +1,11 @@
-import { getScheduleContent } from '../data/schedule.js'
-import { createScheduleLocalRepository } from './scheduleLocalRepository.js'
 import { createScheduleRemoteRepository } from './scheduleRemoteRepository.js'
-import { createScheduleService, getSortedTimelineEntries, normalizeEvent, removeEventFromState, upsertEventGroup } from './scheduleService.js'
+import { createScheduleLocalRepository } from './scheduleLocalRepository.js'
+import { createScheduleService } from './scheduleService.js'
 import { createSyncController } from './syncState.js'
-import { getCurrentUserScope } from './userScopedStorage.js'
 
 const SCHEDULE_TABS = ['upcoming', 'travel', 'archive']
 const scheduleListeners = new Set()
 const scheduleSyncController = createSyncController()
-
-function clone(value) {
-    return JSON.parse(JSON.stringify(value))
-}
-
-function createSeed(locale) {
-    return clone(getScheduleContent(locale).views)
-}
-
-function countEvents(groups) {
-    return groups.reduce((total, group) => total + group.events.length, 0)
-}
 
 function notifyScheduleStore(locale) {
     const nextState = getScheduleState(locale)
@@ -35,24 +21,34 @@ const scheduleService = createScheduleService({
     onStateChange: (locale) => notifyScheduleStore(locale)
 })
 
-export function getScheduleState(locale = 'en-US', scope = getCurrentUserScope()) {
-    const storedTabs = scheduleLocalRepository.read(locale, scope)
-    const seed = createSeed(locale)
-
-    return SCHEDULE_TABS.reduce((state, key) => {
-        state[key] = {
-            ...seed[key],
-            groups: clone(storedTabs[key].groups)
-        }
-        return state
-    }, {})
+export function getScheduleState(locale = 'en-US') {
+    const s = scheduleService.getState()
+    const fallback = {
+        tabs: [
+            { key: 'upcoming', label: 'Upcoming', active: true },
+            { key: 'travel', label: 'Travel', active: false },
+            { key: 'archive', label: 'Archive', active: false }
+        ],
+        views: {
+            upcoming: { groups: [] },
+            travel: { groups: [] },
+            archive: { groups: [] }
+        },
+        form: { labels: {}, placeholders: {}, actions: {}, fallback: {} }
+    }
+    if (!s) return fallback
+    return {
+        ...fallback,
+        ...s,
+        tabs: s.tabs || fallback.tabs,
+        views: s.views || fallback.views,
+        form: s.form || fallback.form
+    }
 }
 
-export function createScheduleEvent(input, locale = 'en-US') {
-    const scope = getCurrentUserScope()
-    const state = getScheduleState(locale, scope)
+export async function createScheduleEvent(input, locale = 'en-US') {
     const tab = SCHEDULE_TABS.includes(input.tab) ? input.tab : 'upcoming'
-    const nextEvent = normalizeEvent({
+    const nextEvent = {
         id: `${tab}-${input.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
         time: input.time,
         title: input.title,
@@ -61,76 +57,56 @@ export function createScheduleEvent(input, locale = 'en-US') {
         tags: input.tags,
         reminderEnabled: Boolean(input.reminderEnabled),
         version: 1,
-        updatedAt: Date.now()
-    })
-
-    state[tab].groups = upsertEventGroup(
-        state[tab].groups,
-        nextEvent,
-        input.day,
-        input.label
-    )
-
-    scheduleLocalRepository.write(state, locale, scope)
-    notifyScheduleStore(locale)
-    void scheduleService.create({
-        ...nextEvent,
+        updatedAt: Date.now(),
         day: input.day,
         label: input.label,
         tab
-    }, locale, scope)
-    return getScheduleState(locale, scope)
+    }
+
+    await scheduleService.create(nextEvent, locale)
+    return getScheduleState(locale)
 }
 
-export function deleteScheduleEvent(tab, eventId, locale = 'en-US') {
-    const scope = getCurrentUserScope()
-    const previousState = getScheduleState(locale, scope)
-    const state = getScheduleState(locale, scope)
-    const targetTab = SCHEDULE_TABS.includes(tab) ? tab : 'upcoming'
-
-    removeEventFromState(state, targetTab, eventId)
-
-    scheduleLocalRepository.write(state, locale, scope)
-    notifyScheduleStore(locale)
-    void scheduleService.remove(eventId, previousState, locale, scope)
-    return getScheduleState(locale, scope)
+export async function deleteScheduleEvent(tab, eventId, locale = 'en-US') {
+    await scheduleService.remove(eventId, locale)
+    return getScheduleState(locale)
 }
 
 export function getScheduleEventById(eventId, locale = 'en-US') {
     const state = getScheduleState(locale)
-    return getSortedTimelineEntries(state).find((event) => event.id === eventId) || null
+    for (const tab of SCHEDULE_TABS) {
+        for (const group of state.views[tab]?.groups || []) {
+            const event = group.events.find((e) => e.id === eventId)
+            if (event) return { ...event, tab, day: group.day, label: group.label }
+        }
+    }
+    return null
 }
 
-export function updateScheduleEvent(eventId, input, locale = 'en-US') {
-    const scope = getCurrentUserScope()
+export async function updateScheduleEvent(eventId, input, locale = 'en-US') {
     const existing = getScheduleEventById(eventId, locale)
     if (!existing) return getScheduleState(locale)
 
-    const previousState = getScheduleState(locale, scope)
-    const state = getScheduleState(locale, scope)
     const targetTab = SCHEDULE_TABS.includes(input.tab) ? input.tab : existing.tab
-    const nextEvent = normalizeEvent({
+    const nextEvent = {
         ...existing,
         ...input,
         id: eventId,
         tab: targetTab
-    })
+    }
 
-    removeEventFromState(state, existing.tab, eventId)
-    state[targetTab].groups = upsertEventGroup(state[targetTab].groups, nextEvent, input.day || existing.day, input.label || existing.label)
-
-    scheduleLocalRepository.write(state, locale, scope)
-    notifyScheduleStore(locale)
-    void scheduleService.update(eventId, nextEvent, previousState, locale, scope)
-    return getScheduleState(locale, scope)
+    await scheduleService.update(eventId, nextEvent, locale)
+    return getScheduleState(locale)
 }
 
-export function toggleScheduleReminder(eventId, locale = 'en-US') {
+export async function toggleScheduleReminder(eventId, locale = 'en-US') {
     const existing = getScheduleEventById(eventId, locale)
     if (!existing) return null
 
-    updateScheduleEvent(eventId, {
+    const targetTab = SCHEDULE_TABS.includes(existing.tab) ? existing.tab : 'upcoming'
+    await updateScheduleEvent(eventId, {
         ...existing,
+        tab: targetTab,
         reminderEnabled: !existing.reminderEnabled
     }, locale)
 
@@ -146,11 +122,33 @@ export function subscribeScheduleStore(listener) {
 
 export function getScheduleSummary(locale = 'en-US') {
     const state = getScheduleState(locale)
-    const nextEvent = getSortedTimelineEntries(state)[0]
+    let nextEvent = null
+    let nextTime = Infinity
 
-    if (!nextEvent) {
-        return null
+    for (const tab of SCHEDULE_TABS) {
+        for (const group of state.views[tab]?.groups || []) {
+            for (const event of group.events) {
+                const match = event.time.match(/(\d+):(\d+)\s*(AM|PM)/i)
+                if (match) {
+                    let hours = parseInt(match[1], 10)
+                    const minutes = parseInt(match[2], 10)
+                    const ampm = match[3].toUpperCase()
+                    if (ampm === 'PM' && hours < 12) hours += 12
+                    if (ampm === 'AM' && hours === 12) hours = 0
+                    
+                    const eventTime = hours * 60 + minutes
+                    if (eventTime < nextTime) {
+                        nextTime = eventTime
+                        nextEvent = event
+                    }
+                } else if (!nextEvent) {
+                    nextEvent = event
+                }
+            }
+        }
     }
+
+    if (!nextEvent) return null
 
     return {
         title: nextEvent.title,
@@ -164,24 +162,33 @@ export function getScheduleSummary(locale = 'en-US') {
 
 export function getScheduleStats(locale = 'en-US') {
     const state = getScheduleState(locale)
+    const countEvents = (groups) => (groups || []).reduce((total, group) => total + group.events.length, 0)
 
     return {
-        upcoming: countEvents(state.upcoming.groups),
-        travel: countEvents(state.travel.groups),
-        archive: countEvents(state.archive.groups),
-        total: SCHEDULE_TABS.reduce((total, key) => total + countEvents(state[key].groups), 0)
+        upcoming: countEvents(state.views.upcoming?.groups),
+        travel: countEvents(state.views.travel?.groups),
+        archive: countEvents(state.views.archive?.groups),
+        total: SCHEDULE_TABS.reduce((total, key) => total + countEvents(state.views[key]?.groups), 0)
     }
 }
 
 export function getScheduleFeed(limit = 3, locale = 'en-US') {
     const state = getScheduleState(locale)
-
-    return getSortedTimelineEntries(state)
-        .slice(0, limit)
+    const feed = []
+    
+    for (const tab of SCHEDULE_TABS) {
+        for (const group of state.views[tab]?.groups || []) {
+            for (const event of group.events) {
+                feed.push(event)
+                if (feed.length >= limit) return feed
+            }
+        }
+    }
+    return feed
 }
 
 export async function hydrateSchedule(locale = 'en-US') {
-    return scheduleService.hydrate(locale, getCurrentUserScope())
+    return scheduleService.hydrate(locale)
 }
 
 export function getScheduleSyncState() {
@@ -193,5 +200,5 @@ export function subscribeScheduleSyncState(listener) {
 }
 
 export function retryScheduleSync(locale = 'en-US') {
-    return scheduleService.retry(locale, getCurrentUserScope())
+    return scheduleService.retry(locale)
 }
