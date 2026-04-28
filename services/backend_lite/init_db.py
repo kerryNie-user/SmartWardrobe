@@ -13,7 +13,7 @@ from services.backend_lite.models import (
 
 def init_db():
     print("Connecting to database...")
-    db.connect()
+    db.connect(reuse_if_open=True)
     
     models = [
         User, UserSetting, WardrobeItem, ScheduleItem,

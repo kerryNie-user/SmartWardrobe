@@ -84,5 +84,9 @@ export function renderDiscoveryFeed(activeTab, items) {
         return renderEmptyState();
     }
 
-    return activeTab === 'posts' ? renderPostCards(items) : renderHotspotCards(items);
+    if (activeTab === 'posts' || activeTab === 'editorials') {
+        return renderPostCards(items);
+    }
+
+    return renderHotspotCards(items);
 }

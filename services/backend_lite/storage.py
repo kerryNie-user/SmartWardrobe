@@ -343,27 +343,50 @@ class JsonDatabase:
         } if trend_strip_items else None
 
         posts = ContentPost.select().where(ContentPost.locale == normalized_locale)
-        community_posts = [{
-            'id': p.id,
-            'author': p.author,
-            'time': p.time_str,
-            'title': p.title,
-            'description': p.description,
-            'body': p.body_json or [],
-            'tags': p.tags_json or [],
-            'heroImage': p.hero_image,
-            'images': p.images_json or [],
-            'stats': {
-                'likes': p.stats_likes or '0',
-                'comments': p.stats_comments or '0'
+        community_posts = []
+        editorials = []
+        
+        for p in posts:
+            post_data = {
+                'id': p.id,
+                'author': p.author,
+                'time': p.time_str,
+                'title': p.title,
+                'description': p.description,
+                'body': p.body_json or [],
+                'tags': p.tags_json or [],
+                'heroImage': p.hero_image,
+                'images': p.images_json or [],
+                'stats': {
+                    'likes': p.stats_likes or '0',
+                    'comments': p.stats_comments or '0'
+                }
             }
-        } for p in posts]
+            if 'editorial' in (p.tags_json or []):
+                editorials.append(post_data)
+            else:
+                community_posts.append(post_data)
 
         # Tabs are mostly static, we can hardcode them here or add them to DB later.
         tabs = [
             {'key': 'hotspots', 'label': 'Fashion Hotspots' if normalized_locale == 'en-US' else '热点趋势', 'active': True},
-            {'key': 'posts', 'label': 'Posts' if normalized_locale == 'en-US' else '帖子', 'active': False}
+            {'key': 'posts', 'label': 'Posts' if normalized_locale == 'en-US' else '帖子', 'active': False},
+            {'key': 'editorials', 'label': 'Editorials' if normalized_locale == 'en-US' else '编辑精选', 'active': False}
         ]
+
+        # Specific trend strip for editorials
+        editorial_trend_items = TrendStripItem.select().where((TrendStripItem.strip_type == 'editorial') & (TrendStripItem.locale == normalized_locale))
+        editorial_trend_strip_items = [{
+            'tag': t.tag,
+            'title': t.title,
+            'description': t.description,
+            'image': t.image
+        } for t in editorial_trend_items]
+        
+        editorial_trend_strip = {
+            'title': 'Featured Editorials' if normalized_locale == 'en-US' else '编辑精选',
+            'items': editorial_trend_strip_items
+        } if editorial_trend_strip_items else None
 
         # For static/seed data
         discovery_content_seed = load_json_seed('discovery_content_seed.json')
@@ -374,7 +397,14 @@ class JsonDatabase:
             'tabs': tabs,
             'hotspotStories': hotspot_stories if hotspot_stories else seed_data.get('hotspotStories', []),
             'hotspotTrendStrip': hotspot_trend_strip if hotspot_trend_strip else seed_data.get('hotspotTrendStrip', None),
-            'communityPosts': community_posts if community_posts else seed_data.get('communityPosts', [])
+            'editorialTrendStrip': editorial_trend_strip if editorial_trend_strip else seed_data.get('editorialTrendStrip', None),
+            'communityPosts': community_posts if community_posts else seed_data.get('communityPosts', []),
+            'editorials': editorials if editorials else seed_data.get('editorials', []),
+            'searchPlaceholder': {
+                'hotspots': 'HOT SEARCHES · TOKYO · TAILORING · CITY EDITS' if normalized_locale == 'en-US' else '热门搜索 · 东京 · 剪裁 · 城市选集',
+                'posts': 'HOT SEARCHES · ARCHIVES · TREND NOTES' if normalized_locale == 'en-US' else '热门搜索 · 档案 · 趋势笔记',
+                'editorials': 'HOT SEARCHES · STYLE GUIDE · TRENDS' if normalized_locale == 'en-US' else '热门搜索 · 穿搭指南 · 趋势解析'
+            }
         })
         
         return {

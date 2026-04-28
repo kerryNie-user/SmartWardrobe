@@ -1,8 +1,35 @@
 import json
 import re
+import os
+import tempfile
+from pathlib import Path
+import pytest
 
 from unittest.mock import patch
 from services.ai_blogger.run_pipeline import run_batch
+from services.backend_lite.database import db
+from services.backend_lite.init_db import init_db
+from services.backend_lite.models import ContentPost
+
+@pytest.fixture(autouse=True)
+def setup_test_db():
+    db_path = str(Path(tempfile.mkdtemp()) / "test.db")
+    os.environ["SQLITE_DB"] = db_path
+    
+    if not db.is_closed():
+        db.close()
+    db.init(db_path)
+    db.connect()
+    init_db()
+    
+    yield
+    
+    if not db.is_closed():
+        db.close()
+    
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
 
 @patch('services.ai_blogger.llm_client.UniversalLLMClient.generate_json')
 def test_batch_pipeline_generates_10_articles_and_reports(mock_generate_json, tmp_path):
@@ -40,3 +67,9 @@ def test_batch_pipeline_generates_10_articles_and_reports(mock_generate_json, tm
     assert "images" in report
     assert report["images"]["download_enabled"] is False
     assert report["images"]["downloaded"] == 0
+
+    # Verify database insertion
+    assert ContentPost.select().count() == 10
+    first_post = ContentPost.select().first()
+    assert first_post.author == "SmartWardrobe AI Editor"
+    assert "editorial" in first_post.tags_json

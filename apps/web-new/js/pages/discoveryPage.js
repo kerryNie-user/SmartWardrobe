@@ -52,6 +52,18 @@ function buildFeedItems(content, activeTab, query, locale, shareFeedbackPostId) 
                 }
             }));
     }
+    if (activeTab === 'editorials') {
+        return filterItems(content.editorials, (item) => [item.title, item.description, item.author], query)
+            .map((item) => ({
+                ...item,
+                social: {
+                    ...getPostSocialState(item),
+                    shareFeedback: shareFeedbackPostId === item.id
+                        ? (locale === 'zh-CN' ? '链接已复制' : 'Link copied')
+                        : ''
+                }
+            }));
+    }
 
     return filterItems(content.hotspotStories, (item) => [item.title, item.description, item.tag, item.meta], query);
 }
@@ -82,7 +94,7 @@ export function renderDiscoveryPage() {
             content,
             activeTab: viewState.activeTab,
             query: viewState.query,
-            trendStrip: viewState.activeTab === 'posts' ? content.postTrendStrip : content.hotspotTrendStrip,
+            trendStrip: viewState.activeTab === 'posts' ? content.postTrendStrip : (viewState.activeTab === 'editorials' ? content.editorialTrendStrip : content.hotspotTrendStrip),
             feed: {
                 kind: feedItems.length ? 'ready' : 'empty',
                 items: feedItems

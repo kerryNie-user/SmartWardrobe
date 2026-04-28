@@ -29,7 +29,37 @@ def create_handler(database, directory):
                 self.serve_upload()
                 return
 
+            if self.path.startswith('/ai-images/'):
+                self.serve_ai_images()
+                return
+
             super().do_GET()
+
+        def serve_ai_images(self):
+            filename = self.path.split('/')[-1]
+            
+            # Prevent directory traversal
+            if '..' in self.path:
+                self.respond(403, {'error': 'FORBIDDEN'})
+                return
+                
+            from pathlib import Path
+            project_root = Path(__file__).resolve().parents[2]
+            image_path = project_root / 'services' / 'ai_blogger' / 'output' / 'images' / filename
+            
+            if not image_path.exists() or not image_path.is_file():
+                self.respond(404, {'error': 'NOT_FOUND'})
+                return
+                
+            # Determine content type based on extension
+            content_type = 'image/jpeg'
+            if filename.endswith('.png'):
+                content_type = 'image/png'
+            elif filename.endswith('.webp'):
+                content_type = 'image/webp'
+                
+            with open(image_path, 'rb') as f:
+                self.respond_bytes(200, content_type, f.read())
 
         def serve_upload(self):
             import mimetypes

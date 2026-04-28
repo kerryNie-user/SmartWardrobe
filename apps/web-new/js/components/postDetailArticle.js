@@ -18,7 +18,12 @@ export function renderPostDetailArticle(post, social, detailState = {}) {
             <div class="ct-post-detail__copy">
                 <h1 class="ct-post-detail__title">${post.title}</h1>
                 <div class="ct-post-detail__body">
-                    ${post.body.map((paragraph) => `<p>${paragraph}</p>`).join('')}
+                    ${post.body.map((paragraph) => {
+                        if (paragraph && paragraph.type === 'html') {
+                            return paragraph.content;
+                        }
+                        return `<p>${paragraph}</p>`;
+                    }).join('')}
                 </div>
                 <div class="ct-post-detail__tags">
                     ${post.tags.map((tag) => `<span class="ct-post-detail__tag">#${tag}</span>`).join('')}

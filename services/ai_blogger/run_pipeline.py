@@ -451,6 +451,90 @@ def run_batch(config: dict) -> dict:
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(final_html)
 
+    # Helper function to generate post html
+    def _generate_post_html(post, title, idx, topics, ts):
+        paragraphs = post.get("paragraphs", [])
+        post_html = f"""
+        <div class="post clearfix">
+            <h2 class="post-title">{post.get('title', title)}</h2>
+            <div class="post-meta">By SmartWardrobe AI Editor | {datetime.now().strftime('%B %d, %Y')}</div>
+        """
+        for p_idx, p in enumerate(paragraphs):
+            section_name = p.get("section_name", "")
+            text = p.get("text", "")
+            layout_name = p.get("layout_name", "")
+            image_queries = list(p.get("image_queries", []))
+            safe_text = f"<strong>{section_name}</strong> — {text}"
+            
+            if layout_name == "pull_quote_center":
+                post_html += f'<div class="layout-pull-quote" data-layout="{layout_name}">{text}</div>'
+                continue
+            if layout_name == "tip_box_rules":
+                post_html += f'<div class="layout-tip-box" data-layout="{layout_name}"><div class="text-content">{safe_text}</div></div>'
+                continue
+                
+            post_html += f'<div class="paragraph-block clearfix" data-layout="{layout_name}">'
+            
+            if layout_name in ["layout-hero", "layout-hero-full"]:
+                if image_queries:
+                    url = f"/ai-images/{ts}_idx{idx}_p{p_idx}.jpg"
+                    post_html += f'<img src="{url}" alt="{image_queries[0]}" />'
+                post_html += f'<div class="text-content">{safe_text}</div>'
+            else:
+                post_html += f'<div class="text-content">{safe_text}</div>'
+            post_html += '</div>'
+            
+        post_html += "</div>"
+        return post_html
+
+    # Insert into database
+    import sys
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+    from services.backend_lite.database import db
+    from services.backend_lite.models import ContentPost
+    
+    # We should not close the db if it was open, just ensure it's connected
+    was_closed = db.is_closed()
+    if was_closed:
+        db.connect()
+        
+    try:
+        with db.atomic():
+            for idx, title, post, error in results:
+                if error is None and post is not None:
+                    paragraphs = post.get("paragraphs", [])
+                    hero_image = ""
+                    if paragraphs and paragraphs[0].get("image_queries"):
+                        hero_image = paragraphs[0]["image_queries"][0]
+                    
+                    # In case of real run, hero_image should be an actual URL from image_details
+                    # We look for the first downloaded image for this article
+                    for d in tracker.image_details:
+                        if d.get("topic_id") == f"auto_{idx}" and d.get("local_path"):
+                            # Rewrite the local path to be served via the API
+                            hero_image = f"/ai-images/{os.path.basename(d['local_path'])}"
+                            break
+
+                    ContentPost.create(
+                        id=f"ai_post_{ts}_{idx}",
+                        author="SmartWardrobe AI Editor",
+                        time_str=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        title=post.get("title", title),
+                        description=paragraphs[0].get("text", "")[:100] + "..." if paragraphs else "",
+                        body_json=[{"type": "html", "content": _generate_post_html(post, title, idx, topics, ts)}],
+                        tags_json=["editorial", "ai-generated"],
+                        hero_image=hero_image,
+                        images_json=[],
+                        stats_likes="0",
+                        stats_comments="0",
+                        locale="zh-CN"
+                    )
+    except Exception as e:
+        logging.error(f"Failed to insert into ContentPost: {e}")
+    finally:
+        if was_closed and not db.is_closed():
+            db.close()
+
     report = {
         "article_count": len(report_articles),
         "articles": report_articles,
