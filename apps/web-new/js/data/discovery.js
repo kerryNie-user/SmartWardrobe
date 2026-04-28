@@ -2,68 +2,26 @@ import { getDiscoveryContent as fetchDiscoveryContent } from '../lib/liteBackend
 
 let DISCOVERY_COPY = {
     'en-US': {
-        tabs: [
-            { key: 'hotspots', label: 'Fashion Hotspots', active: true },
-            { key: 'posts', label: 'Posts', active: false },
-            { key: 'editorials', label: 'Editorials', active: false }
-        ],
-        hotspotTrendStrip: {
-            eyebrow: '',
-            title: '',
-            action: '',
-            items: []
-        },
-        postTrendStrip: {
-            eyebrow: '',
-            title: '',
-            action: '',
-            items: []
-        },
         editorialTrendStrip: {
             eyebrow: '',
             title: '',
             action: '',
             items: []
         },
-        hotspotStories: [],
-        communityPosts: [],
         editorials: [],
         searchPlaceholder: {
-            hotspots: 'HOT SEARCHES · TOKYO · TAILORING · CITY EDITS',
-            posts: 'HOT SEARCHES · ARCHIVES · TREND NOTES',
             editorials: 'HOT SEARCHES · STYLE GUIDE · TRENDS'
         }
     },
     'zh-CN': {
-        tabs: [
-            { key: 'hotspots', label: '时尚热点', active: true },
-            { key: 'posts', label: '社区动态', active: false },
-            { key: 'editorials', label: '编辑精选', active: false }
-        ],
-        hotspotTrendStrip: {
-            eyebrow: '',
-            title: '',
-            action: '',
-            items: []
-        },
-        postTrendStrip: {
-            eyebrow: '',
-            title: '',
-            action: '',
-            items: []
-        },
         editorialTrendStrip: {
             eyebrow: '',
             title: '',
             action: '',
             items: []
         },
-        hotspotStories: [],
-        communityPosts: [],
         editorials: [],
         searchPlaceholder: {
-            hotspots: '热门搜索 · 东京 · 剪裁 · 城市选集',
-            posts: '热门搜索 · 档案 · 趋势笔记',
             editorials: '热门搜索 · 穿搭指南 · 趋势解析'
         }
     }
@@ -81,12 +39,7 @@ function notify() {
     listeners.forEach((listener) => listener())
 }
 
-export const tabs = DISCOVERY_COPY['en-US'].tabs;
-export const hotspotTrendStrip = DISCOVERY_COPY['en-US'].hotspotTrendStrip;
-export const postTrendStrip = DISCOVERY_COPY['en-US'].postTrendStrip;
 export const editorialTrendStrip = DISCOVERY_COPY['en-US'].editorialTrendStrip;
-export const hotspotStories = DISCOVERY_COPY['en-US'].hotspotStories;
-export const communityPosts = DISCOVERY_COPY['en-US'].communityPosts;
 export const editorials = DISCOVERY_COPY['en-US'].editorials;
 export const searchPlaceholder = DISCOVERY_COPY['en-US'].searchPlaceholder;
 

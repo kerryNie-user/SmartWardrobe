@@ -7,7 +7,6 @@ const listeners = new Set()
 const syncController = createSyncController()
 
 let state = {
-    activeTab: 'hotspots',
     query: '',
     shareFeedbackPostId: ''
 }
@@ -16,13 +15,8 @@ function notify() {
     listeners.forEach((listener) => listener(getDiscoveryViewSnapshot()))
 }
 
-function normalizeTab(tab) {
-    return tab === 'posts' ? 'posts' : 'hotspots'
-}
-
 function normalizeSnapshot(snapshot) {
     return {
-        activeTab: normalizeTab(snapshot?.activeTab),
         query: typeof snapshot?.query === 'string' ? snapshot.query : '',
         shareFeedbackPostId: typeof snapshot?.shareFeedbackPostId === 'string' ? snapshot.shareFeedbackPostId : ''
     }
@@ -95,19 +89,6 @@ export async function hydrateDiscoveryView() {
 
 export function retryDiscoveryViewHydration() {
     return hydrateDiscoveryView()
-}
-
-export function setDiscoveryActiveTab(tab) {
-    try {
-        writeSnapshot({
-            ...state,
-            activeTab: normalizeTab(tab)
-        })
-        syncController.markSynced()
-    } catch (error) {
-        syncController.markFailed(error?.message || 'DISCOVERY_VIEW_WRITE_FAILED')
-    }
-    return getDiscoveryViewSnapshot()
 }
 
 export function setDiscoveryQuery(query) {

@@ -305,19 +305,16 @@ export function createMePageContract({
 export function createDiscoveryPageContract({
     locale,
     content,
-    activeTab,
     query,
     trendStrip,
     feed,
     shareFeedbackPostId = '',
     syncStates = {}
 }) {
-    const tabs = buildTabState(activeTab, content.tabs, 'ct-discovery-tab', PANEL_IDS.discovery)
     const sync = createSyncSemantics(syncStates, ['discoveryView', 'discoverySocial'])
     const items = Array.isArray(feed?.items) ? feed.items : []
     return {
         state: {
-            tab: activeTab,
             query,
             shareFeedbackPostId
         },
@@ -325,11 +322,9 @@ export function createDiscoveryPageContract({
             topbar: {
                 rightHref: 'profile.html'
             },
-            activeTab,
             query,
-            tabs,
             search: {
-                placeholder: content.searchPlaceholder?.[activeTab] || '',
+                placeholder: content.searchPlaceholder?.editorials || '',
                 value: query
             },
             trendStrip,
@@ -342,7 +337,6 @@ export function createDiscoveryPageContract({
             }
         },
         actions: {
-            switchTab: { type: 'ui', retryable: false },
             setQuery: { type: 'ui', retryable: false },
             togglePostLike: { type: 'domain', optimistic: true, retryable: true },
             togglePostSave: { type: 'domain', optimistic: true, retryable: true },
@@ -351,7 +345,7 @@ export function createDiscoveryPageContract({
         loading: createLoadingSemantics(sync),
         empty: items.length
             ? createStaticEmpty(false, 'notApplicable')
-            : createCollectionEmpty([], activeTab, query),
+            : createCollectionEmpty([], 'all', query),
         error: createErrorSemantics(sync),
         sync
     }

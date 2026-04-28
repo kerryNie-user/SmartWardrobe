@@ -94,5 +94,5 @@ class DiscoverySocialApiTest(unittest.TestCase):
         self.assertEqual(beta_payload['social']['authors'], {})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

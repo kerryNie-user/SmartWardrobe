@@ -1,5 +1,4 @@
 import { renderTopbar } from '../components/topbar.js';
-import { renderSecondaryTabs } from '../components/secondaryTabs.js';
 import { renderSearchBar } from '../components/searchBar.js';
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
 import { renderTrendStrip } from '../components/trendStrip.js';
@@ -13,7 +12,7 @@ import { subscribeFavoritesStore } from '../lib/favoritesStore.js';
 import { getDiscoveryContent } from '../data/discovery.js';
 import { getStoredComments, subscribeDiscoveryCommentStore } from '../lib/discoveryCommentStore.js';
 import { getDiscoverySocialSyncState, getPostSocialState, hydrateDiscoverySocial, retryDiscoverySocialSync, subscribeDiscoverySocialStore, subscribeDiscoverySocialSyncState, toggleDiscoveryPostLike, toggleDiscoveryPostSave } from '../lib/discoverySocialStore.js';
-import { getDiscoveryViewSnapshot, getDiscoveryViewSyncState, hydrateDiscoveryView, retryDiscoveryViewHydration, setDiscoveryActiveTab, setDiscoveryQuery, setDiscoveryShareFeedback, subscribeDiscoveryViewStore, subscribeDiscoveryViewSyncState } from '../lib/discoveryViewStore.js';
+import { getDiscoveryViewSnapshot, getDiscoveryViewSyncState, hydrateDiscoveryView, retryDiscoveryViewHydration, setDiscoveryQuery, setDiscoveryShareFeedback, subscribeDiscoveryViewStore, subscribeDiscoveryViewSyncState } from '../lib/discoveryViewStore.js';
 
 const DISCOVERY_PANEL_ID = 'ct-discovery-feed-panel';
 
@@ -39,33 +38,17 @@ function filterItems(items, fields, query) {
         .includes(normalizedQuery));
 }
 
-function buildFeedItems(content, activeTab, query, locale, shareFeedbackPostId) {
-    if (activeTab === 'posts') {
-        return filterItems(content.communityPosts, (item) => [item.title, item.description, item.author], query)
-            .map((item) => ({
-                ...item,
-                social: {
-                    ...getPostSocialState(item),
-                    shareFeedback: shareFeedbackPostId === item.id
-                        ? (locale === 'zh-CN' ? '链接已复制' : 'Link copied')
-                        : ''
-                }
-            }));
-    }
-    if (activeTab === 'editorials') {
-        return filterItems(content.editorials, (item) => [item.title, item.description, item.author], query)
-            .map((item) => ({
-                ...item,
-                social: {
-                    ...getPostSocialState(item),
-                    shareFeedback: shareFeedbackPostId === item.id
-                        ? (locale === 'zh-CN' ? '链接已复制' : 'Link copied')
-                        : ''
-                }
-            }));
-    }
-
-    return filterItems(content.hotspotStories, (item) => [item.title, item.description, item.tag, item.meta], query);
+function buildFeedItems(content, query, locale, shareFeedbackPostId) {
+    return filterItems(content.editorials || [], (item) => [item.title, item.description, item.author], query)
+        .map((item) => ({
+            ...item,
+            social: {
+                ...getPostSocialState(item),
+                shareFeedback: shareFeedbackPostId === item.id
+                    ? (locale === 'zh-CN' ? '链接已复制' : 'Link copied')
+                    : ''
+            }
+        }));
 }
 
 export function renderDiscoveryPage() {
@@ -92,12 +75,10 @@ export function renderDiscoveryPage() {
         const contract = createDiscoveryPageContract({
             locale,
             content,
-            activeTab: viewState.activeTab,
             query: viewState.query,
-            trendStrip: viewState.activeTab === 'posts' ? content.postTrendStrip : (viewState.activeTab === 'editorials' ? content.editorialTrendStrip : content.hotspotTrendStrip),
+            trendStrip: content.editorialTrendStrip,
             feed: {
-                kind: feedItems.length ? 'ready' : 'empty',
-                items: feedItems
+                items: buildFeedItems(content, viewState.query, locale, viewState.shareFeedbackPostId)
             },
             shareFeedbackPostId: viewState.shareFeedbackPostId,
             syncStates: {
@@ -110,7 +91,6 @@ export function renderDiscoveryPage() {
         applyLocaleDocument('discovery', locale);
         if (topbarRoot) topbarRoot.innerHTML = renderTopbar();
         if (bottomNavRoot) bottomNavRoot.innerHTML = renderBottomNav('discovery');
-        if (tabsRoot) tabsRoot.innerHTML = renderSecondaryTabs(contract.derivedView.tabs, getSharedCopy(locale).tabs.discovery);
         if (searchRoot) searchRoot.innerHTML = renderSearchBar(contract.derivedView.search.placeholder, contract.derivedView.search.value);
         if (trendRoot) trendRoot.innerHTML = renderTrendStrip(contract.derivedView.trendStrip);
 
@@ -118,18 +98,8 @@ export function renderDiscoveryPage() {
         feedRoot.id = DISCOVERY_PANEL_ID;
         feedRoot.setAttribute('role', 'tabpanel');
         feedRoot.setAttribute('aria-labelledby', activeTabState.tabId);
-        feedRoot.innerHTML = renderDiscoveryFeed(contract.derivedView.activeTab, contract.derivedView.feed.items);
+        feedRoot.innerHTML = renderDiscoveryFeed(contract.derivedView.feed.items);
     };
-
-    if (tabsRoot) {
-        const handleTabsClick = (event) => {
-            const target = event.target.closest('[data-tab-key]');
-            if (!target) return;
-            setDiscoveryActiveTab(target.getAttribute('data-tab-key') || 'hotspots');
-        };
-        tabsRoot.addEventListener('click', handleTabsClick);
-        listenerCleanups.push(() => tabsRoot.removeEventListener('click', handleTabsClick));
-    }
 
     if (searchRoot) {
         const handleSearchInput = (event) => {

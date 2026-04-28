@@ -41,18 +41,18 @@ class DiscoveryContentApiTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn('content', payload)
         self.assertEqual(payload['locale'], 'en-US')
-        self.assertEqual(payload['content']['tabs'][0]['key'], 'hotspots')
-        self.assertEqual(payload['content']['communityPosts'][0]['id'], 'brutalist-basics')
-        self.assertEqual(payload['content']['searchPlaceholder']['posts'], 'HOT SEARCHES · ARCHIVES · TREND NOTES')
+        self.assertNotIn('tabs', payload['content'])
+        self.assertNotIn('communityPosts', payload['content'])
+        self.assertEqual(payload['content']['searchPlaceholder']['editorials'], 'HOT SEARCHES · STYLE GUIDE · TRENDS')
 
     def test_get_discovery_content_supports_zh_cn_locale(self):
         status, payload = self.request_json('/api/discovery/content?locale=zh-CN')
 
         self.assertEqual(status, 200)
         self.assertEqual(payload['locale'], 'zh-CN')
-        self.assertEqual(payload['content']['tabs'][0]['label'], '热点趋势')
-        self.assertEqual(payload['content']['communityPosts'][0]['title'], '现代制服：粗野主义基础款')
-        self.assertEqual(payload['content']['postTrendStrip']['title'], '秀场解析')
+        self.assertNotIn('tabs', payload['content'])
+        self.assertNotIn('communityPosts', payload['content'])
+        self.assertEqual(payload['content']['searchPlaceholder']['editorials'], '热门搜索 · 穿搭指南 · 趋势解析')
 
 
 if __name__ == '__main__':

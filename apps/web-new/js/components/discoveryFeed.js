@@ -79,14 +79,10 @@ function renderPostCards(items) {
     `;
 }
 
-export function renderDiscoveryFeed(activeTab, items) {
+export function renderDiscoveryFeed(items) {
     if (!items.length) {
         return renderEmptyState();
     }
 
-    if (activeTab === 'posts' || activeTab === 'editorials') {
-        return renderPostCards(items);
-    }
-
-    return renderHotspotCards(items);
+    return renderPostCards(items);
 }
