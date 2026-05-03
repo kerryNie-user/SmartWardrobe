@@ -1,6 +1,6 @@
 # SmartWardrobe
 
-SmartWardrobe is a comprehensive personal wardrobe management solution that helps users organize clothing, plan outfits, and iterate on cross-platform experiences. The repository currently keeps the new web app, the legacy web app, Android, and two backend variants side by side during a transition period.
+SmartWardrobe is a comprehensive personal wardrobe management solution that helps users organize clothing, plan outfits, and iterate on cross-platform experiences.
 
 ## 🏗 Project Architecture
 
@@ -17,9 +17,9 @@ graph TD
 
 ### 📂 Directories
 
-- **`apps/web-new/`**: Current main web app under active development.
+- **`apps/web/`**: Current main web app under active development.
 - **`apps/android/`**: Android client.
-- **`services/backend_lite/`**: Lightweight JSON-backed backend for frontend-first development.
+- **`services/backend/`**: Lightweight local backend for frontend-first development.
 - **`docs/product/`**: Product-facing documentation.
 - **`docs/superpowers/`**: Planning and spec documents.
 - **`scripts/dev/`**: Start scripts for local development.
@@ -32,10 +32,10 @@ graph TD
 Run the lightweight integrated server for the new web app (static frontend + APIs):
 
 ```bash
-zsh ./scripts/dev/start_lite_backend.sh
+zsh ./scripts/dev/start_backend.sh
 ```
 
-Default port is `8140` (set `LITE_BACKEND_PORT` to change).
+Default port is `8140` (set `BACKEND_PORT` to change).
 
 ## 🛠 Tech Stack
 
@@ -52,7 +52,7 @@ Default port is `8140` (set `LITE_BACKEND_PORT` to change).
 
 ## 🚀 Quick Navigation
 
-- [New Web App](apps/web-new/)
+- [New Web App](apps/web/)
 - [Android Application Documentation](apps/android/README.md)
 - [User Guide](docs/product/USER_GUIDE.md)
 - [Server Setup](docs/product/SERVER_SETUP.md)
@@ -61,7 +61,7 @@ Default port is `8140` (set `LITE_BACKEND_PORT` to change).
 
 ### Web Development
 For active web development tasks:
-[Go to New Web App](apps/web-new/README.md)
+[Go to New Web App](apps/web/README.md)
 
 ### Android Development
 For native feature implementation and APK building:

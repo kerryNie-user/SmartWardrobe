@@ -532,8 +532,8 @@ def run_batch(config: dict) -> dict:
     # Insert into database
     import sys
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-    from services.backend_lite.database import db
-    from services.backend_lite.models import ContentPost
+    from services.backend.database import db
+    from services.backend.models import ContentPost
     
     # We should not close the db if it was open, just ensure it's connected
     was_closed = db.is_closed()

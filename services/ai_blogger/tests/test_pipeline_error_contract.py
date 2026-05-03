@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from services.ai_blogger.run_pipeline import run_batch
-from services.backend_lite.database import db
-from services.backend_lite.init_db import init_db
+from services.backend.database import db
+from services.backend.init_db import init_db
 
 
 @pytest.fixture(autouse=True)
@@ -47,4 +47,3 @@ def test_run_batch_report_contains_errors_list_and_perceptual_counter(tmp_path):
     assert isinstance(report["errors"], list)
     assert "images" in report
     assert "duplicate_perceptual" in report["images"]
-
