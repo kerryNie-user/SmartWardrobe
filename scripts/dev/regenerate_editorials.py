@@ -56,10 +56,10 @@ def main() -> int:
     parser.add_argument("--skip-if-ai", action="store_true")
     args = parser.parse_args()
 
-    os.environ.setdefault("SQLITE_DB", os.path.join("services", "backend_lite", "data", "smartwardrobe_lite.db"))
+    os.environ.setdefault("SQLITE_DB", os.path.join("services", "backend", "data", "smartwardrobe.db"))
 
-    from services.backend_lite.database import db
-    from services.backend_lite.models import ContentPost
+    from services.backend.database import db
+    from services.backend.models import ContentPost
     from services.ai_blogger.chain_runner import PromptChainRunner
     from services.ai_blogger.run_pipeline import ImageTracker
     from services.ai_blogger.protocol.normalize_ai_post import normalize_ai_post_v1

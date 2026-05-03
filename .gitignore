@@ -17,6 +17,10 @@ Thumbs.db
 *.code-workspace
 *.trae/
 
+# Python venv
+.venv-verify/
+.venv*/
+
 # IntelliJ IDEA / Android Studio
 .idea/
 *.iml

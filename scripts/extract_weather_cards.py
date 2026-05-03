@@ -7,7 +7,7 @@ import cv2
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "wheather.png"
-OUTPUT_DIR = ROOT / "apps" / "web-new" / "images" / "weather"
+OUTPUT_DIR = ROOT / "apps" / "web" / "images" / "weather"
 DEBUG_PATH = OUTPUT_DIR / "debug_overlay.png"
 MANIFEST_PATH = OUTPUT_DIR / "manifest.json"
 

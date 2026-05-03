@@ -51,8 +51,8 @@ def scan_file(filepath):
 
 def main():
     target_dirs = [
-        'apps/web-new',
-        'apps/web-new/js'
+        'apps/web',
+        'apps/web/js'
     ]
     
     extensions = ['*.html', '*.js', '*.json']

@@ -7,9 +7,9 @@ import pytest
 
 from unittest.mock import patch
 from services.ai_blogger.run_pipeline import run_batch
-from services.backend_lite.database import db
-from services.backend_lite.init_db import init_db
-from services.backend_lite.models import ContentPost
+from services.backend.database import db
+from services.backend.init_db import init_db
+from services.backend.models import ContentPost
 
 @pytest.fixture(autouse=True)
 def setup_test_db():
