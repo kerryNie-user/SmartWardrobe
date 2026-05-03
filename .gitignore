@@ -118,12 +118,11 @@ build/
 test_output/
 services/ai_blogger/output_test/
 services/ai_blogger/test_output/
+services/ai_blogger/services/ai_blogger/output_test/
 commit_out.txt
 git_status.txt
 pytest_out.txt
 archive/
-docs/
 services/ai_blogger/output/
-services/backend_lite/
-AGENTS.md
+services/ai_blogger/services/ai_blogger/output/
 worktrees/

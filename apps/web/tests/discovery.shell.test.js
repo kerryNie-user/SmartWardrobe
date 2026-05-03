@@ -281,8 +281,6 @@ runTest('New Discovery 页面应跟随 app_locale 切换主要文案', async () 
   assert.ok(/热门搜索/.test(dom.window.document.querySelector('.ct-search-bar__input').getAttribute('placeholder')));
 });
 
-// tests for discoveryState.js removed
-
 runTest('New Discovery 帖子应支持点赞并在重绘后保持状态', async () => {
   const htmlPath = path.join(__dirname, '..', 'discovery.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
@@ -334,8 +332,6 @@ runTest('New Discovery 加载态与空状态应使用统一状态面板', async 
   assert.strictEqual(dom.window.document.querySelector('[data-state-kind="loading"]').getAttribute('aria-busy'), 'true', 'Loading state should expose aria-busy');
   assert.ok(dom.window.document.querySelector('[data-state-kind="empty"]'), 'Empty state should use shared panel markup');
 });
-
-// tests for discoveryState.js user scope removed
 
 async function main() {
   for (const test of testQueue) {
