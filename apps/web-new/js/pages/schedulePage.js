@@ -60,7 +60,7 @@ export function renderSchedulePage() {
         }
         if (tabsRoot) tabsRoot.innerHTML = renderSecondaryTabs(view.tabs, sharedCopy.schedule?.tabsAria);
         if (timelineRoot) {
-            timelineRoot.innerHTML = renderScheduleTimeline(view.groups, view.emptyStateCopy);
+            timelineRoot.innerHTML = renderScheduleTimeline(view.groups, getScheduleSyncState());
         }
         if (dialogRoot) {
             dialogRoot.innerHTML = renderScheduleConfirmDialog(view.deleteDialogCopy);
@@ -70,7 +70,8 @@ export function renderSchedulePage() {
     const binding = bindPageStores({
         paint,
         subscriptions: [
-            (listener) => subscribeScheduleStore(listener)
+            (listener) => subscribeScheduleStore(listener),
+            (listener) => subscribeScheduleSyncState(listener)
         ],
         hydrators: [
             () => hydrateSchedule(locale)

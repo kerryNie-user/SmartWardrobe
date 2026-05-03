@@ -12,6 +12,7 @@ import { logoutUser } from '../lib/authStore.js';
 import { getProfile, getProfileSyncState, hydrateProfile, retryProfileSync, subscribeProfileStore, subscribeProfileSyncState } from '../lib/profileStore.js';
 import { navigateTo } from '../lib/navigation.js';
 import { getSettingsState, getSettingsSyncState, hydrateSettings, retrySettingsSync, setSetting, subscribeSettingsStore, subscribeSettingsSyncState, toggleSetting } from '../lib/settingsStore.js';
+import { renderLoadFailedPanel } from '../components/errorPanel.js';
 
 export function renderSettingsPage() {
     const topbarRoot = document.querySelector('[data-ct-topbar]');
@@ -48,10 +49,20 @@ export function renderSettingsPage() {
             });
         }
         if (profileRoot) {
-            profileRoot.innerHTML = renderSettingsProfile(contract.derivedView.profile);
+            const state = getProfileSyncState()
+            if (state?.status === 'failed') {
+                profileRoot.innerHTML = renderLoadFailedPanel(state?.error, locale === 'zh-CN' ? '资料加载失败。' : 'Failed to load profile.')
+            } else {
+                profileRoot.innerHTML = renderSettingsProfile(contract.derivedView.profile);
+            }
         }
         if (panelRoot) {
-            panelRoot.innerHTML = renderSettingsPanel(contract.derivedView.panel);
+            const state = getSettingsSyncState()
+            if (state?.status === 'failed') {
+                panelRoot.innerHTML = renderLoadFailedPanel(state?.error, locale === 'zh-CN' ? '设置加载失败。' : 'Failed to load settings.')
+            } else {
+                panelRoot.innerHTML = renderSettingsPanel(contract.derivedView.panel);
+            }
         }
         if (bottomNavRoot) {
             bottomNavRoot.innerHTML = renderBottomNav('me');
@@ -70,7 +81,9 @@ export function renderSettingsPage() {
                 settingsState = nextSettingsState;
                 locale = settingsState.language;
                 listener();
-            })
+            }),
+            (listener) => subscribeProfileSyncState(listener),
+            (listener) => subscribeSettingsSyncState(listener)
         ],
         hydrators: [
             () => hydrateProfile(locale),

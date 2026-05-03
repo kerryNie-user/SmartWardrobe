@@ -187,6 +187,49 @@ async function main() {
   await runTest('Post Comment 空内容提交应展示校验提示', async () => {
     const dom = createDom('post-detail.html', 'http://localhost/post-detail.html?id=brutalist-basics');
 
+    dom.window.fetch = async (url) => {
+      if (typeof url === 'string' && /\/api\/discovery\/content/i.test(url)) {
+        return {
+          ok: true,
+          status: 200,
+          headers: {
+            get(name) {
+              return name.toLowerCase() === 'content-type' ? 'application/json' : null;
+            }
+          },
+          async json() {
+            return {
+              locale: 'en-US',
+              content: {
+                editorialTrendStrip: { eyebrow: '', title: '', action: '', items: [] },
+                editorials: [{
+                  id: 'brutalist-basics',
+                  author: 'Editorial Team',
+                  authorId: 'editorial-team',
+                  time: '2 hours ago',
+                  title: 'The Modern Uniform: Brutalist Basics',
+                  description: 'A study in architectural silhouettes and functional dressing.',
+                  body: ['Paragraph 1'],
+                  tags: ['editorial'],
+                  heroImage: '',
+                  images: [],
+                  comments: [],
+                  stats: { likes: '0', comments: '0' }
+                }],
+                searchPlaceholder: { editorials: 'HOT SEARCHES · STYLE GUIDE · TRENDS' }
+              }
+            };
+          }
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        async json() { return {}; }
+      };
+    };
+
     global.window = dom.window;
     global.document = dom.window.document;
     global.localStorage = dom.window.localStorage;
@@ -198,6 +241,8 @@ async function main() {
     const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?validation=8`;
     const { renderPostDetailPage } = await import(modulePath);
     renderPostDetailPage();
+
+    await new Promise((resolve) => setTimeout(resolve, 120));
 
     dom.window.document.querySelector('[data-ct-post-comment-form]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
     const notice = dom.window.document.querySelector('[data-ct-post-comment-form] [data-ct-form-notice]');

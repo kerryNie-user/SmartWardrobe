@@ -27,7 +27,6 @@ function setupMockFetch(window) {
 
 global.fetch = async (url) => {
   try {
-    console.log("MOCK FETCH CALLED", url);
     if (url.includes('/api/schedules/content')) {
       const urlObj = new URL(url, 'http://localhost');
       const locale = urlObj.searchParams.get('locale') || 'en-US';
@@ -40,7 +39,6 @@ global.fetch = async (url) => {
     }
     return { ok: false, status: 404, headers: { get: () => null }, json: async () => null };
   } catch (e) {
-    console.error("MOCK ERROR", e);
     throw e;
   }
 };
@@ -72,7 +70,7 @@ runTest('New Schedule 页面应默认显示 Upcoming 并支持切换到 Travel',
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   setupMockFetch(dom.window);
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
@@ -92,7 +90,7 @@ runTest('New Schedule 页面应具备 tabs 语义、列表语义且不再渲染�
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -120,7 +118,7 @@ runTest('New Schedule 页面应把 Add Event 入口指向独立 schedule-event.h
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -142,7 +140,7 @@ runTest('New Schedule Event 页面应支持新增并在返回总览后持久化'
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -218,7 +216,7 @@ runTest('New Schedule Event 页面应通过统一 binding 暴露 sync feedback �
   const eventHtml = fs.readFileSync(eventHtmlPath, 'utf8');
   const dom = new JSDOM(eventHtml, { url: 'http://localhost/schedule-event.html' });
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -241,7 +239,7 @@ runTest('Schedule 页顶部应提供返回 Me 的入口', async () => {
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
@@ -299,7 +297,7 @@ runTest('New Schedule 页面应跟随 app_locale 切换主要文案', async () =
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
 
   dom.window.localStorage.setItem('app_locale', 'zh-CN');
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -323,7 +321,7 @@ runTest('New Schedule Event 页面表单控件应补齐双语占位与 aria 文�
   const dom = new JSDOM(html, { url: 'http://localhost/schedule-event.html' });
 
   dom.window.localStorage.setItem('app_locale', 'zh-CN');
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -360,7 +358,7 @@ runTest('New Schedule 空日程时应渲染统一空状态面板', async () => {
     }
   }));
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -409,7 +407,7 @@ runTest('New Schedule 应容忍旧存储中缺失 tags 的事件', async () => {
     }
   }));
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -431,7 +429,7 @@ runTest('New Schedule Event 页面应支持编辑已有事件并在刷新后保�
   const listHtml = fs.readFileSync(path.join(__dirname, '..', 'schedule.html'), 'utf8');
   const dom = new JSDOM(eventHtml, { url: 'http://localhost/schedule-event.html?id=upcoming-product-review-1' });
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -510,7 +508,7 @@ runTest('New Schedule Event 页面应读取来自 Outfit Detail 的日程草稿�
     reminderEnabled: true
   }));
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -533,7 +531,7 @@ runTest('New Schedule 页面应支持提醒开关并持久化状态', async () =
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;
@@ -601,7 +599,7 @@ runTest('New Schedule 删除应先打开自定义确认弹层再执行删除', a
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
 
-  global.window = dom.window; global.window.fetch = global.fetch; global.window.fetch = global.fetch;
+  global.window = dom.window; global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
   global.CustomEvent = dom.window.CustomEvent;

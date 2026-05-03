@@ -1,12 +1,17 @@
 import { getLocale, getSharedCopy } from '../lib/locale.js';
 import { getWardrobeLayoutPreference } from '../lib/settingsStore.js';
 import { renderStatePanel } from './statePanel.js';
+import { renderLoadFailedPanel } from './errorPanel.js';
 
-export function renderWardrobeArchive(items) {
+export function renderWardrobeArchive(items, syncState = null) {
     const sharedCopy = getSharedCopy(getLocale());
     const locale = getLocale();
     const layout = getWardrobeLayoutPreference();
     if (!items.length) {
+        if (syncState?.status === 'failed') {
+            const message = String(syncState?.error || '').trim();
+            return renderLoadFailedPanel(message, getLocale() === 'zh-CN' ? '衣橱加载失败。' : 'Failed to load wardrobe.');
+        }
         return renderStatePanel({
             kind: 'empty',
             eyebrow: sharedCopy.misc.noPieces,

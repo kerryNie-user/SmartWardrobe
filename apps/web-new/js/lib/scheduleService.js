@@ -52,9 +52,12 @@ function normalizeViewWithKey(view, tabKey) {
                 ...group,
                 events: events.map((event) => {
                     const normalized = normalizeEventRecord(event)
-                    const prefix = `${tabKey}-`
-                    if (typeof normalized.id === 'string' && normalized.id.startsWith(prefix)) {
-                        return normalized
+                    if (typeof normalized.id === 'string' && normalized.id.trim()) {
+                        const stable = normalized.version !== undefined || normalized.updatedAt !== undefined
+                        const prefix = `${tabKey}-`
+                        if (stable || normalized.id.startsWith(prefix)) {
+                            return normalized
+                        }
                     }
                     const base = slugify(normalized.id || normalized.title || 'event')
                     const id = `${tabKey}-${base}-${eventIndex}`
@@ -208,6 +211,7 @@ export function createScheduleService({
     onStateChange = () => {}
 }) {
     let currentState = null
+    let pendingMutation = null
 
     function readLocal(nextLocale = locale) {
         return normalizeStoredSchedule(localRepository?.read(nextLocale))
@@ -234,7 +238,7 @@ export function createScheduleService({
             ])
 
             if (!itemsResponse.ok) {
-                syncController.markStale(itemsResponse.error)
+                syncController.markStale(itemsResponse.message || itemsResponse.error)
                 currentState = withLegacyAliases(localData || (content ? {
                     ...content,
                     views: normalizeViews(content.views || {}),
@@ -246,15 +250,16 @@ export function createScheduleService({
             }
 
             const eventViews = buildViewsFromItems(itemsResponse.data?.items || [])
-            const mergedViews = mergeViews(content?.views, eventViews)
+            const mergedViews = mergeViews(localData?.views || content?.views, eventViews)
             currentState = withLegacyAliases({
-                tabs: content?.tabs || localData?.tabs || DEFAULT_TABS,
-                form: content?.form || localData?.form || EMPTY_FORM,
+                tabs: localData?.tabs || content?.tabs || DEFAULT_TABS,
+                form: localData?.form || content?.form || EMPTY_FORM,
                 views: mergedViews
             })
 
             localRepository?.write(currentState, nextLocale)
             onStateChange(nextLocale)
+            pendingMutation = null
             syncController.markSynced()
             return currentState
         },
@@ -262,6 +267,11 @@ export function createScheduleService({
         async create(payload, nextLocale = locale) {
             ensureState(nextLocale)
             syncController.markSyncing()
+            pendingMutation = {
+                kind: 'create',
+                payload,
+                locale: nextLocale
+            }
 
             if (currentState && localRepository) {
                 const targetTab = payload.tab || 'upcoming'
@@ -280,7 +290,7 @@ export function createScheduleService({
 
             const response = await remoteRepository.create(payload)
             if (!response.ok) {
-                syncController.markFailed(response.error)
+                syncController.markFailed(response.message || response.error)
                 return null
             }
 
@@ -290,6 +300,11 @@ export function createScheduleService({
         async remove(eventId, nextLocale = locale) {
             ensureState(nextLocale)
             syncController.markSyncing()
+            pendingMutation = {
+                kind: 'remove',
+                eventId,
+                locale: nextLocale
+            }
 
             if (currentState && localRepository) {
                 for (const tab in currentState.views) {
@@ -308,7 +323,7 @@ export function createScheduleService({
 
             const response = await remoteRepository.remove(eventId)
             if (!response.ok) {
-                syncController.markFailed(response.error)
+                syncController.markFailed(response.message || response.error)
                 return null
             }
 
@@ -318,6 +333,12 @@ export function createScheduleService({
         async update(eventId, nextEvent, nextLocale = locale) {
             ensureState(nextLocale)
             syncController.markSyncing()
+            pendingMutation = {
+                kind: 'update',
+                eventId,
+                payload: nextEvent,
+                locale: nextLocale
+            }
 
             if (currentState && localRepository) {
                 for (const tab in currentState.views) {
@@ -348,10 +369,38 @@ export function createScheduleService({
             const response = await remoteRepository.update(eventId, nextEvent)
             if (!response.ok) {
                 if (response.kind === 'conflict') {
-                    syncController.markConflict(response.data?.item || nextEvent)
+                    const remoteItem = response.data?.item
+                    if (remoteItem && currentState && localRepository) {
+                        for (const tab in currentState.views) {
+                            const view = currentState.views[tab]
+                            for (const group of view.groups || []) {
+                                const idx = group.events.findIndex((e) => e.id === eventId)
+                                if (idx >= 0) {
+                                    group.events.splice(idx, 1)
+                                    break
+                                }
+                            }
+                        }
+
+                        const targetTab = remoteItem.tab || 'upcoming'
+                        const view = currentState.views?.[targetTab]
+                        if (view) {
+                            let group = view.groups.find((g) => g.day === remoteItem.day && g.label === remoteItem.label)
+                            if (!group) {
+                                group = { day: remoteItem.day, label: remoteItem.label, events: [] }
+                                view.groups.push(group)
+                            }
+                            group.events.push(normalizeEventPayload(remoteItem))
+                            localRepository.write(currentState, nextLocale)
+                            onStateChange(nextLocale)
+                        }
+                    }
+
+                    pendingMutation = null
+                    syncController.markConflict(remoteItem || nextEvent)
                     return null
                 }
-                syncController.markFailed(response.error)
+                syncController.markFailed(response.message || response.error)
                 return null
             }
 
@@ -359,6 +408,44 @@ export function createScheduleService({
         },
 
         async retry(nextLocale = locale) {
+            if (!pendingMutation) {
+                return this.hydrate(nextLocale)
+            }
+
+            syncController.markSyncing()
+
+            if (pendingMutation.kind === 'create') {
+                const response = await remoteRepository.create(pendingMutation.payload)
+                if (!response.ok) {
+                    syncController.markFailed(response.message || response.error)
+                    return null
+                }
+                return this.hydrate(pendingMutation.locale || nextLocale)
+            }
+
+            if (pendingMutation.kind === 'update') {
+                const response = await remoteRepository.update(pendingMutation.eventId, pendingMutation.payload)
+                if (!response.ok) {
+                    if (response.kind === 'conflict') {
+                        pendingMutation = null
+                        syncController.markConflict(response.data?.item || pendingMutation.payload)
+                        return null
+                    }
+                    syncController.markFailed(response.message || response.error)
+                    return null
+                }
+                return this.hydrate(pendingMutation.locale || nextLocale)
+            }
+
+            if (pendingMutation.kind === 'remove') {
+                const response = await remoteRepository.remove(pendingMutation.eventId)
+                if (!response.ok) {
+                    syncController.markFailed(response.message || response.error)
+                    return null
+                }
+                return this.hydrate(pendingMutation.locale || nextLocale)
+            }
+
             return this.hydrate(nextLocale)
         }
     }

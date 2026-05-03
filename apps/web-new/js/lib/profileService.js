@@ -1,4 +1,4 @@
-const FALLBACK_AVATAR = ''
+const FALLBACK_AVATAR = '/uploads/profile/elara-vance.jpg'
 
 const DEFAULT_PROFILE = {
     'en-US': {
@@ -40,7 +40,7 @@ export function createProfileService({
             syncController.markLoading()
             const remote = await remoteRepository.fetch()
             if (!remote.ok || !remote.data?.profile) {
-                syncController.markStale(remote.error)
+                syncController.markStale(remote.message || remote.error)
                 return localRepository.read(nextLocale)
             }
 
@@ -59,7 +59,7 @@ export function createProfileService({
             const response = await remoteRepository.save(nextProfile)
 
             if (!response.ok) {
-                syncController.markFailed(response.error)
+                syncController.markFailed(response.message || response.error)
                 return localRepository.read(nextLocale)
             }
 

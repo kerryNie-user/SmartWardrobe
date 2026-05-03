@@ -7,9 +7,24 @@ from typing import Dict, List
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class PromptChainRunner:
-    def __init__(self, prompts_dir: str = "services/ai_blogger/agents", profile_name: str = "editorial_styling"):
-        self.prompts_dir = prompts_dir
+    def __init__(self, prompts_dir: str = "services/ai_blogger/agents", profile_name: str = "editorial_styling", locale: str = "zh-CN"):
+        normalized_locale = "zh-CN" if locale == "zh-CN" else "en-US"
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+        resolved_prompts_dir = prompts_dir
+        if not os.path.isabs(resolved_prompts_dir):
+            if os.path.exists(resolved_prompts_dir):
+                resolved_prompts_dir = os.path.abspath(resolved_prompts_dir)
+            else:
+                candidate = os.path.join(project_root, resolved_prompts_dir)
+                if os.path.exists(candidate):
+                    resolved_prompts_dir = candidate
+        if normalized_locale == "en-US":
+            normalized_path = os.path.normpath(resolved_prompts_dir)
+            if os.path.basename(normalized_path) != "en-US":
+                resolved_prompts_dir = os.path.join(resolved_prompts_dir, "en-US")
+        self.prompts_dir = resolved_prompts_dir
         self.profile_name = profile_name
+        self.locale = normalized_locale
         self.profile = self._load_profile(profile_name)
         self.prompts = self._load_prompts()
         self._layout_registry = None
@@ -234,10 +249,11 @@ class PromptChainRunner:
             for attempt in range(2):
                 draft_response = self._llm_client.generate_json(system_prompt, user_input, enable_search=enable_search)
                 draft_paras = draft_response.get("paragraphs", [])
-                if len(draft_paras) >= len(outline_paras):
+                has_missing_text = any(not str((p or {}).get("text", "") or "").strip() for p in (draft_paras or []))
+                if not has_missing_text and len(draft_paras) >= len(outline_paras):
                     break
-                if attempt == 0:
-                    logging.warning(f"LLM output truncation detected ({len(draft_paras)}/{len(outline_paras)}). Retrying phase 3...")
+                if attempt < 1:
+                    logging.warning(f"LLM output quality issue detected (missing_text={has_missing_text}, paragraphs={len(draft_paras)}/{len(outline_paras)}). Retrying phase 3...")
             
             if len(draft_paras) < len(outline_paras):
                 logging.warning(f"LLM truncation persists after retry. Truncating outline from {len(outline_paras)} to {len(draft_paras)} paragraphs.")
@@ -248,10 +264,17 @@ class PromptChainRunner:
             for i in range(len(outline_paras)):
                 out_p = outline_paras[i]
                 draft_p = draft_paras[i]
+                fallback_text = out_p.get("summary_intent", "") or out_p.get("section_name", "")
+                text_value = draft_p.get("text") if isinstance(draft_p, dict) else None
+                text_value = str(text_value or "").strip()
+                if not text_value:
+                    text_value = str(draft_p.get("summary_intent") or "").strip() if isinstance(draft_p, dict) else ""
+                if not text_value:
+                    text_value = str(fallback_text or "").strip()
                 
                 final_paragraphs.append({
                     "section_name": draft_p.get("section_name", out_p.get("section_name", "")),
-                    "text": draft_p.get("text", "【内容生成失败】"),
+                    "text": text_value,
                     "layout_name": out_p.get("layout_name", "hero_full_bleed"),
                     "image_queries": draft_p.get("image_queries", [])
                 })

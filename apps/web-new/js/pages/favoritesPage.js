@@ -67,7 +67,7 @@ export function renderFavoritesPage() {
             collectionRoot.id = activeTabState.panelId
             collectionRoot.setAttribute('role', 'tabpanel')
             collectionRoot.setAttribute('aria-labelledby', activeTabState.tabId)
-            collectionRoot.innerHTML = renderFavoritesCollection(contract.derivedView.items, contract.derivedView.emptyCopy)
+            collectionRoot.innerHTML = renderFavoritesCollection(contract.derivedView.items, contract.derivedView.emptyCopy, getFavoritesSyncState())
         }
     }
 
@@ -75,7 +75,8 @@ export function renderFavoritesPage() {
         paint,
         subscriptions: [
             (listener) => subscribeFavoritesStore(listener),
-            (listener) => subscribeSettingsStore(listener)
+            (listener) => subscribeSettingsStore(listener),
+            (listener) => subscribeFavoritesSyncState(listener)
         ],
         hydrators: [
             () => hydrateFavorites(),

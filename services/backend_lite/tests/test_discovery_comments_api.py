@@ -81,7 +81,7 @@ class DiscoveryCommentsApiTest(unittest.TestCase):
             }
         )
         self.assertEqual(status, 409)
-        self.assertEqual(payload['error'], 'DISCOVERY_COMMENT_BODY_REQUIRED')
+        self.assertEqual(payload['error']['code'], 'DISCOVERY_COMMENT_BODY_REQUIRED')
 
     def test_discovery_comments_are_isolated_by_user(self):
         self.request_json(

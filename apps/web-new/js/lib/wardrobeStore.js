@@ -74,7 +74,7 @@ export function saveWardrobeItem(item, locale = 'en-US') {
         }
     }).then((response) => {
         if (!response.ok) {
-            wardrobeSyncController.markFailed(response.error, {
+            wardrobeSyncController.markFailed(response.message || response.error, {
                 itemId: nextItem.id
             })
             return
@@ -111,7 +111,7 @@ export function deleteWardrobeItem(id, locale = 'en-US') {
         if (!response.ok) {
             writeUserScopedValue(WARDROBE_KEY, previousItems, scope)
             notifyWardrobeStore(previousItems)
-            wardrobeSyncController.markFailed(response.error, {
+            wardrobeSyncController.markFailed(response.message || response.error, {
                 itemId: id
             })
             return
@@ -152,7 +152,7 @@ export function toggleWardrobeFavorite(id, locale = 'en-US') {
             if (!response.ok) {
                 writeUserScopedValue(WARDROBE_KEY, previousItems, scope)
                 notifyWardrobeStore(previousItems)
-                wardrobeSyncController.markFailed(response.error, {
+                wardrobeSyncController.markFailed(response.message || response.error, {
                     itemId: id
                 })
                 return
@@ -187,7 +187,7 @@ export async function hydrateWardrobe(locale = 'en-US') {
     wardrobeSyncController.markLoading()
     const remote = await requestLiteBackend('/api/wardrobe')
     if (!remote.ok || !Array.isArray(remote.data?.items)) {
-        wardrobeSyncController.markStale(remote.error)
+        wardrobeSyncController.markStale(remote.message || remote.error)
         return readWardrobeItems(locale, scope)
     }
 

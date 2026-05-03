@@ -2,3 +2,4 @@ pytest
 requests
 beautifulsoup4
 feedparser
+Pillow

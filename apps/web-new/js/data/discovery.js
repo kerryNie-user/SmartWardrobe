@@ -50,14 +50,14 @@ export function getDiscoveryContent(locale) {
 
 
 export async function hydrateDiscoveryContent(locale) {
-    try {
-        const response = await fetchDiscoveryContent(locale)
-        if (response.ok && response.data?.content) {
-            const loc = response.data.locale || locale
-            DISCOVERY_COPY[loc === 'zh-CN' ? 'zh-CN' : 'en-US'] = response.data.content
-            notify()
-        }
-    } catch (err) {
-        console.warn('Failed to hydrate discovery content', err)
+    const response = await fetchDiscoveryContent(locale)
+    if (!response.ok) {
+        throw new Error(response.message || response.error || 'DISCOVERY_CONTENT_FETCH_FAILED')
     }
+    if (!response.data?.content) {
+        throw new Error('DISCOVERY_CONTENT_MISSING')
+    }
+    const loc = response.data.locale || locale
+    DISCOVERY_COPY[loc === 'zh-CN' ? 'zh-CN' : 'en-US'] = response.data.content
+    notify()
 }

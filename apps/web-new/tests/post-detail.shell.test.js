@@ -8,7 +8,18 @@ global.fetch = async (url) => {
   if (url.includes('/api/discovery/content')) {
     const urlObj = new URL(url, 'http://localhost');
     const locale = urlObj.searchParams.get('locale') || 'en-US';
-    return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ content: seedData[locale], locale }) };
+    const normalizedLocale = locale === 'zh-CN' ? 'zh-CN' : 'en-US'
+    try {
+      const raw = global.sessionStorage?.getItem('ct_discovery_content')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed && parsed[normalizedLocale]) {
+          return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ content: parsed[normalizedLocale], locale: normalizedLocale }) };
+        }
+      }
+    } catch (_) {
+    }
+    return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ content: seedData[normalizedLocale], locale: normalizedLocale }) };
   }
   return { ok: false, status: 404, headers: { get: () => null }, json: async () => null };
 };
@@ -99,6 +110,72 @@ async function main() {
     assert.ok(/post/i.test(errorPanel.textContent), 'Post detail error should explain missing post');
   });
 
+  await runTest('New Post Detail 页面应优先渲染 ai 协议帖子', async () => {
+    const htmlPath = path.join(__dirname, '..', 'post-detail.html');
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    const dom = new JSDOM(html, { url: 'http://localhost/post-detail.html?id=ai-protocol-post' });
+
+    global.window = dom.window;
+    global.window.fetch = global.fetch;
+    global.document = dom.window.document;
+    global.localStorage = dom.window.localStorage;
+    global.sessionStorage = dom.window.sessionStorage;
+    global.CustomEvent = dom.window.CustomEvent;
+    global.HTMLElement = dom.window.HTMLElement;
+    global.Node = dom.window.Node;
+
+    dom.window.localStorage.setItem('ct_locale', 'en-US');
+    dom.window.sessionStorage.setItem('ct_discovery_content', JSON.stringify({
+      'en-US': {
+        editorials: [{
+          id: 'ai-protocol-post',
+          author: 'SmartWardrobe AI Editor',
+          time: 'Just now',
+          title: 'Fallback title',
+          description: 'Fallback description',
+          body: [],
+          ai: {
+            schema: 'ct_ai_post_v1',
+            language: 'en-US',
+            title: 'AI Protocol Title',
+            subtitle: null,
+            tags: ['editorial', 'ai-generated'],
+            hero: {
+              image_url: '/ai-images/example.jpg',
+              alt: 'Example'
+            },
+            paragraphs: [
+              {
+                id: 'p1',
+                layout: 'hero_full_bleed',
+                text: 'Intro paragraph',
+                image_urls: ['/ai-images/example.jpg'],
+                image_alts: ['Example']
+              }
+            ]
+          },
+          tags: ['editorial', 'ai-generated'],
+          heroImage: '/ai-images/example.jpg',
+          images: ['/ai-images/example.jpg'],
+          stats: { likes: '0', comments: '0' }
+        }],
+        editorialTrendStrip: { eyebrow: '', title: '', action: '', items: [] },
+        searchPlaceholder: { editorials: 'HOT SEARCHES · STYLE GUIDE · TRENDS' }
+      }
+    }));
+
+    const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'postDetailPage.js')).href}?ai=1`;
+    const { renderPostDetailPage } = await import(modulePath);
+    renderPostDetailPage();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    assert.ok(dom.window.document.querySelector('.ct-ai-post'), 'AI post should render with ai container');
+    assert.ok(dom.window.document.querySelector('.ct-ai-block'), 'AI post should render ai blocks');
+    const hero = dom.window.document.querySelector('.ct-post-detail__image');
+    assert.ok(hero && hero.getAttribute('src') === '/ai-images/example.jpg', 'AI post hero should use protocol image url');
+    assert.ok(/AI Protocol Title/.test(dom.window.document.body.textContent));
+  });
+
   await runTest('New Post Detail 页面应通过统一 binding 暴露 sync feedback 与 teardown', async () => {
     const htmlPath = path.join(__dirname, '..', 'post-detail.html');
     const html = fs.readFileSync(htmlPath, 'utf8');
@@ -145,11 +222,30 @@ async function main() {
       likedPostIds: ['brutalist-basics'],
       followedAuthors: ['ELIAS.VAULT']
     }));
+    dom.window.sessionStorage.setItem('ct_discovery_content', JSON.stringify({
+      'en-US': {
+        editorials: [{
+          id: 'brutalist-basics',
+          author: 'ELIAS.VAULT',
+          time: '2 hours ago',
+          title: 'The Modern Uniform: Brutalist Basics',
+          description: 'A study in architectural silhouettes and functional dressing.',
+          body: ['Paragraph 1', 'Paragraph 2'],
+          tags: ['editorial'],
+          heroImage: '/uploads/shared/travel-look.jpg',
+          images: ['/uploads/shared/travel-look.jpg'],
+          stats: { likes: '12', comments: '0' }
+        }],
+        editorialTrendStrip: { eyebrow: '', title: '', action: '', items: [] },
+        searchPlaceholder: { editorials: 'HOT SEARCHES · STYLE GUIDE · TRENDS' }
+      }
+    }));
 
     global.window = dom.window;
   global.window.fetch = global.fetch;
     global.document = dom.window.document;
     global.localStorage = dom.window.localStorage;
+    global.sessionStorage = dom.window.sessionStorage;
     global.CustomEvent = dom.window.CustomEvent;
     global.HTMLElement = dom.window.HTMLElement;
     global.Node = dom.window.Node;

@@ -75,7 +75,8 @@ export function toggleFavorite(type, item) {
             kind: 'remove',
             type: normalizedType,
             id: item.id,
-            locale: null
+            locale: null,
+            previousFavorites
         }
         favoritesSyncController.markSyncing()
         void requestLiteBackend(`/api/favorites/${normalizedType}/${item.id}`, {
@@ -84,7 +85,7 @@ export function toggleFavorite(type, item) {
             if (!response.ok) {
                 writeFavorites(previousFavorites, scope)
                 notifyFavoritesStore(previousFavorites)
-                favoritesSyncController.markFailed(response.error)
+                favoritesSyncController.markFailed(response.message || response.error)
                 return
             }
             pendingFavoritesMutation = null
@@ -108,7 +109,8 @@ export function toggleFavorite(type, item) {
         kind: 'add',
         type: normalizedType,
         item: normalizeItem(normalizedType, item),
-        locale: null
+        locale: null,
+        previousFavorites
     }
     favoritesSyncController.markSyncing()
     void requestLiteBackend('/api/favorites', {
@@ -121,7 +123,7 @@ export function toggleFavorite(type, item) {
         if (!response.ok) {
             writeFavorites(previousFavorites, scope)
             notifyFavoritesStore(previousFavorites)
-            favoritesSyncController.markFailed(response.error)
+            favoritesSyncController.markFailed(response.message || response.error)
             return
         }
         pendingFavoritesMutation = null
@@ -151,7 +153,8 @@ export function removeFavorite(type, id) {
         kind: 'remove',
         type: normalizedType,
         id,
-        locale: null
+        locale: null,
+        previousFavorites
     }
     favoritesSyncController.markSyncing()
     void requestLiteBackend(`/api/favorites/${normalizedType}/${id}`, {
@@ -160,7 +163,7 @@ export function removeFavorite(type, id) {
         if (!response.ok) {
             writeFavorites(previousFavorites, scope)
             notifyFavoritesStore(previousFavorites)
-            favoritesSyncController.markFailed(response.error)
+            favoritesSyncController.markFailed(response.message || response.error)
             return
         }
         pendingFavoritesMutation = null
@@ -191,7 +194,7 @@ export async function hydrateFavorites() {
     favoritesSyncController.markLoading()
     const remote = await requestLiteBackend('/api/favorites')
     if (!remote.ok || !remote.data?.favorites) {
-        favoritesSyncController.markStale(remote.error)
+        favoritesSyncController.markStale(remote.message || remote.error)
         return readFavorites(scope)
     }
 
@@ -218,9 +221,53 @@ export function retryFavoritesSync() {
         return hydrateFavorites()
     }
 
-    if (pendingFavoritesMutation.kind === 'add') {
-        return toggleFavorite(pendingFavoritesMutation.type, pendingFavoritesMutation.item)
+    const scope = getCurrentUserScope()
+    const mutation = pendingFavoritesMutation
+    const previousFavorites = mutation.previousFavorites || readFavorites(scope)
+    favoritesSyncController.markSyncing()
+
+    if (mutation.kind === 'add') {
+        const favorites = readFavorites(scope)
+        const nextItems = [
+            mutation.item,
+            ...favorites[mutation.type].filter((entry) => entry.id !== mutation.item.id)
+        ]
+        const nextFavorites = writeFavorites({
+            ...favorites,
+            [mutation.type]: nextItems
+        }, scope)
+        notifyFavoritesStore(nextFavorites)
+
+        return requestLiteBackend('/api/favorites', {
+            method: 'POST',
+            payload: {
+                type: mutation.type,
+                item: mutation.item
+            }
+        }).then((response) => {
+            if (!response.ok) {
+                writeFavorites(previousFavorites, scope)
+                notifyFavoritesStore(previousFavorites)
+                favoritesSyncController.markFailed(response.message || response.error)
+                return readFavorites(scope)
+            }
+            pendingFavoritesMutation = null
+            favoritesSyncController.markSynced()
+            return readFavorites(scope)
+        })
     }
 
-    return removeFavorite(pendingFavoritesMutation.type, pendingFavoritesMutation.id)
+    return requestLiteBackend(`/api/favorites/${mutation.type}/${mutation.id}`, {
+        method: 'DELETE'
+    }).then((response) => {
+        if (!response.ok) {
+            writeFavorites(previousFavorites, scope)
+            notifyFavoritesStore(previousFavorites)
+            favoritesSyncController.markFailed(response.message || response.error)
+            return readFavorites(scope)
+        }
+        pendingFavoritesMutation = null
+        favoritesSyncController.markSynced()
+        return readFavorites(scope)
+    })
 }

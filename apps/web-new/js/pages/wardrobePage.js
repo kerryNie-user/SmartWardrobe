@@ -126,7 +126,7 @@ export function renderWardrobePage() {
             archiveRoot.id = activeTabState.panelId;
             archiveRoot.setAttribute('role', 'tabpanel');
             archiveRoot.setAttribute('aria-labelledby', activeTabState.tabId);
-            archiveRoot.innerHTML = renderWardrobeArchive(contract.derivedView.archiveItems);
+            archiveRoot.innerHTML = renderWardrobeArchive(contract.derivedView.archiveItems, getWardrobeSyncState());
         }
 
         if (heroRoot) {
@@ -170,7 +170,8 @@ export function renderWardrobePage() {
         paint,
         subscriptions: [
             (listener) => subscribeWardrobeStore(listener),
-            (listener) => subscribeSettingsStore(listener)
+            (listener) => subscribeSettingsStore(listener),
+            (listener) => subscribeWardrobeSyncState(listener)
         ],
         hydrators: [
             () => hydrateWardrobe(getLocale()),

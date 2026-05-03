@@ -29,10 +29,10 @@ function persistDedicatedKeys(state, storage = null) {
 function buildState(snapshot = {}, storage = null) {
     const resolvedStorage = resolveStorage(storage)
     return {
-        language: normalizeLocale(snapshot.language || resolvedStorage?.getItem(LOCALE_KEY)),
-        'display-mode': normalizeTheme(snapshot['display-mode'] || resolvedStorage?.getItem(THEME_KEY)),
-        'wardrobe-layout': normalizeWardrobeLayout(snapshot['wardrobe-layout'] || resolvedStorage?.getItem(WARDROBE_LAYOUT_KEY)),
-        'temperature-unit': normalizeTemperatureUnit(snapshot['temperature-unit'] || resolvedStorage?.getItem(TEMPERATURE_UNIT_KEY)),
+        language: normalizeLocale(snapshot.language || resolvedStorage?.getItem(LOCALE_KEY) || DEFAULT_SETTINGS_STATE.language),
+        'display-mode': normalizeTheme(snapshot['display-mode'] || resolvedStorage?.getItem(THEME_KEY) || DEFAULT_SETTINGS_STATE['display-mode']),
+        'wardrobe-layout': normalizeWardrobeLayout(snapshot['wardrobe-layout'] || resolvedStorage?.getItem(WARDROBE_LAYOUT_KEY) || DEFAULT_SETTINGS_STATE['wardrobe-layout']),
+        'temperature-unit': normalizeTemperatureUnit(snapshot['temperature-unit'] || resolvedStorage?.getItem(TEMPERATURE_UNIT_KEY) || DEFAULT_SETTINGS_STATE['temperature-unit']),
         'public-profile': normalizeBoolean(snapshot['public-profile'], DEFAULT_SETTINGS_STATE['public-profile']),
         'outfit-reminders': normalizeBoolean(snapshot['outfit-reminders'], DEFAULT_SETTINGS_STATE['outfit-reminders'])
     }

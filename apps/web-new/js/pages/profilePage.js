@@ -10,6 +10,7 @@ import { getFavorites, getFavoritesStats, getFavoritesSyncState, hydrateFavorite
 import { getProfile, getProfileSyncState, hydrateProfile, retryProfileSync, subscribeProfileStore, subscribeProfileSyncState } from '../lib/profileStore.js';
 import { getWardrobeCount, getWardrobeSyncState, hydrateWardrobe, retryWardrobeSync, subscribeWardrobeStore, subscribeWardrobeSyncState } from '../lib/wardrobeStore.js';
 import { hydrateSettings, subscribeSettingsStore } from '../lib/settingsStore.js';
+import { renderLoadFailedPanel } from '../components/errorPanel.js';
 
 function renderProfileSummary(content, profile, stats, wardrobeCount) {
     return `
@@ -107,17 +108,29 @@ export function renderProfilePage() {
         }
 
         if (summaryRoot) {
-            const summaryView = contract.derivedView.summary;
-            summaryRoot.innerHTML = renderProfileSummary(
-                summaryView.content,
-                summaryView.profile,
-                { total: summaryView.favoritesTotal },
-                summaryView.wardrobeCount
-            );
+            const sync = contract.sync
+            if (sync.failedDomains?.length) {
+                const state = getProfileSyncState()
+                summaryRoot.innerHTML = renderLoadFailedPanel(state?.error, locale === 'zh-CN' ? '资料加载失败。' : 'Failed to load profile.')
+            } else {
+                const summaryView = contract.derivedView.summary;
+                summaryRoot.innerHTML = renderProfileSummary(
+                    summaryView.content,
+                    summaryView.profile,
+                    { total: summaryView.favoritesTotal },
+                    summaryView.wardrobeCount
+                );
+            }
         }
 
         if (previewRoot) {
-            previewRoot.innerHTML = renderProfilePreviewCollection(content, contract.derivedView.previewItems);
+            const sync = contract.sync
+            if (sync.failedDomains?.length) {
+                const state = getFavoritesSyncState()
+                previewRoot.innerHTML = renderLoadFailedPanel(state?.error, locale === 'zh-CN' ? '收藏预览加载失败。' : 'Failed to load favorites preview.')
+            } else {
+                previewRoot.innerHTML = renderProfilePreviewCollection(content, contract.derivedView.previewItems);
+            }
         }
 
         if (bottomNavRoot) {
@@ -131,7 +144,10 @@ export function renderProfilePage() {
             (listener) => subscribeProfileStore(listener),
             (listener) => subscribeFavoritesStore(listener),
             (listener) => subscribeWardrobeStore(listener),
-            (listener) => subscribeSettingsStore(listener)
+            (listener) => subscribeSettingsStore(listener),
+            (listener) => subscribeProfileSyncState(listener),
+            (listener) => subscribeFavoritesSyncState(listener),
+            (listener) => subscribeWardrobeSyncState(listener)
         ],
         hydrators: [
             () => hydrateProfile(locale),

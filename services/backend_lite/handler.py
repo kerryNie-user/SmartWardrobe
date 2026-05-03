@@ -1,24 +1,51 @@
 import base64
 import json
+import logging
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 
 def create_handler(database, directory):
+    class ApiError(Exception):
+        def __init__(self, status: int, code: str, message: str, details: dict | None = None):
+            super().__init__(message)
+            self.status = int(status)
+            self.code = str(code)
+            self.message = str(message)
+            self.details = details or {}
+
     class LiteBackendHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=str(directory), **kwargs)
+
+        def respond_error(self, status: int, code: str, message: str, details: dict | None = None):
+            self.respond(status, {
+                'error': {
+                    'code': str(code),
+                    'message': str(message),
+                    'details': details or {}
+                }
+            })
 
         def end_headers(self):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-User-Id')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            try:
+                path = urlparse(self.path).path
+                if path.endswith(('.html', '.js', '.css')):
+                    self.send_header('Cache-Control', 'no-store')
+            except Exception:
+                pass
             super().end_headers()
 
         def do_OPTIONS(self):
             self.send_response(HTTPStatus.NO_CONTENT)
             self.end_headers()
+
+        def log_message(self, format, *args):
+            logging.getLogger("backend_lite.http").info("%s - %s", self.address_string(), format % args)
 
         def do_GET(self):
             if self.path.startswith('/api/'):
@@ -40,7 +67,7 @@ def create_handler(database, directory):
             
             # Prevent directory traversal
             if '..' in self.path:
-                self.respond(403, {'error': 'FORBIDDEN'})
+                self.respond_error(403, 'FORBIDDEN', 'Forbidden')
                 return
                 
             from pathlib import Path
@@ -48,7 +75,7 @@ def create_handler(database, directory):
             image_path = project_root / 'services' / 'ai_blogger' / 'output' / 'images' / filename
             
             if not image_path.exists() or not image_path.is_file():
-                self.respond(404, {'error': 'NOT_FOUND'})
+                self.respond_error(404, 'NOT_FOUND', 'Not found')
                 return
                 
             # Determine content type based on extension
@@ -70,13 +97,13 @@ def create_handler(database, directory):
             
             # Prevent directory traversal
             if '..' in file_path or file_path.startswith('/'):
-                self.send_error(403, "Forbidden")
+                self.respond_error(403, 'FORBIDDEN', 'Forbidden')
                 return
                 
             full_path = os.path.join(os.path.dirname(__file__), 'uploads', file_path)
             
             if not os.path.exists(full_path) or not os.path.isfile(full_path):
-                self.send_error(404, "File not found")
+                self.respond_error(404, 'NOT_FOUND', 'File not found')
                 return
                 
             try:
@@ -95,7 +122,7 @@ def create_handler(database, directory):
                 self.end_headers()
                 self.wfile.write(content)
             except Exception as e:
-                self.send_error(500, f"Internal server error: {str(e)}")
+                self.respond_error(500, 'INTERNAL', 'Internal server error', {'detail': str(e)})
 
         def do_POST(self):
             self.handle_api('POST')
@@ -111,7 +138,10 @@ def create_handler(database, directory):
             if length <= 0:
                 return {}
             raw = self.rfile.read(length)
-            return json.loads(raw.decode('utf-8'))
+            try:
+                return json.loads(raw.decode('utf-8'))
+            except Exception as exc:
+                raise ApiError(400, 'INVALID_JSON', 'Invalid JSON payload', {'detail': str(exc)})
 
         def respond(self, status=200, payload=None):
             body = json.dumps(payload or {}, ensure_ascii=False).encode('utf-8')
@@ -151,63 +181,103 @@ def create_handler(database, directory):
 
                 if method == 'POST' and path == '/api/auth/register':
                     user = database.create_user(payload)
+                    if not isinstance(user, dict):
+                        raise ApiError(500, 'AUTH_CONTRACT_MISSING', 'Auth contract missing', {'path': 'user'})
                     self.respond(201, {'user': user})
                     return
 
                 if method == 'POST' and path == '/api/auth/login':
                     user = database.login_user(payload)
+                    if not isinstance(user, dict):
+                        raise ApiError(500, 'AUTH_CONTRACT_MISSING', 'Auth contract missing', {'path': 'user'})
                     self.respond(200, {'user': user})
                     return
 
                 user_id = self.resolve_user_id(payload)
 
                 if method == 'GET' and path == '/api/profile':
-                    self.respond(200, {'profile': database.get_profile(user_id)})
+                    profile = database.get_profile(user_id)
+                    if not isinstance(profile, dict):
+                        raise ApiError(500, 'PROFILE_CONTRACT_MISSING', 'Profile contract missing', {'path': 'profile'})
+                    self.respond(200, {'profile': profile})
                     return
                 if method == 'POST' and path == '/api/profile':
-                    self.respond(200, {'profile': database.save_profile(user_id, payload)})
+                    profile = database.save_profile(user_id, payload)
+                    if not isinstance(profile, dict):
+                        raise ApiError(500, 'PROFILE_CONTRACT_MISSING', 'Profile contract missing', {'path': 'profile'})
+                    self.respond(200, {'profile': profile})
                     return
 
                 if method == 'GET' and path == '/api/settings':
-                    self.respond(200, {'settings': database.get_settings(user_id)})
+                    settings = database.get_settings(user_id)
+                    if not isinstance(settings, dict):
+                        raise ApiError(500, 'SETTINGS_CONTRACT_MISSING', 'Settings contract missing', {'path': 'settings'})
+                    self.respond(200, {'settings': settings})
                     return
                 if method == 'POST' and path == '/api/settings':
-                    self.respond(200, {'settings': database.save_settings(user_id, payload)})
+                    settings = database.save_settings(user_id, payload)
+                    if not isinstance(settings, dict):
+                        raise ApiError(500, 'SETTINGS_CONTRACT_MISSING', 'Settings contract missing', {'path': 'settings'})
+                    self.respond(200, {'settings': settings})
                     return
 
                 if method == 'GET' and path.startswith('/api/schedules/content'):
                     parsed = urlparse(self.path)
                     qs = parse_qs(parsed.query)
                     locale = qs.get('locale', ['en-US'])[0]
-                    self.respond(200, database.get_schedule_content(user_id, locale))
+                    content = database.get_schedule_content(user_id, locale)
+                    if not isinstance(content, dict) or 'tabs' not in content or 'views' not in content:
+                        raise ApiError(500, 'SCHEDULE_CONTRACT_MISSING', 'Schedule content contract missing', {'required': ['tabs', 'views']})
+                    self.respond(200, content)
                     return
 
                 if method == 'GET' and path == '/api/schedules':
-                    self.respond(200, {'items': database.list_schedules(user_id)})
+                    items = database.list_schedules(user_id)
+                    if not isinstance(items, list):
+                        raise ApiError(500, 'SCHEDULES_CONTRACT_MISSING', 'Schedules contract missing', {'path': 'items'})
+                    self.respond(200, {'items': items})
                     return
                 if method == 'POST' and path == '/api/schedules':
-                    self.respond(201, {'item': database.create_schedule(user_id, payload)})
+                    item = database.create_schedule(user_id, payload)
+                    if not isinstance(item, dict):
+                        raise ApiError(500, 'SCHEDULES_CONTRACT_MISSING', 'Schedules contract missing', {'path': 'item'})
+                    self.respond(201, {'item': item})
                     return
                 if path.startswith('/api/schedules/'):
                     item_id = path.split('/')[-1]
                     if method == 'PUT':
-                        self.respond(200, {'item': database.update_schedule(user_id, item_id, payload)})
+                        item = database.update_schedule(user_id, item_id, payload)
+                        if not isinstance(item, dict):
+                            raise ApiError(500, 'SCHEDULES_CONTRACT_MISSING', 'Schedules contract missing', {'path': 'item'})
+                        self.respond(200, {'item': item})
                         return
                     if method == 'DELETE':
-                        self.respond(200, database.delete_schedule(user_id, item_id))
+                        result = database.delete_schedule(user_id, item_id)
+                        if not isinstance(result, dict):
+                            raise ApiError(500, 'SCHEDULES_CONTRACT_MISSING', 'Schedules contract missing', {'path': 'deleted'})
+                        self.respond(200, result)
                         return
 
                 if method == 'GET' and path == '/api/favorites':
-                    self.respond(200, {'favorites': database.get_favorites(user_id)})
+                    favorites = database.get_favorites(user_id)
+                    if not isinstance(favorites, dict):
+                        raise ApiError(500, 'FAVORITES_CONTRACT_MISSING', 'Favorites contract missing', {'path': 'favorites'})
+                    self.respond(200, {'favorites': favorites})
                     return
                 if method == 'POST' and path == '/api/favorites':
                     favorite_type = payload.get('type', 'looks')
                     item = payload.get('item') or {}
-                    self.respond(200, {'favorites': database.add_favorite(user_id, favorite_type, item)})
+                    favorites = database.add_favorite(user_id, favorite_type, item)
+                    if not isinstance(favorites, dict):
+                        raise ApiError(500, 'FAVORITES_CONTRACT_MISSING', 'Favorites contract missing', {'path': 'favorites'})
+                    self.respond(200, {'favorites': favorites})
                     return
                 if method == 'DELETE' and path.startswith('/api/favorites/'):
                     _, _, _, favorite_type, item_id = path.split('/', 4)
-                    self.respond(200, {'favorites': database.remove_favorite(user_id, favorite_type, item_id)})
+                    favorites = database.remove_favorite(user_id, favorite_type, item_id)
+                    if not isinstance(favorites, dict):
+                        raise ApiError(500, 'FAVORITES_CONTRACT_MISSING', 'Favorites contract missing', {'path': 'favorites'})
+                    self.respond(200, {'favorites': favorites})
                     return
 
                 if method == 'GET' and path == '/api/discovery/social':
@@ -226,12 +296,37 @@ def create_handler(database, directory):
 
                 if method == 'GET' and path == '/api/discovery/content':
                     locale = parse_qs(parsed.query).get('locale', ['en-US'])[0]
-                    self.respond(200, database.get_discovery_content(locale))
+                    result = database.get_discovery_content(locale)
+                    content = result.get('content') if isinstance(result, dict) else None
+                    if not isinstance(content, dict) or 'editorials' not in content:
+                        raise ApiError(500, 'DISCOVERY_CONTRACT_MISSING', 'Discovery content contract missing', {'path': 'content.editorials'})
+                    self.respond(200, result)
+                    return
+
+                if method == 'POST' and path == '/api/admin/regenerate_editorials':
+                    locale = str(payload.get('locale', 'all') or 'all')
+                    limit = int(payload.get('limit') or 0)
+                    dry_run = bool(payload.get('dryRun', False))
+                    update_time = bool(payload.get('updateTime', False))
+                    batch_id = payload.get('batchId')
+                    skip_if_ai = bool(payload.get('skipIfAi', False))
+                    self.respond(200, {'report': database.regenerate_editorials(locale=locale, limit=limit, dry_run=dry_run, update_time=update_time, batch_id=batch_id, skip_if_ai=skip_if_ai)})
+                    return
+
+                if method == 'POST' and path == '/api/admin/cleanup_editorials':
+                    locale = str(payload.get('locale', 'all') or 'all')
+                    keep_batch_id = payload.get('keepBatchId')
+                    dry_run = bool(payload.get('dryRun', False))
+                    self.respond(200, {'report': database.cleanup_editorials_keep_batch(locale=locale, keep_batch_id=keep_batch_id, dry_run=dry_run)})
                     return
 
                 if method == 'GET' and path == '/api/home/content':
                     locale = parse_qs(parsed.query).get('locale', ['en-US'])[0]
-                    self.respond(200, database.get_home_content(locale))
+                    result = database.get_home_content(locale)
+                    content = result.get('content') if isinstance(result, dict) else None
+                    if not isinstance(content, dict) or 'tabs' not in content:
+                        raise ApiError(500, 'HOME_CONTRACT_MISSING', 'Home content contract missing', {'path': 'content.tabs'})
+                    self.respond(200, result)
                     return
 
                 if method == 'GET' and path == '/api/discovery/comments':
@@ -243,15 +338,23 @@ def create_handler(database, directory):
                     return
 
                 if method == 'POST' and path == '/api/media/prepare':
-                    self.respond(201, {'upload': database.prepare_media_upload(user_id, payload)})
+                    upload = database.prepare_media_upload(user_id, payload)
+                    if not isinstance(upload, dict) or not upload.get('token') or not upload.get('remoteUrl'):
+                        raise ApiError(500, 'MEDIA_CONTRACT_MISSING', 'Media upload contract missing', {'path': 'upload'})
+                    self.respond(201, {'upload': upload})
                     return
                 if method == 'POST' and path.startswith('/api/media/upload/'):
                     token = path.split('/')[-1]
-                    self.respond(201, {'media': database.upload_media_content(user_id, token, payload)})
+                    media = database.upload_media_content(user_id, token, payload)
+                    if not isinstance(media, dict) or not media.get('remoteUrl'):
+                        raise ApiError(500, 'MEDIA_CONTRACT_MISSING', 'Media contract missing', {'path': 'media'})
+                    self.respond(201, {'media': media})
                     return
                 if method == 'GET' and path.startswith('/api/media/files/'):
                     media_id = path.split('/')[-1]
                     media_file = database.get_media_file(media_id)
+                    if not isinstance(media_file, dict) or 'mimeType' not in media_file or 'contentBase64' not in media_file:
+                        raise ApiError(500, 'MEDIA_CONTRACT_MISSING', 'Media file contract missing', {'path': 'media'})
                     self.respond_bytes(
                         200,
                         media_file['mimeType'],
@@ -260,30 +363,47 @@ def create_handler(database, directory):
                     return
 
                 if method == 'GET' and path == '/api/wardrobe':
-                    self.respond(200, {'items': database.list_wardrobe(user_id)})
+                    items = database.list_wardrobe(user_id)
+                    if not isinstance(items, list):
+                        raise ApiError(500, 'WARDROBE_CONTRACT_MISSING', 'Wardrobe contract missing', {'path': 'items'})
+                    self.respond(200, {'items': items})
                     return
                 if method == 'POST' and path == '/api/wardrobe':
                     item = payload.get('item') or payload
-                    self.respond(201, {'item': database.create_wardrobe_item(user_id, item)})
+                    created = database.create_wardrobe_item(user_id, item)
+                    if not isinstance(created, dict):
+                        raise ApiError(500, 'WARDROBE_CONTRACT_MISSING', 'Wardrobe contract missing', {'path': 'item'})
+                    self.respond(201, {'item': created})
                     return
                 if path.startswith('/api/wardrobe/'):
                     item_id = path.split('/')[-1]
                     if method == 'PUT':
                         item = payload.get('item') or payload
-                        self.respond(200, {'item': database.update_wardrobe_item(user_id, item_id, item)})
+                        updated = database.update_wardrobe_item(user_id, item_id, item)
+                        if not isinstance(updated, dict):
+                            raise ApiError(500, 'WARDROBE_CONTRACT_MISSING', 'Wardrobe contract missing', {'path': 'item'})
+                        self.respond(200, {'item': updated})
                         return
                     if method == 'DELETE':
-                        self.respond(200, database.delete_wardrobe_item(user_id, item_id))
+                        result = database.delete_wardrobe_item(user_id, item_id)
+                        if not isinstance(result, dict):
+                            raise ApiError(500, 'WARDROBE_CONTRACT_MISSING', 'Wardrobe contract missing', {'path': 'deleted'})
+                        self.respond(200, result)
                         return
 
-                self.respond(404, {'error': 'NOT_FOUND'})
+                raise ApiError(404, 'NOT_FOUND', 'Route not found', {'path': path, 'method': method})
+            except ApiError as exc:
+                self.respond_error(exc.status, exc.code, exc.message, exc.details)
             except ValueError as exc:
-                self.respond(409, {'error': str(exc)})
+                code = str(exc) or 'CONFLICT'
+                self.respond_error(409, code, code)
             except LookupError as exc:
-                self.respond(404, {'error': str(exc)})
+                code = str(exc) or 'NOT_FOUND'
+                self.respond_error(404, code, code)
             except PermissionError as exc:
-                self.respond(401, {'error': str(exc)})
+                code = str(exc) or 'UNAUTHORIZED'
+                self.respond_error(401, code, code)
             except Exception as exc:
-                self.respond(500, {'error': 'SERVER_ERROR', 'detail': str(exc)})
+                self.respond_error(500, 'INTERNAL', 'Internal server error', {'detail': str(exc)})
 
     return LiteBackendHandler

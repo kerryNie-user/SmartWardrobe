@@ -11,6 +11,14 @@ class UniversalLLMClient:
     Uses urllib.request to avoid needing pip install openai in restricted environments.
     """
     def __init__(self, api_key: str = None, base_url: str = None, model: str = None):
+        def strip_wrapping(value: str | None) -> str | None:
+            if value is None:
+                return None
+            value = str(value).strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'", "`"}:
+                return value[1:-1].strip()
+            return value
+
         # First try to load from the new agent-specific .env if it exists
         agent_env_path = os.path.join(os.path.dirname(__file__), "agents", ".env")
         if os.path.exists(agent_env_path):
@@ -19,11 +27,12 @@ class UniversalLLMClient:
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
                         k, v = line.split("=", 1)
-                        os.environ[k.strip()] = v.strip()
+                        key = k.strip()
+                        os.environ[key] = strip_wrapping(v)
 
-        self.api_key = api_key or os.getenv("LLM_API_KEY")
-        self.base_url = base_url or os.getenv("LLM_BASE_URL", "https://api.deepseek.com")
-        self.model = model or os.getenv("LLM_MODEL_NAME", "deepseek-chat")
+        self.api_key = strip_wrapping(api_key) or strip_wrapping(os.getenv("LLM_API_KEY"))
+        self.base_url = strip_wrapping(base_url) or strip_wrapping(os.getenv("LLM_BASE_URL", "https://api.deepseek.com"))
+        self.model = strip_wrapping(model) or strip_wrapping(os.getenv("LLM_MODEL_NAME", "deepseek-chat"))
         
         # Log the current configuration for debugging
         logging.info(f"Initialized LLMClient with Model: {self.model}, Base URL: {self.base_url}")
@@ -41,7 +50,8 @@ class UniversalLLMClient:
         Sends a request to the LLM and strictly expects a JSON object back.
         If use_memory is True, the system will append to self.history and send the full history.
         """
-        url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+        base = self.base_url.rstrip('/')
+        url = f"{base}/chat/completions" if base.endswith("/v1") else f"{base}/v1/chat/completions"
         
         headers = {
             "Content-Type": "application/json",
@@ -128,8 +138,10 @@ class UniversalLLMClient:
                 logging.error(f"LLM API HTTPError {e.code}: {error_body}")
                 
                 # Token limit exceeded or rate limited
-                if e.code == 401 or e.code == 429:
-                    logging.warning("API Quota/Rate Limit hit. Pausing for 5 seconds...")
+                if e.code == 401:
+                    raise RuntimeError(f"LLM API authentication failed (401). Check LLM_API_KEY / LLM_BASE_URL. Response: {error_body}")
+                if e.code == 429:
+                    logging.warning("API rate limited (429). Pausing for 5 seconds...")
                     time.sleep(5)
                 
                 if allow_search and e.code in (400, 422):

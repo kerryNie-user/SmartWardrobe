@@ -1,6 +1,6 @@
 export const DEFAULT_SETTINGS_STATE = {
     language: 'en-US',
-    'display-mode': 'dark',
+    'display-mode': 'light',
     'wardrobe-layout': 'grid',
     'temperature-unit': 'celsius',
     'public-profile': true,
@@ -51,7 +51,7 @@ export function createSettingsService({
             syncController.markLoading()
             const remote = await remoteRepository.fetch()
             if (!remote.ok || !remote.data?.settings) {
-                syncController.markStale(remote.error)
+                syncController.markStale(remote.message || remote.error)
                 return localRepository.read()
             }
 
@@ -70,7 +70,7 @@ export function createSettingsService({
             const response = await remoteRepository.save(nextSettings)
 
             if (!response.ok) {
-                syncController.markFailed(response.error)
+                syncController.markFailed(response.message || response.error)
                 return localRepository.read()
             }
 

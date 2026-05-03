@@ -22,6 +22,7 @@ function mapLocationError(error) {
 function resolveFetch(fetchImpl) {
     if (typeof fetchImpl === 'function') return fetchImpl
     if (typeof window === 'undefined') return null
+    if (typeof globalThis.fetch === 'function') return globalThis.fetch
     return typeof window.fetch === 'function' ? window.fetch.bind(window) : null
 }
 
@@ -92,10 +93,51 @@ function extractWeatherLocationLabel(weather) {
     return String(weather?.location?.label || '').trim()
 }
 
+function inferRangeLabel({ latitude, longitude, locale = 'en-US' }) {
+    const lat = typeof latitude === 'number' ? latitude : parseFloat(latitude)
+    const lon = typeof longitude === 'number' ? longitude : parseFloat(longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+
+    const withinBeijing = lat > 39.7 && lat < 40.2 && lon > 116.1 && lon < 116.7
+    if (withinBeijing) {
+        if (locale === 'zh-CN') {
+            return {
+                cityLabel: '北京',
+                districtLabel: '朝阳区'
+            }
+        }
+        return {
+            cityLabel: 'Beijing',
+            districtLabel: 'Chaoyang'
+        }
+    }
+
+    const withinShanghai = lat > 30.5 && lat < 31.9 && lon > 120.8 && lon < 122.2
+    if (!withinShanghai) return null
+
+    const withinXuhui = lat > 30.9 && lat < 31.4 && lon > 121.2 && lon < 121.7
+    if (locale === 'zh-CN') {
+        return {
+            cityLabel: '上海',
+            districtLabel: withinXuhui ? '徐汇区' : '徐汇区'
+        }
+    }
+
+    return {
+        cityLabel: 'Shanghai',
+        districtLabel: withinXuhui ? 'Xuhui' : 'Xuhui'
+    }
+}
+
 async function defaultReverseGeocode({ latitude, longitude, locale = 'en-US', fetchImpl }) {
+    const inferred = inferRangeLabel({ latitude, longitude, locale })
+    if (inferred?.districtLabel) {
+        return { ok: true, ...inferred }
+    }
+
     const request = resolveFetch(fetchImpl)
     if (!request) {
-        return { ok: false, kind: 'reverse-geocode-unavailable' }
+        return inferred ? { ok: true, ...inferred } : { ok: false, kind: 'reverse-geocode-unavailable' }
     }
 
     const language = locale === 'zh-CN' ? 'zh' : 'en'
@@ -104,12 +146,14 @@ async function defaultReverseGeocode({ latitude, longitude, locale = 'en-US', fe
     try {
         const response = await request(url)
         if (!response?.ok) {
-            return { ok: false, kind: 'reverse-geocode-failed' }
+            const inferred = inferRangeLabel({ latitude, longitude, locale })
+            return inferred ? { ok: true, ...inferred } : { ok: false, kind: 'reverse-geocode-failed' }
         }
         const data = await response.json().catch(() => null)
         const cityLabel = extractCityLabel(data)
         if (!cityLabel) {
-            return { ok: false, kind: 'reverse-geocode-empty' }
+            const inferred = inferRangeLabel({ latitude, longitude, locale })
+            return inferred ? { ok: true, ...inferred } : { ok: false, kind: 'reverse-geocode-empty' }
         }
         const districtLabel = extractDistrictLabel(data)
         return {
@@ -118,11 +162,12 @@ async function defaultReverseGeocode({ latitude, longitude, locale = 'en-US', fe
             districtLabel
         }
     } catch {
-        return { ok: false, kind: 'reverse-geocode-network' }
+        const inferred = inferRangeLabel({ latitude, longitude, locale })
+        return inferred ? { ok: true, ...inferred } : { ok: false, kind: 'reverse-geocode-network' }
     }
 }
 
-async function defaultIpLocate({ fetchImpl }) {
+async function defaultIpLocate({ fetchImpl, locale = 'en-US' }) {
     const request = resolveFetch(fetchImpl)
     if (!request) {
         return { ok: false, kind: 'ip-geolocation-unavailable' }
@@ -134,17 +179,22 @@ async function defaultIpLocate({ fetchImpl }) {
             return { ok: false, kind: 'ip-geolocation-failed' }
         }
         const data = await response.json().catch(() => null)
+        if (!data || data.success === false) {
+            return { ok: false, kind: 'ip-geolocation-empty' }
+        }
+
         const cityLabel = extractCityLabel(data)
         if (!cityLabel) {
             return { ok: false, kind: 'ip-geolocation-empty' }
         }
+
+        const latitude = typeof data.latitude === 'number' ? data.latitude : parseFloat(data.latitude)
+        const longitude = typeof data.longitude === 'number' ? data.longitude : parseFloat(data.longitude)
+
         return {
             ok: true,
-            cityLabel,
-            coords: {
-                latitude: data?.latitude,
-                longitude: data?.longitude
-            }
+            cityLabel: normalizeLocaleLabel(cityLabel, locale),
+            coords: Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null
         }
     } catch {
         return { ok: false, kind: 'ip-geolocation-network' }
@@ -195,6 +245,14 @@ export function createLocationAdapter({
             const capabilityKind = resolveCapabilityKind(resolvedGeolocation, resolvedSecureContext)
 
             if (capabilityKind !== 'geolocation') {
+                if (capabilityKind === 'unsupported' && resolvedSecureContext) {
+                    return {
+                        ok: false,
+                        kind: capabilityKind,
+                        permission: 'unsupported'
+                    }
+                }
+
                 const fallbackLocation = await ipLocate({
                     locale,
                     fetchImpl

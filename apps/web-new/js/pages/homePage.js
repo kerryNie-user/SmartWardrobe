@@ -11,12 +11,16 @@ import { applyLocationToWeather, getCurrentLocation } from '../lib/locationAdapt
 import { createHomePageContract } from '../lib/pageContracts.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { getFavoriteIds, getFavoritesSyncState, hydrateFavorites, retryFavoritesSync, subscribeFavoritesStore, subscribeFavoritesSyncState, toggleFavorite } from '../lib/favoritesStore.js';
+import { getLiteBackendUserId } from '../lib/liteBackendClient.js';
 import { getScheduleSummary, getScheduleSyncState, hydrateSchedule, retryScheduleSync, subscribeScheduleStore, subscribeScheduleSyncState } from '../lib/scheduleStore.js';
-import { getSettingsState, subscribeSettingsStore } from '../lib/settingsStore.js';
+import { getSettingsState, getTemperatureUnitPreference, subscribeSettingsStore } from '../lib/settingsStore.js';
 import { getRecentWardrobeItems, getWardrobeCount, getWardrobeSyncState, hydrateWardrobe, retryWardrobeSync, subscribeWardrobeStore, subscribeWardrobeSyncState } from '../lib/wardrobeStore.js';
-import { hydrateHomeContent, subscribeHomeContent } from '../data/home.js';
+import { getHomeContentSyncState, hydrateHomeContent, retryHomeContentHydration, subscribeHomeContent, subscribeHomeContentSyncState } from '../data/home.js';
 
 export function renderHomePage() {
+    if (globalThis.localStorage && window.localStorage && globalThis.localStorage !== window.localStorage) {
+        globalThis.localStorage = window.localStorage
+    }
     const topbarRoot = document.querySelector('[data-ct-topbar]');
     const syncFeedbackRoot = ensureSyncFeedbackRoot(topbarRoot, 'home');
     const weatherRoot = document.querySelector('[data-ct-weather]');
@@ -28,6 +32,35 @@ export function renderHomePage() {
     let activeTab = 'recommend';
     let locationResult = null;
     let locationRequested = false;
+    const canHydrateRemote = Boolean(getLiteBackendUserId());
+
+    const applyTemperatureUnit = (weather, unit = 'celsius') => {
+        const normalize = (value) => {
+            const match = String(value || '').trim().match(/(-?\\d+(?:\\.\\d+)?)\\s*°?([CF])/i)
+            if (!match) return null
+            return { value: parseFloat(match[1]), unit: match[2].toUpperCase() }
+        }
+        const toF = (c) => Math.round((c * 9) / 5 + 32)
+        const toC = (f) => Math.round(((f - 32) * 5) / 9)
+        const format = (record) => {
+            if (!record) return ''
+            const target = unit === 'fahrenheit' ? 'F' : 'C'
+            if (record.unit === target) return `${Math.round(record.value)}°${target}`
+            const converted = target === 'F' ? toF(record.value) : toC(record.value)
+            return `${converted}°${target}`
+        }
+        const current = format(normalize(weather?.temperature?.current))
+        const low = format(normalize(weather?.temperature?.low))
+        const high = format(normalize(weather?.temperature?.high))
+        return {
+            ...weather,
+            temperature: {
+                current: current || weather?.temperature?.current || '',
+                low: low || weather?.temperature?.low || '',
+                high: high || weather?.temperature?.high || ''
+            }
+        }
+    }
 
     const paint = () => {
         const locale = getLocale();
@@ -61,7 +94,10 @@ export function renderHomePage() {
         });
         const favoriteIds = new Set(contract.derivedView.favoriteIds);
         const activeTabState = contract.derivedView.tabs.find((tab) => tab.active) || contract.derivedView.tabs[0];
-        const weatherView = applyLocationToWeather(contract.derivedView.weather, locationResult, locale);
+        const weatherView = applyTemperatureUnit(
+            applyLocationToWeather(contract.derivedView.weather, locationResult, locale),
+            getTemperatureUnitPreference()
+        );
         applyLocaleDocument('home', locale);
         if (topbarRoot) topbarRoot.innerHTML = renderTopbar();
         if (weatherRoot) weatherRoot.innerHTML = renderWeatherBar(weatherView);
@@ -86,10 +122,10 @@ export function renderHomePage() {
             (listener) => subscribeHomeContent(listener)
         ],
         hydrators: [
-            () => hydrateFavorites(),
-            () => hydrateWardrobe(getLocale()),
-            () => hydrateSchedule(),
-            () => hydrateHomeContent(getLocale())
+            () => canHydrateRemote ? hydrateFavorites() : undefined,
+            () => canHydrateRemote ? hydrateWardrobe(getLocale()) : undefined,
+            () => canHydrateRemote ? hydrateSchedule() : undefined,
+            () => canHydrateRemote ? hydrateHomeContent(getLocale()) : undefined
         ],
         syncFeedback: {
             root: syncFeedbackRoot,
@@ -124,6 +160,16 @@ export function renderHomePage() {
                     getState: () => getScheduleSyncState(),
                     subscribe: (listener) => subscribeScheduleSyncState(listener),
                     retry: (locale) => retryScheduleSync(locale)
+                },
+                {
+                    key: 'homeContent',
+                    label: {
+                        'zh-CN': '首页内容',
+                        'en-US': 'Home Content'
+                    },
+                    getState: () => getHomeContentSyncState(),
+                    subscribe: (listener) => subscribeHomeContentSyncState(listener),
+                    retry: (locale) => retryHomeContentHydration(locale)
                 }
             ]
         }

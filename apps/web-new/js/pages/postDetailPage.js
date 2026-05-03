@@ -1,5 +1,6 @@
 import { renderTopbar } from '../components/topbar.js'
 import { renderPostDetailArticle } from '../components/postDetailArticle.js'
+import { renderAiPost } from '../components/aiPostRenderer.js'
 import { renderStatePanel } from '../components/statePanel.js'
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js'
 import { renderFormNotice } from '../components/formNotice.js'
@@ -17,6 +18,14 @@ import { hydrateDiscoveryContent, subscribeDiscoveryContent } from '../data/disc
 
 function getPostId() {
     return getQueryParam('id')
+}
+
+function inferLocaleFromPostId(postId) {
+    const value = String(postId || '')
+    if (!value) return ''
+    if (value.includes('zh-CN')) return 'zh-CN'
+    if (value.includes('en-US')) return 'en-US'
+    return ''
 }
 
 function renderComments(post) {
@@ -93,9 +102,13 @@ export function renderPostDetailPage() {
         }
 
         if (detailRoot) {
-            detailRoot.innerHTML = renderPostDetailArticle(contract.derivedView.article, contract.derivedView.social, {
-                shareFeedback: contract.state.shareFeedback
-            })
+            const ai = contract.derivedView.article.ai
+            const detailState = { shareFeedback: contract.state.shareFeedback }
+            if (ai && ai.schema === 'ct_ai_post_v1') {
+                detailRoot.innerHTML = renderAiPost(contract.derivedView.article, ai, contract.derivedView.social, detailState)
+            } else {
+                detailRoot.innerHTML = renderPostDetailArticle(contract.derivedView.article, contract.derivedView.social, detailState)
+            }
         }
         if (commentsRoot) {
             commentsRoot.innerHTML = renderComments(contract.derivedView.article)
@@ -197,7 +210,13 @@ export function renderPostDetailPage() {
             (listener) => subscribeDiscoveryContent(listener)
         ],
         hydrators: [
-            () => hydrateDiscoveryContent(getLocale()),
+            () => hydrateDiscoveryContent(getLocale()).catch(() => undefined),
+            () => {
+                const inferredLocale = inferLocaleFromPostId(getPostId())
+                if (inferredLocale && inferredLocale !== getLocale()) {
+                    return hydrateDiscoveryContent(inferredLocale).catch(() => undefined)
+                }
+            },
             () => hydrateDiscoverySocial(getLocale()),
             () => hydrateDiscoveryComments(getLocale())
         ],

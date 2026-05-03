@@ -4,26 +4,14 @@ import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
 import { renderTrendStrip } from '../components/trendStrip.js';
 import { renderDiscoveryFeed } from '../components/discoveryFeed.js';
 import { renderBottomNav } from '../components/bottomNav.js';
-import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js';
+import { applyLocaleDocument, getLocale } from '../lib/locale.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createDiscoveryPageContract } from '../lib/pageContracts.js';
-import { buildCanonicalHref, shareLink } from '../lib/shareAdapter.js';
-import { subscribeFavoritesStore } from '../lib/favoritesStore.js';
 import { getDiscoveryContent } from '../data/discovery.js';
-import { getStoredComments, subscribeDiscoveryCommentStore } from '../lib/discoveryCommentStore.js';
-import { getDiscoverySocialSyncState, getPostSocialState, hydrateDiscoverySocial, retryDiscoverySocialSync, subscribeDiscoverySocialStore, subscribeDiscoverySocialSyncState, toggleDiscoveryPostLike, toggleDiscoveryPostSave } from '../lib/discoverySocialStore.js';
-import { getDiscoveryViewSnapshot, getDiscoveryViewSyncState, hydrateDiscoveryView, retryDiscoveryViewHydration, setDiscoveryQuery, setDiscoveryShareFeedback, subscribeDiscoveryViewStore, subscribeDiscoveryViewSyncState } from '../lib/discoveryViewStore.js';
+import { getDiscoverySocialSyncState, getPostSocialState, hydrateDiscoverySocial, retryDiscoverySocialSync, subscribeDiscoverySocialStore, subscribeDiscoverySocialSyncState, toggleDiscoveryPostLike } from '../lib/discoverySocialStore.js';
+import { getDiscoveryViewSnapshot, getDiscoveryViewSyncState, hydrateDiscoveryView, retryDiscoveryViewHydration, setDiscoveryQuery, subscribeDiscoveryViewStore, subscribeDiscoveryViewSyncState } from '../lib/discoveryViewStore.js';
 
 const DISCOVERY_PANEL_ID = 'ct-discovery-feed-panel';
-
-function buildTabState(activeKey, tabs) {
-    return tabs.map((tab) => ({
-        ...tab,
-        active: tab.key === activeKey,
-        tabId: `ct-discovery-tab-${tab.key}`,
-        panelId: DISCOVERY_PANEL_ID
-    }));
-}
 
 function filterItems(items, fields, query) {
     const normalizedQuery = String(query || '').trim().toLowerCase();
@@ -38,22 +26,16 @@ function filterItems(items, fields, query) {
         .includes(normalizedQuery));
 }
 
-function buildFeedItems(content, query, locale, shareFeedbackPostId) {
+function buildFeedItems(content, query) {
     return filterItems(content.editorials || [], (item) => [item.title, item.description, item.author], query)
         .map((item) => ({
             ...item,
-            social: {
-                ...getPostSocialState(item),
-                shareFeedback: shareFeedbackPostId === item.id
-                    ? (locale === 'zh-CN' ? '链接已复制' : 'Link copied')
-                    : ''
-            }
+            social: getPostSocialState(item)
         }));
 }
 
 export function renderDiscoveryPage() {
     const topbarRoot = document.querySelector('[data-ct-topbar]');
-    const tabsRoot = document.querySelector('[data-ct-discovery-tabs]');
     const searchRoot = document.querySelector('[data-ct-search]');
     const trendRoot = document.querySelector('[data-ct-trend-strip]');
     const feedRoot = document.querySelector('[data-ct-discovery-feed]');
@@ -65,28 +47,20 @@ export function renderDiscoveryPage() {
         const locale = getLocale();
         const content = getDiscoveryContent(locale);
         const viewState = getDiscoveryViewSnapshot();
-        const feedItems = buildFeedItems(
-            content,
-            viewState.activeTab,
-            viewState.query,
-            locale,
-            viewState.shareFeedbackPostId
-        );
         const contract = createDiscoveryPageContract({
             locale,
             content,
             query: viewState.query,
             trendStrip: content.editorialTrendStrip,
             feed: {
-                items: buildFeedItems(content, viewState.query, locale, viewState.shareFeedbackPostId)
+                items: buildFeedItems(content, viewState.query)
             },
-            shareFeedbackPostId: viewState.shareFeedbackPostId,
+            shareFeedbackPostId: null,
             syncStates: {
                 discoveryView: getDiscoveryViewSyncState(),
                 discoverySocial: getDiscoverySocialSyncState()
             }
         });
-        const activeTabState = contract.derivedView.tabs.find((tab) => tab.active) || contract.derivedView.tabs[0];
 
         applyLocaleDocument('discovery', locale);
         if (topbarRoot) topbarRoot.innerHTML = renderTopbar();
@@ -96,9 +70,9 @@ export function renderDiscoveryPage() {
 
         if (!feedRoot) return;
         feedRoot.id = DISCOVERY_PANEL_ID;
-        feedRoot.setAttribute('role', 'tabpanel');
-        feedRoot.setAttribute('aria-labelledby', activeTabState.tabId);
-        feedRoot.innerHTML = renderDiscoveryFeed(contract.derivedView.feed.items);
+        feedRoot.setAttribute('role', 'region');
+        feedRoot.setAttribute('aria-label', locale === 'zh-CN' ? '发现内容' : 'Discovery feed');
+        feedRoot.innerHTML = renderDiscoveryFeed(contract.derivedView.feed.items, getDiscoveryViewSyncState());
     };
 
     if (searchRoot) {
@@ -113,39 +87,12 @@ export function renderDiscoveryPage() {
 
     if (feedRoot) {
         const handleFeedClick = (event) => {
-            const favoriteButton = event.target.closest('.ct-discovery-post__favorite');
-            if (favoriteButton) {
-                const postId = favoriteButton.getAttribute('data-ct-toggle-post-favorite');
-                const locale = getLocale();
-                const content = getDiscoveryContent(locale);
-                const viewState = getDiscoveryViewSnapshot();
-                const feedItems = buildFeedItems(content, viewState.activeTab, viewState.query, locale, viewState.shareFeedbackPostId);
-                const item = feedItems.find((post) => post.id === postId);
-                if (!item) return;
-
-                toggleDiscoveryPostSave(item);
-                return;
-            }
-
             const likeButton = event.target.closest('[data-ct-toggle-post-like]');
             if (likeButton) {
                 const postId = likeButton.getAttribute('data-ct-toggle-post-like');
                 toggleDiscoveryPostLike(postId);
                 return;
             }
-
-            const shareButton = event.target.closest('[data-ct-share-post]');
-            if (!shareButton) return;
-
-            const locale = getLocale();
-            const postId = shareButton.getAttribute('data-ct-share-post');
-            const shareUrl = buildCanonicalHref('post-detail.html', { id: postId });
-            setDiscoveryShareFeedback(postId);
-            void shareLink({
-                href: shareUrl,
-                title: postId,
-                text: locale === 'zh-CN' ? '发现内容分享' : 'Discovery share'
-            });
         };
         feedRoot.addEventListener('click', handleFeedClick);
         listenerCleanups.push(() => feedRoot.removeEventListener('click', handleFeedClick));
@@ -156,8 +103,7 @@ export function renderDiscoveryPage() {
         subscriptions: [
             (listener) => subscribeDiscoveryViewStore(listener),
             (listener) => subscribeDiscoverySocialStore(listener),
-            (listener) => subscribeFavoritesStore(listener),
-            (listener) => subscribeDiscoveryCommentStore(listener)
+            (listener) => subscribeDiscoveryViewSyncState(listener)
         ],
         hydrators: [
             () => hydrateDiscoveryView(getLocale()),

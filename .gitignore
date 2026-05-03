@@ -111,6 +111,12 @@ build/
 *~
 
 .pytest_cache/
+test_output/
+services/ai_blogger/output_test/
+services/ai_blogger/test_output/
+commit_out.txt
+git_status.txt
+pytest_out.txt
 archive/
 docs/
 services/ai_blogger/output/

@@ -1,5 +1,7 @@
 import { getStoredAuthUserId } from './authIdentity.js'
 
+const DEFAULT_GLOBAL_FETCH = typeof globalThis.fetch === 'function' ? globalThis.fetch : null
+
 export function getLiteBackendUserId() {
     return getStoredAuthUserId() || null
 }
@@ -49,23 +51,32 @@ function buildLiteBackendUrl(path, locationObject = typeof window !== 'undefined
     return baseUrl ? `${baseUrl}${normalizedPath}` : normalizedPath
 }
 
-function canUseLiteBackend() {
-    return typeof window !== 'undefined' && typeof window.fetch === 'function'
+function resolveRequest() {
+    if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
+        return window.fetch.bind(window)
+    }
+    if (typeof globalThis.fetch === 'function' && globalThis.fetch !== DEFAULT_GLOBAL_FETCH) {
+        return globalThis.fetch
+    }
+    return null
 }
 
 export async function requestLiteBackend(path, { method = 'GET', payload, userId } = {}) {
-    if (!canUseLiteBackend()) {
+    const request = resolveRequest()
+    if (!request) {
         return {
             ok: false,
             status: 0,
             error: 'FETCH_UNAVAILABLE',
+            message: 'Fetch API unavailable',
+            details: null,
             kind: 'network',
             data: null
         }
     }
 
     try {
-        const response = await window.fetch(buildLiteBackendUrl(path), {
+        const response = await request(buildLiteBackendUrl(path), {
             method,
             headers: {
                 'Content-Type': 'application/json',
@@ -77,10 +88,22 @@ export async function requestLiteBackend(path, { method = 'GET', payload, userId
         const data = contentType.includes('application/json') ? await response.json().catch(() => null) : null
 
         if (!response.ok) {
+            const errorPayload = data?.error
+            const code = typeof errorPayload === 'string'
+                ? errorPayload
+                : (errorPayload?.code || 'REQUEST_FAILED')
+            const message = typeof errorPayload === 'object' && errorPayload
+                ? (errorPayload.message || code)
+                : code
+            const details = typeof errorPayload === 'object' && errorPayload
+                ? (errorPayload.details || null)
+                : null
             return {
                 ok: false,
                 status: response.status,
-                error: data?.error || 'REQUEST_FAILED',
+                error: code,
+                message,
+                details,
                 kind: response.status === 409 ? 'conflict' : 'http',
                 data
             }
@@ -91,6 +114,8 @@ export async function requestLiteBackend(path, { method = 'GET', payload, userId
             status: response.status,
             data,
             error: null,
+            message: null,
+            details: null,
             kind: 'success'
         }
     } catch (err) {
@@ -98,6 +123,8 @@ export async function requestLiteBackend(path, { method = 'GET', payload, userId
             ok: false,
             status: 0,
             error: 'NETWORK_ERROR',
+            message: 'Network error',
+            details: null,
             kind: 'network',
             data: null
         }

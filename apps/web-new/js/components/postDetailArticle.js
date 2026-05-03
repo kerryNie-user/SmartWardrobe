@@ -2,6 +2,7 @@ import { getLocale, getSharedCopy } from '../lib/locale.js'
 
 export function renderPostDetailArticle(post, social, detailState = {}) {
     const sharedCopy = getSharedCopy(getLocale())
+    const heroUrl = post.heroImage || post.images?.[0] || ''
 
     return `
         <article class="ct-post-detail">
@@ -13,7 +14,7 @@ export function renderPostDetailArticle(post, social, detailState = {}) {
                 <button class="ct-post-detail__follow${social.isFollowed ? ' is-active' : ''}" data-ct-post-follow type="button" aria-pressed="${social.isFollowed ? 'true' : 'false'}">${sharedCopy.actions.follow}</button>
             </header>
             <div class="ct-post-detail__hero">
-                <img class="ct-post-detail__image" src="${post.heroImage || post.images[0]}" alt="${post.title}">
+                ${heroUrl ? `<img class="ct-post-detail__image" src="${heroUrl}" alt="${post.title}">` : ''}
             </div>
             <div class="ct-post-detail__copy">
                 <h1 class="ct-post-detail__title">${post.title}</h1>

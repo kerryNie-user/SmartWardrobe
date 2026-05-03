@@ -18,7 +18,6 @@ graph TD
 ### 📂 Directories
 
 - **`apps/web-new/`**: Current main web app under active development.
-- **`apps/web-legacy/`**: (Deprecated) Legacy web app kept for comparison and fallback.
 - **`apps/android/`**: Android client.
 - **`services/backend_lite/`**: Lightweight JSON-backed backend for frontend-first development.
 - **`services/backend_legacy/`**: (Deprecated) Existing Python/MySQL backend.
@@ -64,7 +63,6 @@ zsh ./scripts/dev/start_new_server.sh
 - [Android Application Documentation](apps/android/README.md)
 - [User Guide](docs/product/USER_GUIDE.md)
 - [Server Setup](docs/product/SERVER_SETUP.md)
-- [Legacy Web App Documentation (Deprecated)](apps/web-legacy/README.md)
 
 ## 💻 Developer Guide
 

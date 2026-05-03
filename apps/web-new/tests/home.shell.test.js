@@ -358,10 +358,10 @@ runTest('New 首页应在定位成功后切换为解析出的范围天气摘要'
   dom.window.isSecureContext = true;
 
   global.window = dom.window;
+  global.fetch = dom.window.fetch;
   global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
-  global.fetch = dom.window.fetch;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;
@@ -422,10 +422,10 @@ runTest('New 首页在非安全上下文下应回退到 IP 城市天气摘要', 
   dom.window.isSecureContext = false;
 
   global.window = dom.window;
+  global.fetch = dom.window.fetch;
   global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
-  global.fetch = dom.window.fetch;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;
@@ -500,10 +500,10 @@ runTest('New 首页应把繁体地区名显示为简体范围文案', async () =
   dom.window.isSecureContext = true;
 
   global.window = dom.window;
+  global.fetch = dom.window.fetch;
   global.window.fetch = global.fetch;
   global.document = dom.window.document;
   global.localStorage = dom.window.localStorage;
-  global.fetch = dom.window.fetch;
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;

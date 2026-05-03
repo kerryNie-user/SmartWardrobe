@@ -222,16 +222,16 @@
 
 .ct-discovery-post__author {
     color: var(--ct-text);
+    display: block;
 }
 
 .ct-discovery-post__time {
-    margin-left: 10px;
+    margin-left: 0;
     color: var(--ct-text-soft);
+    display: block;
 }
 
-.ct-discovery-post__favorite,
-.ct-discovery-post__share,
-.ct-discovery-post__more {
+.ct-discovery-post__like {
     color: var(--ct-text-soft);
     width: 38px;
     height: 38px;
@@ -242,30 +242,40 @@
     background: rgba(255, 255, 255, 0.03);
 }
 
-.ct-discovery-post__more {
-    font-size: 22px;
-}
-
-.ct-discovery-post__favorite.is-active {
-    color: #171717;
-    background: linear-gradient(180deg, rgba(245, 239, 230, 0.98), rgba(231, 225, 214, 0.94));
-    border-color: rgba(247, 243, 236, 0.34);
-}
-
 .ct-discovery-post__media {
     display: grid;
-    gap: 1px;
-    background: rgba(247, 243, 236, 0.08);
+    gap: 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 22px;
 }
 
-.ct-discovery-post__media.is-split {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.ct-discovery-post__media.is-thumb-row3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ct-discovery-post__media.is-thumb-feature3 {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+    align-items: stretch;
+}
+
+.ct-discovery-post__feature-main {
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 14px;
+}
+
+.ct-discovery-post__feature-side {
+    display: grid;
+    gap: 8px;
 }
 
 .ct-discovery-post__frame {
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.04);
+    border-radius: 14px;
 }
 
 .ct-discovery-post__image {
@@ -276,16 +286,19 @@
 
 .ct-discovery-post__body {
     display: grid;
-    gap: 12px;
+    gap: 10px;
 }
 
-.ct-discovery-post__stats {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    color: var(--ct-text-soft);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+.ct-discovery-post__title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ct-discovery-post__description {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }

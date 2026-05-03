@@ -1,9 +1,14 @@
 import { getLocale, getSharedCopy } from '../lib/locale.js'
+import { renderLoadFailedPanel } from './errorPanel.js'
 
-export function renderFavoritesCollection(items, emptyState) {
+export function renderFavoritesCollection(items, emptyState, syncState = null) {
     const sharedCopy = getSharedCopy(getLocale())
 
     if (!items.length) {
+        if (syncState?.status === 'failed') {
+            const message = String(syncState?.error || '').trim()
+            return renderLoadFailedPanel(message, getLocale() === 'zh-CN' ? '收藏加载失败。' : 'Failed to load favorites.')
+        }
         return `
             <div class="ct-favorites-empty">
                 <span class="ct-eyebrow">${emptyState.eyebrow}</span>

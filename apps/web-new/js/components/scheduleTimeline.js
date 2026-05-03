@@ -1,9 +1,14 @@
 import { getLocale, getSharedCopy } from '../lib/locale.js';
 import { renderStatePanel } from './statePanel.js';
+import { renderLoadFailedPanel } from './errorPanel.js';
 
-export function renderScheduleTimeline(groups) {
+export function renderScheduleTimeline(groups, syncState = null) {
     const sharedCopy = getSharedCopy(getLocale());
     if (!groups.length) {
+        if (syncState?.status === 'failed') {
+            const message = String(syncState?.error || '').trim();
+            return renderLoadFailedPanel(message, getLocale() === 'zh-CN' ? '日程加载失败。' : 'Failed to load schedule.');
+        }
         return renderStatePanel({
             kind: 'empty',
             eyebrow: sharedCopy.misc.noEvents,

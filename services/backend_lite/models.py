@@ -111,12 +111,14 @@ class ContentPost(BaseModel):
     title = CharField(max_length=128)
     description = TextField()
     body_json = JSONField(null=True)
+    ai_json = JSONField(null=True)
     tags_json = JSONField(null=True)
     hero_image = CharField(max_length=256)
     images_json = JSONField(null=True)
     stats_likes = CharField(max_length=64, null=True)
     stats_comments = CharField(max_length=64, null=True)
     locale = CharField(max_length=16, index=True)
+    batch_id = CharField(max_length=64, null=True, index=True)
 
 class ContentStory(BaseModel):
     id = CharField(max_length=64, primary_key=True)

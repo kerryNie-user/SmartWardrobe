@@ -33,7 +33,7 @@
         }
       ]
     },
-    "postTrendStrip": {
+    "editorialTrendStrip": {
       "eyebrow": "Community Signals",
       "title": "Runway Analysis",
       "action": "Refresh",
@@ -80,7 +80,7 @@
         "image": "/uploads/shared/leather-craft-fabric.jpg"
       }
     ],
-    "communityPosts": [
+    "editorials": [
       {
         "id": "brutalist-basics",
         "author": "ELIAS.VAULT",
@@ -156,6 +156,7 @@
       }
     ],
     "searchPlaceholder": {
+      "editorials": "HOT SEARCHES · ARCHIVES · TREND NOTES",
       "hotspots": "HOT SEARCHES · TOKYO · TAILORING · CITY EDITS",
       "posts": "HOT SEARCHES · ARCHIVES · TREND NOTES"
     }
@@ -194,7 +195,7 @@
         }
       ]
     },
-    "postTrendStrip": {
+    "editorialTrendStrip": {
       "eyebrow": "社区信号",
       "title": "秀场解析",
       "action": "刷新",
@@ -241,7 +242,7 @@
         "image": "/uploads/shared/leather-craft-fabric.jpg"
       }
     ],
-    "communityPosts": [
+    "editorials": [
       {
         "id": "brutalist-basics",
         "author": "ELIAS.VAULT",
@@ -317,6 +318,7 @@
       }
     ],
     "searchPlaceholder": {
+      "editorials": "热门搜索 · 档案 · 趋势笔记",
       "hotspots": "热门搜索 · 东京 · 剪裁 · 城市选集",
       "posts": "热门搜索 · 档案 · 趋势笔记"
     }
