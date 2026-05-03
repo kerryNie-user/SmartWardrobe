@@ -123,6 +123,8 @@ commit_out.txt
 git_status.txt
 pytest_out.txt
 archive/
+docs/
 services/ai_blogger/output/
 services/ai_blogger/services/ai_blogger/output/
+AGENTS.md
 worktrees/
