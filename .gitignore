@@ -124,5 +124,6 @@ pytest_out.txt
 archive/
 docs/
 services/ai_blogger/output/
+services/backend_lite/
 AGENTS.md
 worktrees/
