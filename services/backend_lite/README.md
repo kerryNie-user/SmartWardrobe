@@ -69,4 +69,3 @@ zsh ./scripts/dev/start_lite_backend.sh
 ## 相关目录
 
 - 当前主线前端：`apps/web-new`
-- 历史后端：`services/backend_legacy`

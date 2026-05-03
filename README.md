@@ -20,7 +20,6 @@ graph TD
 - **`apps/web-new/`**: Current main web app under active development.
 - **`apps/android/`**: Android client.
 - **`services/backend_lite/`**: Lightweight JSON-backed backend for frontend-first development.
-- **`services/backend_legacy/`**: (Deprecated) Existing Python/MySQL backend.
 - **`docs/product/`**: Product-facing documentation.
 - **`docs/superpowers/`**: Planning and spec documents.
 - **`scripts/dev/`**: Start scripts for local development.
@@ -37,12 +36,6 @@ zsh ./scripts/dev/start_lite_backend.sh
 ```
 
 Default port is `8140` (set `LITE_BACKEND_PORT` to change).
-
-*(Deprecated)* Run the legacy integrated server for the previous stack:
-
-```bash
-zsh ./scripts/dev/start_new_server.sh
-```
 
 ## 🛠 Tech Stack
 

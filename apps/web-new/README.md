@@ -75,5 +75,4 @@ node apps/web-new/tests/api-connect.shell.test.js
 ## 相关目录
 
 - 轻量联调后端：`services/backend_lite`
-- 历史 Web：`apps/web-legacy`
 - Android 客户端：`apps/android`
