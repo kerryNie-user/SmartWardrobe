@@ -35,7 +35,5 @@ if [[ "${WITH_AI_WORKER}" == "1" ]]; then
   trap cleanup EXIT INT TERM
 fi
 
-python3 <<EOF
-from services.backend.server import main
-main()
-EOF
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+"${PYTHON_BIN}" -m services.backend.server
