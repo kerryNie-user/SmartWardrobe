@@ -20,9 +20,15 @@ fi
 
 echo -e "${YELLOW}Starting SmartWardrobe App Installation Process...${NC}"
 
+source "$SCRIPT_DIR/_adb_utils.sh"
+if ! adb_ensure_available; then
+    echo -e "${RED}Error: adb command not found. Please install Android SDK Platform-Tools.${NC}"
+    exit 1
+fi
+
 # Check for connected devices
 echo -e "${YELLOW}Scanning for connected Android devices...${NC}"
-DEVICE_COUNT=$(adb devices | grep -w "device" | wc -l)
+DEVICE_COUNT=$(adb_list_devices | wc -l)
 DEVICE_COUNT=$((DEVICE_COUNT)) # Trim whitespace
 
 if [ "$DEVICE_COUNT" -eq 0 ]; then
@@ -32,7 +38,7 @@ if [ "$DEVICE_COUNT" -eq 0 ]; then
 fi
 
 echo -e "${GREEN}Found $DEVICE_COUNT device(s).${NC}"
-adb devices -l
+"${ADB_BIN}" devices -l
 
 # Navigate to project root
 cd "$PROJECT_ROOT" || { echo -e "${RED}Error: Cannot find Android project directory.${NC}"; exit 1; }
@@ -53,7 +59,7 @@ if [ ! -f "$APK_PATH" ]; then
 fi
 
 # Install APK on all connected devices
-DEVICES=$(adb devices | grep -w "device" | awk '{print $1}')
+DEVICES=$(adb_list_devices)
 
 for DEVICE in $DEVICES; do
     echo -e "${YELLOW}Installing on device: $DEVICE${NC}"
@@ -62,12 +68,12 @@ for DEVICE in $DEVICES; do
     # echo "Uninstalling old version..."
     # adb -s "$DEVICE" uninstall "$PACKAGE_NAME"
 
-    if adb -s "$DEVICE" install -r "$APK_PATH"; then
+    if "${ADB_BIN}" -s "$DEVICE" install -r "$APK_PATH"; then
         echo -e "${GREEN}Installation Successful on $DEVICE!${NC}"
         
         # Launch the app
         echo "Launching app..."
-        adb -s "$DEVICE" shell monkey -p "$PACKAGE_NAME" -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
+        "${ADB_BIN}" -s "$DEVICE" shell monkey -p "$PACKAGE_NAME" -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
     else
         echo -e "${RED}Installation Failed on $DEVICE!${NC}"
     fi

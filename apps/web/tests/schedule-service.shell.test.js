@@ -29,9 +29,17 @@ runTest('scheduleService 应处理 hydrate、conflict 与 retry 语义', async (
   const { createScheduleService } = await import(modulePath);
 
   const localRepository = createMemoryLocalRepository({
-    upcoming: { groups: [{ day: '09', label: 'Apr / Wed', events: [{ id: 'event-1', title: 'Local Event', time: '09:00', location: 'Local', tags: [], reminderEnabled: true, version: 1, updatedAt: 1 }] }] },
-    travel: { groups: [] },
-    archive: { groups: [] }
+    tabs: [
+      { key: 'upcoming', label: 'Upcoming', active: true },
+      { key: 'travel', label: 'Travel', active: false },
+      { key: 'archive', label: 'Archive', active: false }
+    ],
+    form: { labels: {}, placeholders: {}, actions: {}, fallback: {} },
+    views: {
+      upcoming: { groups: [{ day: '09', label: 'Apr / Wed', events: [{ id: 'event-1', title: 'Local Event', time: '09:00', location: 'Local', tags: [], reminderEnabled: true, version: 1, updatedAt: 1 }] }] },
+      travel: { groups: [] },
+      archive: { groups: [] }
+    }
   });
 
   let failUpdateOnce = true;
@@ -93,7 +101,8 @@ runTest('scheduleService 应处理 hydrate、conflict 与 retry 语义', async (
   });
 
   const hydrated = await service.hydrate();
-  assert.strictEqual(hydrated.upcoming.groups[0].events[0].id, 'remote-1');
+  assert.strictEqual(hydrated.views.upcoming.groups[0].events[0].id, 'remote-1');
+  assert.strictEqual(hydrated.upcoming, undefined);
   assert.strictEqual(syncController.getState().status, 'synced');
 
   const conflictResult = await service.update('remote-1', {
@@ -115,6 +124,43 @@ runTest('scheduleService 应处理 hydrate、conflict 与 retry 语义', async (
   const retryResult = await service.retry();
   assert.ok(retryResult);
   assert.strictEqual(syncController.getState().status, 'synced');
+});
+
+runTest('scheduleService 应忽略 legacy 存储结构', async () => {
+  const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'scheduleService.js')).href}?service=legacy=1`;
+  const { createScheduleService } = await import(modulePath);
+
+  const localRepository = createMemoryLocalRepository({
+    upcoming: { groups: [{ day: '09', label: 'Apr / Wed', events: [{ id: 'event-1', title: 'Legacy Event', time: '09:00', location: 'Local', tags: [], reminderEnabled: true, version: 1, updatedAt: 1 }] }] },
+    travel: { groups: [] },
+    archive: { groups: [] }
+  });
+
+  const remoteRepository = {
+    async fetch() { return { ok: false }; },
+    async create() { return { ok: false }; },
+    async update() { return { ok: false }; },
+    async remove() { return { ok: false }; }
+  };
+
+  const syncController = {
+    markLoading() {},
+    markSyncing() {},
+    markSynced() {},
+    markFailed() {},
+    markStale() {},
+    markConflict() {},
+    getState() { return { status: 'idle' }; }
+  };
+
+  const service = createScheduleService({
+    locale: 'en-US',
+    localRepository,
+    remoteRepository,
+    syncController
+  });
+
+  assert.strictEqual(service.getState(), null);
 });
 
 async function main() {

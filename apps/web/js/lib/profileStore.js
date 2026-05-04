@@ -1,4 +1,4 @@
-import { createProfileLocalRepository, getFallbackProfile } from './profileLocalRepository.js';
+import { createProfileLocalRepository } from './profileLocalRepository.js';
 import { createProfileRemoteRepository } from './profileRemoteRepository.js';
 import { createProfileService } from './profileService.js';
 import { createSyncController } from './syncState.js';

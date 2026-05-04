@@ -17,9 +17,11 @@ runTest('scheduleSelectors 应产出 overview、delete candidate 与 dialog copy
   } = await import(modulePath);
 
   const scheduleState = {
-    upcoming: {
-      overview: { label: 'Upcoming' },
-      groups: [{ events: [{ id: 'review-1', title: 'Product Review' }, { id: 'review-2', title: 'Travel Review' }] }]
+    views: {
+      upcoming: {
+        overview: { label: 'Upcoming' },
+        groups: [{ events: [{ id: 'review-1', title: 'Product Review' }, { id: 'review-2', title: 'Travel Review' }] }]
+      }
     }
   };
 

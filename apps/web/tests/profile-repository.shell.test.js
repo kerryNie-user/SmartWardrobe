@@ -50,7 +50,7 @@ runTest('profile repositories 应归一 remote 结果并读写 local snapshot', 
 
   const localModulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'profileLocalRepository.js')).href}?local=1`;
   const remoteModulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'profileRemoteRepository.js')).href}?remote=1`;
-  const { createProfileLocalRepository, getFallbackProfile } = await import(localModulePath);
+  const { createProfileLocalRepository } = await import(localModulePath);
   const { createProfileRemoteRepository } = await import(remoteModulePath);
 
   const localRepository = createProfileLocalRepository({ locale: 'en-US' });
@@ -65,7 +65,6 @@ runTest('profile repositories 应归一 remote 结果并读写 local snapshot', 
   assert.strictEqual(persisted.name, 'Stored Nova');
   assert.strictEqual(localRepository.read().bio, 'Stored bio');
   assert.strictEqual(JSON.parse(dom.window.localStorage.getItem('ct_auth_session')).user.name, 'Stored Nova');
-  assert.strictEqual(getFallbackProfile('zh-CN').avatar, '/uploads/profile/elara-vance.jpg');
 
   const fetched = await remoteRepository.fetch();
   const saved = await remoteRepository.save({
@@ -78,6 +77,29 @@ runTest('profile repositories 应归一 remote 结果并读写 local snapshot', 
   assert.strictEqual(fetched.data.profile.name, 'Remote Nova');
   assert.strictEqual(saved.ok, true);
   assert.strictEqual(saved.data.profile.avatar, './next.jpg');
+});
+
+runTest('profileLocalRepository 不应回退读取 legacy currentUser', async () => {
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost:8140/' });
+  dom.window.localStorage.setItem('currentUser', JSON.stringify({
+    id: 'user-legacy',
+    name: 'Legacy Name',
+    bio: 'Legacy bio',
+    avatar: './legacy.jpg'
+  }));
+
+  global.window = dom.window;
+  global.document = dom.window.document;
+  global.localStorage = dom.window.localStorage;
+
+  const localModulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'profileLocalRepository.js')).href}?local=legacy=1`;
+  const { createProfileLocalRepository } = await import(localModulePath);
+  const localRepository = createProfileLocalRepository({ locale: 'en-US' });
+
+  const profile = localRepository.read('en-US');
+  assert.notStrictEqual(profile.name, 'Legacy Name');
+  assert.notStrictEqual(profile.bio, 'Legacy bio');
+  assert.notStrictEqual(profile.avatar, './legacy.jpg');
 });
 
 async function main() {

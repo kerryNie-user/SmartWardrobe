@@ -6,31 +6,37 @@ NC='\033[0m' # No Color
 
 PACKAGE_NAME="com.example.smartwardrobe"
 
-# Check for connected devices
-DEVICE_COUNT=$(adb devices | grep -w "device" | wc -l)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_adb_utils.sh"
+
+if ! adb_ensure_available; then
+    echo "Error: adb command not found. Please install Android SDK Platform-Tools."
+    exit 1
+fi
+
+DEVICE_COUNT=$(adb_list_devices | wc -l)
 
 if [ "$DEVICE_COUNT" -eq 0 ]; then
     echo "No devices connected."
     exit 1
 fi
 
-# If multiple devices, pick the first one (or could add selection logic)
-DEVICE=$(adb devices | grep -w "device" | head -n 1 | awk '{print $1}')
+DEVICE="$(adb_pick_device)"
 
 echo -e "${YELLOW}Streaming logs for $PACKAGE_NAME on device $DEVICE...${NC}"
 echo "Press Ctrl+C to stop."
 
 # Clear old logs
-adb -s "$DEVICE" logcat -c
+"${ADB_BIN}" -s "$DEVICE" logcat -c
 
 # Filter logs by package name (using grep as older adb versions don't support --pid filtering well directly)
 # Getting PID first
-PID=$(adb -s "$DEVICE" shell pidof -s "$PACKAGE_NAME")
+PID=$("${ADB_BIN}" -s "$DEVICE" shell pidof -s "$PACKAGE_NAME")
 
 if [ -z "$PID" ]; then
     echo "App is not running. Waiting for process..."
-    adb -s "$DEVICE" logcat | grep "$PACKAGE_NAME"
+    "${ADB_BIN}" -s "$DEVICE" logcat | grep "$PACKAGE_NAME"
 else
     echo "Process ID: $PID"
-    adb -s "$DEVICE" logcat --pid="$PID" *:D
+    "${ADB_BIN}" -s "$DEVICE" logcat --pid="$PID" *:D
 fi

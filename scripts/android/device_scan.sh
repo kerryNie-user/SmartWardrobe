@@ -7,14 +7,16 @@ NC='\033[0m' # No Color
 
 echo -e "${YELLOW}Scanning for connected Android devices...${NC}"
 
-# Check if adb is installed
-if ! command -v adb &> /dev/null; then
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_adb_utils.sh"
+
+if ! adb_ensure_available; then
     echo "Error: adb command not found. Please install Android SDK Platform-Tools."
     exit 1
 fi
 
 # Get device list
-DEVICES=$(adb devices -l | grep -w "device")
+DEVICES=$("${ADB_BIN}" devices -l | grep -w "device")
 
 if [ -z "$DEVICES" ]; then
     echo "No devices connected."
