@@ -103,21 +103,7 @@ function normalizeStoredSchedule(stored) {
             form: unwrapped.form || EMPTY_FORM
         }
     }
-
-    const legacyTabs = ['upcoming', 'travel', 'archive']
-    const hasLegacyViews = legacyTabs.some((key) => Boolean(unwrapped[key]))
-    if (!hasLegacyViews) return null
-
-    const legacyViews = {}
-    legacyTabs.forEach((key) => {
-        legacyViews[key] = unwrapped[key] ? normalizeView(unwrapped[key]) : { groups: [] }
-    })
-
-    return {
-        ...unwrapped,
-        views: legacyViews,
-        form: unwrapped.form || EMPTY_FORM
-    }
+    return null
 }
 
 function normalizeEventPayload(evt) {
@@ -192,17 +178,6 @@ async function fetchScheduleContent(locale) {
     return response.data?.content || response.data || null
 }
 
-function withLegacyAliases(state) {
-    if (!state || typeof state !== 'object') return state
-    if (!state.views || typeof state.views !== 'object') return state
-    return {
-        ...state,
-        upcoming: state.views.upcoming,
-        travel: state.views.travel,
-        archive: state.views.archive
-    }
-}
-
 export function createScheduleService({
     locale = 'en-US',
     localRepository,
@@ -239,23 +214,23 @@ export function createScheduleService({
 
             if (!itemsResponse.ok) {
                 syncController.markStale(itemsResponse.message || itemsResponse.error)
-                currentState = withLegacyAliases(localData || (content ? {
+                currentState = localData || (content ? {
                     ...content,
                     views: normalizeViews(content.views || {}),
                     form: content.form || EMPTY_FORM,
                     tabs: content.tabs || DEFAULT_TABS
-                } : null))
+                } : null)
                 if (currentState) onStateChange(nextLocale)
                 return currentState
             }
 
             const eventViews = buildViewsFromItems(itemsResponse.data?.items || [])
             const mergedViews = mergeViews(localData?.views || content?.views, eventViews)
-            currentState = withLegacyAliases({
+            currentState = {
                 tabs: localData?.tabs || content?.tabs || DEFAULT_TABS,
                 form: localData?.form || content?.form || EMPTY_FORM,
                 views: mergedViews
-            })
+            }
 
             localRepository?.write(currentState, nextLocale)
             onStateChange(nextLocale)

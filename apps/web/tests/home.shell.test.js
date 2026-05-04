@@ -529,26 +529,28 @@ runTest('New 首页日程卡片应读取持久化 Schedule 摘要', async () => 
     version: 1,
     users: {
       guest: {
-        upcoming: {
-          groups: [
-            {
-              day: '04',
-              label: 'Apr / Fri',
-              events: [
-                {
-                  id: 'atelier-review',
-                  time: '08:30 AM — 09:30 AM',
-                  title: 'Atelier Review',
-                  location: 'Lower East Studio',
-                  image: '/uploads/shared/editorial-look-02.jpg',
-                  tags: ['Outerwear']
-                }
-              ]
-            }
-          ]
-        },
-        travel: { groups: [] },
-        archive: { groups: [] }
+        views: {
+          upcoming: {
+            groups: [
+              {
+                day: '04',
+                label: 'Apr / Fri',
+                events: [
+                  {
+                    id: 'atelier-review',
+                    time: '08:30 AM — 09:30 AM',
+                    title: 'Atelier Review',
+                    location: 'Lower East Studio',
+                    image: '/uploads/shared/editorial-look-02.jpg',
+                    tags: ['Outerwear']
+                  }
+                ]
+              }
+            ]
+          },
+          travel: { groups: [] },
+          archive: { groups: [] }
+        }
       }
     }
   }));
@@ -581,43 +583,45 @@ runTest('New 首页日程卡片应读取真实最近的跨 tab 事件', async ()
     version: 1,
     users: {
       guest: {
-        upcoming: {
-          groups: [
-            {
-              day: '20',
-              label: 'Apr / Sun',
-              events: [
-                {
-                  id: 'late-upcoming',
-                  time: '11:00 AM — 12:00 PM',
-                  title: 'Late Upcoming',
-                  location: 'Studio West',
-                  image: '/uploads/shared/editorial-look-02.jpg',
-                  tags: ['Review']
-                }
-              ]
-            }
-          ]
-        },
-        travel: {
-          groups: [
-            {
-              day: '03',
-              label: 'Apr / Thu',
-              events: [
-                {
-                  id: 'early-travel',
-                  time: '07:30 AM — 09:00 AM',
-                  title: 'Early Travel',
-                  location: 'Terminal 1',
-                  image: '/uploads/shared/travel-look.jpg',
-                  tags: ['Travel']
-                }
-              ]
-            }
-          ]
-        },
-        archive: { groups: [] }
+        views: {
+          upcoming: {
+            groups: [
+              {
+                day: '20',
+                label: 'Apr / Sun',
+                events: [
+                  {
+                    id: 'late-upcoming',
+                    time: '11:00 AM — 12:00 PM',
+                    title: 'Late Upcoming',
+                    location: 'Studio West',
+                    image: '/uploads/shared/editorial-look-02.jpg',
+                    tags: ['Review']
+                  }
+                ]
+              }
+            ]
+          },
+          travel: {
+            groups: [
+              {
+                day: '03',
+                label: 'Apr / Thu',
+                events: [
+                  {
+                    id: 'early-travel',
+                    time: '07:30 AM — 09:00 AM',
+                    title: 'Early Travel',
+                    location: 'Terminal 1',
+                    image: '/uploads/shared/travel-look.jpg',
+                    tags: ['Travel']
+                  }
+                ]
+              }
+            ]
+          },
+          archive: { groups: [] }
+        }
       }
     }
   }));
@@ -682,25 +686,27 @@ runTest('New 首页推荐应统一接入 favorites、wardrobe、schedule、setti
     version: 1,
     users: {
       guest: {
-        upcoming: {
-          groups: [
-            {
-              day: '09',
-              label: 'Apr / Wed',
-              events: [
-                {
-                  id: 'review-call',
-                  time: '08:30 AM — 09:30 AM',
-                  title: 'Product Review',
-                  location: 'SoHo Studio',
-                  tags: ['Outerwear']
-                }
-              ]
-            }
-          ]
-        },
-        travel: { groups: [] },
-        archive: { groups: [] }
+        views: {
+          upcoming: {
+            groups: [
+              {
+                day: '09',
+                label: 'Apr / Wed',
+                events: [
+                  {
+                    id: 'review-call',
+                    time: '08:30 AM — 09:30 AM',
+                    title: 'Product Review',
+                    location: 'SoHo Studio',
+                    tags: ['Outerwear']
+                  }
+                ]
+              }
+            ]
+          },
+          travel: { groups: [] },
+          archive: { groups: [] }
+        }
       }
     }
   }));

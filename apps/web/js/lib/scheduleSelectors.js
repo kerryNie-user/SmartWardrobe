@@ -5,7 +5,6 @@ function countEvents(groups = []) {
 function resolveViews(scheduleState, views) {
     if (views && typeof views === 'object') return views
     if (scheduleState?.views && typeof scheduleState.views === 'object') return scheduleState.views
-    if (scheduleState && typeof scheduleState === 'object') return scheduleState
     return {}
 }
 

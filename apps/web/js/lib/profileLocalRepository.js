@@ -1,12 +1,8 @@
-import { getStoredAuthSession, readAuthJson, syncStoredAuthUser } from './authIdentity.js'
+import { getStoredAuthSession, syncStoredAuthUser } from './authIdentity.js'
 import { getCurrentUserScope, readUserScopedValue, writeUserScopedValue } from './userScopedStorage.js'
 import { getDefaultProfile, normalizeProfile } from './profileService.js'
 
 const PROFILE_KEY = 'ct_profile'
-
-export function getFallbackProfile(locale = 'en-US') {
-    return getDefaultProfile(locale)
-}
 
 export function createProfileLocalRepository({ locale = 'en-US', scope = null } = {}) {
     function resolveScope(nextScope) {
@@ -19,13 +15,12 @@ export function createProfileLocalRepository({ locale = 'en-US', scope = null } 
             const resolvedScope = resolveScope(nextScope)
             const storedProfile = readUserScopedValue(PROFILE_KEY, () => null, resolvedScope)
             const sessionUser = getStoredAuthSession(resolvedScope.storage)?.user
-            const legacyUser = readAuthJson('currentUser', resolvedScope.storage)
-            const fallback = getFallbackProfile(resolvedLocale)
+            const fallback = getDefaultProfile(resolvedLocale)
 
             return {
-                name: storedProfile?.name || sessionUser?.name || legacyUser?.name || fallback.name,
-                bio: storedProfile?.bio || sessionUser?.bio || legacyUser?.bio || fallback.bio,
-                avatar: storedProfile?.avatar || sessionUser?.avatar || legacyUser?.avatar || fallback.avatar
+                name: storedProfile?.name || sessionUser?.name || fallback.name,
+                bio: storedProfile?.bio || sessionUser?.bio || fallback.bio,
+                avatar: storedProfile?.avatar || sessionUser?.avatar || fallback.avatar
             }
         },
         write(profile, nextLocale = locale, nextScope) {

@@ -238,51 +238,53 @@ runTest('New Me Schedule 摘要应读取持久化日程统计与下一条事件'
     version: 1,
     users: {
       guest: {
-        upcoming: {
-          groups: [
-            {
-              day: '04',
-              label: 'Apr / Fri',
-              events: [
-                {
-                  id: 'atelier-review',
-                  time: '08:30 AM — 09:30 AM',
-                  title: 'Atelier Review',
-                  location: 'Lower East Studio',
-                  image: '/uploads/shared/editorial-look-02.jpg',
-                  tags: ['Outerwear']
-                },
-                {
-                  id: 'fabric-pull',
-                  time: '02:00 PM — 03:00 PM',
-                  title: 'Fabric Pull',
-                  location: 'Canal Archive',
-                  image: '/uploads/shared/leather-craft-fabric.jpg',
-                  tags: ['Material']
-                }
-              ]
-            }
-          ]
-        },
-        travel: {
-          groups: [
-            {
-              day: '09',
-              label: 'Apr / Wed',
-              events: [
-                {
-                  id: 'buyer-trip',
-                  time: '09:00 AM — 01:00 PM',
-                  title: 'Buyer Trip',
-                  location: 'CDG Terminal 2',
-                  image: '/uploads/shared/travel-look.jpg',
-                  tags: ['Travel']
-                }
-              ]
-            }
-          ]
-        },
-        archive: { groups: [] }
+        views: {
+          upcoming: {
+            groups: [
+              {
+                day: '04',
+                label: 'Apr / Fri',
+                events: [
+                  {
+                    id: 'atelier-review',
+                    time: '08:30 AM — 09:30 AM',
+                    title: 'Atelier Review',
+                    location: 'Lower East Studio',
+                    image: '/uploads/shared/editorial-look-02.jpg',
+                    tags: ['Outerwear']
+                  },
+                  {
+                    id: 'fabric-pull',
+                    time: '02:00 PM — 03:00 PM',
+                    title: 'Fabric Pull',
+                    location: 'Canal Archive',
+                    image: '/uploads/shared/leather-craft-fabric.jpg',
+                    tags: ['Material']
+                  }
+                ]
+              }
+            ]
+          },
+          travel: {
+            groups: [
+              {
+                day: '09',
+                label: 'Apr / Wed',
+                events: [
+                  {
+                    id: 'buyer-trip',
+                    time: '09:00 AM — 01:00 PM',
+                    title: 'Buyer Trip',
+                    location: 'CDG Terminal 2',
+                    image: '/uploads/shared/travel-look.jpg',
+                    tags: ['Travel']
+                  }
+                ]
+              }
+            ]
+          },
+          archive: { groups: [] }
+        }
       }
     }
   }));
