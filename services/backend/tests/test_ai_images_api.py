@@ -12,7 +12,9 @@ from services.backend.init_db import init_db
 
 class AiImagesApiTest(unittest.TestCase):
     def setUp(self):
-        os.environ["SQLITE_DB"] = str(Path(tempfile.mkdtemp()) / "test.db")
+        self.db_path = Path(tempfile.mkdtemp()) / "test.db"
+        os.environ["SQLITE_DB"] = str(self.db_path)
+        db.init(str(self.db_path))
         if db.is_closed():
             db.connect()
         init_db()
@@ -43,10 +45,8 @@ class AiImagesApiTest(unittest.TestCase):
         
         if not db.is_closed():
             db.close()
-        
-        db_path = os.environ.get("SQLITE_DB")
-        if db_path and os.path.exists(db_path):
-            os.remove(db_path)
+        if self.db_path.exists():
+            os.remove(self.db_path)
 
     def request_file(self, path):
         req = request.Request(f'{self.base_url}{path}', method='GET')

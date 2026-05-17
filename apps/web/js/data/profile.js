@@ -79,7 +79,7 @@ export function getProfilePageContent(locale) {
                 bio: 'Bio'
             },
             placeholders: {
-                avatar: '/uploads/shared/elara-vance.jpg',
+                avatar: '/uploads/profile/elara-vance.jpg',
                 name: 'Elara Vance',
                 bio: 'Write a few lines about your silhouette bias, city mood, and material focus.'
             },

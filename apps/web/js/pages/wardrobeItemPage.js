@@ -181,13 +181,20 @@ export function renderWardrobeItemPage() {
         }
 
         imagePreview = result.src
-        const preview = formRoot.querySelector('[data-ct-wardrobe-image-preview]')
-        const previewShell = preview?.closest('.ct-wardrobe-item-preview')
-        if (preview) {
-            preview.setAttribute('src', imagePreview)
-            preview.setAttribute('alt', file.name || currentItem.title || getWardrobeContent(locale).form.placeholders.title)
+        const previewShell = formRoot.querySelector('.ct-wardrobe-item-preview')
+        if (!previewShell) return
+
+        let preview = formRoot.querySelector('[data-ct-wardrobe-image-preview]')
+        if (!preview) {
+            preview = document.createElement('img')
+            preview.className = 'ct-wardrobe-item-preview__image'
+            preview.setAttribute('data-ct-wardrobe-image-preview', '')
+            previewShell.appendChild(preview)
         }
-        previewShell?.removeAttribute('hidden')
+
+        preview.setAttribute('src', imagePreview)
+        preview.setAttribute('alt', file.name || currentItem.title || getWardrobeContent(locale).form.placeholders.title)
+        previewShell.removeAttribute('hidden')
     }
     formRoot.addEventListener('change', handleChange)
     listenerCleanups.push(() => formRoot.removeEventListener('change', handleChange))

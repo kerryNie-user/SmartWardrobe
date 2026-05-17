@@ -82,6 +82,26 @@ async function main() {
     });
   });
 
+  await runTest('New Wardrobe Item 页面初始状态不应渲染空 src 预览图', async () => {
+    const htmlPath = path.join(__dirname, '..', 'wardrobe-item.html');
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    const dom = new JSDOM(html, { url: 'http://localhost/wardrobe-item.html' });
+
+    global.window = dom.window;
+    global.document = dom.window.document;
+    global.localStorage = dom.window.localStorage;
+    global.CustomEvent = dom.window.CustomEvent;
+    global.HTMLElement = dom.window.HTMLElement;
+    global.Node = dom.window.Node;
+    global.FormData = dom.window.FormData;
+
+    const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'wardrobeItemPage.js')).href}?initial-preview=1`;
+    const { renderWardrobeItemPage } = await import(modulePath);
+    renderWardrobeItemPage();
+
+    assert.strictEqual(dom.window.document.querySelector('[data-ct-wardrobe-image-preview]'), null);
+  });
+
   await runTest('New Wardrobe Item 页面应支持新增模式保存到 store', async () => {
     const htmlPath = path.join(__dirname, '..', 'wardrobe-item.html');
     const html = fs.readFileSync(htmlPath, 'utf8');

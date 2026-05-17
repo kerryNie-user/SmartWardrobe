@@ -16,7 +16,7 @@ export function renderWardrobeItemForm(config) {
                         <label for="ct-wardrobe-item-upload">${getLocale() === 'zh-CN' ? '上传图片' : 'Upload Image'}</label>
                         <input id="ct-wardrobe-item-upload" name="imageFile" type="file" accept="image/*">
                         <div class="ct-wardrobe-item-preview"${config.item.image ? '' : ' hidden'}>
-                            <img class="ct-wardrobe-item-preview__image" data-ct-wardrobe-image-preview src="${config.item.image || ''}" alt="${config.item.title || config.form.placeholders.title}">
+                            ${config.item.image ? `<img class="ct-wardrobe-item-preview__image" data-ct-wardrobe-image-preview src="${config.item.image}" alt="${config.item.title || config.form.placeholders.title}">` : ''}
                         </div>
                     </div>
                     <div class="ct-wardrobe-form__field is-full">

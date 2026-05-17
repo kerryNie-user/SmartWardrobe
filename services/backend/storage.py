@@ -25,8 +25,14 @@ DEBUG_USER = {
     'name': 'API Nova',
     'emailOrMobile': 'api-nova@example.com',
     'password': 'password123',
-    'avatar': './images/profile/elara-vance.jpg',
+    'avatar': '/uploads/profile/elara-vance.jpg',
     'bio': 'Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies.'
+}
+
+DEFAULT_PROFILE_AVATAR = '/uploads/profile/elara-vance.jpg'
+LEGACY_PROFILE_AVATARS = {
+    './images/profile/elara-vance.jpg',
+    '/uploads/shared/elara-vance.jpg'
 }
 
 DEFAULT_SETTINGS = {
@@ -89,6 +95,12 @@ class JsonDatabase:
             db.execute_sql('ALTER TABLE scheduleitem ADD COLUMN image VARCHAR(256);')
         except Exception:
             return
+
+    def _normalize_profile_avatar(self, value: str | None) -> str:
+        avatar = str(value or '').strip()
+        if not avatar or avatar in LEGACY_PROFILE_AVATARS:
+            return DEFAULT_PROFILE_AVATAR
+        return avatar
 
     def _ensure_debug_user(self):
         try:
@@ -345,7 +357,7 @@ class JsonDatabase:
             name=payload.get('name') or 'Closet Twin',
             emailOrMobile=payload['emailOrMobile'],
             password=payload.get('password') or '',
-            avatar='./images/profile/elara-vance.jpg',
+            avatar=DEFAULT_PROFILE_AVATAR,
             bio=''
         )
         
@@ -372,7 +384,7 @@ class JsonDatabase:
             'id': user.id,
             'name': user.name or 'Closet Twin',
             'emailOrMobile': user.emailOrMobile or '',
-            'avatar': user.avatar or './images/profile/elara-vance.jpg',
+            'avatar': self._normalize_profile_avatar(user.avatar),
             'bio': user.bio or ''
         }
 
@@ -382,13 +394,13 @@ class JsonDatabase:
             return {
                 'name': user.name or 'Closet Twin',
                 'bio': user.bio or '',
-                'avatar': user.avatar or './images/profile/elara-vance.jpg'
+                'avatar': self._normalize_profile_avatar(user.avatar)
             }
         except DoesNotExist:
             return {
                 'name': 'Closet Twin',
                 'bio': '',
-                'avatar': './images/profile/elara-vance.jpg'
+                'avatar': DEFAULT_PROFILE_AVATAR
             }
 
     def save_profile(self, user_id, payload):
@@ -396,12 +408,12 @@ class JsonDatabase:
             user = User.get(User.id == user_id)
             user.name = payload.get('name') or 'Closet Twin'
             user.bio = payload.get('bio') or ''
-            user.avatar = payload.get('avatar') or './images/profile/elara-vance.jpg'
+            user.avatar = self._normalize_profile_avatar(payload.get('avatar'))
             user.save()
             return {
                 'name': user.name,
                 'bio': user.bio,
-                'avatar': user.avatar
+                'avatar': self._normalize_profile_avatar(user.avatar)
             }
         except DoesNotExist:
             raise LookupError('ACCOUNT_NOT_FOUND')

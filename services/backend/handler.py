@@ -48,6 +48,12 @@ def create_handler(database, directory):
             logging.getLogger("backend.http").info("%s - %s", self.address_string(), format % args)
 
         def do_GET(self):
+            if self.path == '/favicon.ico':
+                self.send_response(HTTPStatus.NO_CONTENT)
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                return
+
             if self.path.startswith('/api/'):
                 self.handle_api('GET')
                 return

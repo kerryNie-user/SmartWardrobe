@@ -1,3 +1,4 @@
+import socket
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 import logging
@@ -8,13 +9,22 @@ from .handler import create_handler
 from .storage import JsonDatabase
 
 
+class SmartWardrobeHTTPServer(ThreadingHTTPServer):
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(self.server_address)
+        self.server_name = self.server_address[0]
+        self.server_port = self.socket.getsockname()[1]
+
+
 def create_server(host=None, port=None, web_root=None, data_file=None):
     resolved_web_root = Path(web_root or config.WEB_ROOT).resolve()
     resolved_data_file = Path(data_file or config.DATA_FILE).resolve()
     db_file = resolved_data_file.with_name('smartwardrobe.db')
+    db_file.parent.mkdir(parents=True, exist_ok=True)
     database = JsonDatabase(db_file)
     handler_class = create_handler(database, resolved_web_root)
-    return ThreadingHTTPServer((
+    return SmartWardrobeHTTPServer((
         config.HOST if host is None else host,
         config.PORT if port is None else port
     ), handler_class)
