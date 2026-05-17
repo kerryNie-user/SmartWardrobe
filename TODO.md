@@ -1,3 +1,57 @@
+# TODO: SmartWardrobe 架构重构（解耦、接口最小化、目录整理）
+
+## 目标
+把当前代码从“功能可用”整理成“边界清晰、模块解耦、目录优雅”的结构：
+
+- 每个功能模块只向外暴露必要且足够简单的接口。
+- 页面层、状态层、服务层、持久化层的依赖方向单向清晰。
+- 目录结构按职责收拢，同类文件集中，入口明确，避免散落和堆砌。
+- 兼容逻辑保留，但必须收敛在迁移层或 repository 层，不向上扩散。
+
+## 核心要求
+
+- [x] 统一模块出口，只保留 `read / hydrate / save / retry / subscribe` 这类必要接口。
+- [x] 页面只依赖 contract、store 和少量 action，不直接穿透到 repository 或底层存储。
+- [x] 将默认值、兼容字段、旧路径映射、数据归一从页面和组件中移走。
+- [x] 将 view model 聚合、同步状态、错误语义、空态语义拆成可复用层。
+- [x] 收紧目录职责，让页面、组件、data、lib、backend、tests 各归其位。
+- [x] 保持每个功能域只有一个清晰主入口，避免同一能力在多个文件里重复出口。
+
+## 目录整理原则
+
+- `apps/web/js/pages/`：只放页面壳层与路由编排。
+- `apps/web/js/components/`：只放纯渲染组件。
+- `apps/web/js/lib/`：只放 domain store、service、selector、navigation、sync、auth 等复用逻辑。
+- `apps/web/js/data/`：只放静态文案、页面 copy、种子数据。
+- `services/backend/`：按启动、路由、存储、模型、测试分层，不把业务逻辑散进入口文件。
+- `tests/`：按页面、store、contract、API 分区，避免测试命名和职责混乱。
+
+## 实施步骤（TDD）
+
+- [x] 1. 先盘点当前所有对外接口，列出真正需要暴露的最小 API。
+- [x] 2. 为每个 domain 定义统一的 module contract。
+- [x] 3. 将页面层和数据层之间的直接穿透调用收口到 store / service。
+- [x] 4. 按目录职责重排文件，确保模块归属一目了然。
+- [x] 5. 为关键目录边界补测试，防止以后重新耦合。
+
+## 已开始的重构切片
+
+- [x] 1. 将 `apps/web/js/lib/pageContracts.js` 收敛为稳定公开出口。
+- [x] 2. 将 page contract 实现按页面域拆入 `apps/web/js/lib/pageContracts/`。
+- [x] 3. 抽出 shared contract 语义，统一 tab、sync、loading、empty、error 规则。
+- [x] 4. 将 `favoritesStore.js` 拆成 facade + local repository + remote repository + service。
+- [x] 5. 将 `wardrobeStore.js` 拆成 facade + local repository + remote repository + service。
+- [x] 6. 补充 `ARCHITECTURE.md`，明确公开入口、内部模块与禁止依赖。
+- [x] 7. 新增 `apps/web/tests/module-boundaries.shell.test.js`，防止页面直接依赖内部实现。
+- [x] 8. 将 `services/backend/handler.py` 拆成 HTTP 适配层、API 路由层、文件资产层和响应契约层。
+- [x] 9. 新增后端边界测试，防止 handler 重新堆叠业务路由与文件读取逻辑。
+- [x] 10. 将 `services/backend/http/` 收拢为后端 HTTP 内部模块，避免路由、资产、契约散落在 backend 顶层。
+- [x] 11. 将 `storage.py` 收敛为 `JsonDatabase` facade，将账号、日程、收藏、发现、媒体、衣橱、编辑运营和 schema 拆入 `storage_domains/`。
+- [x] 12. 将模型注册表集中到 `models.py` 的 `ALL_MODELS`，避免初始化脚本和存储层重复维护表清单。
+- [x] 13. 更新后端 README 与边界测试，覆盖整个 `services/backend` 目录的职责划分。
+
+---
+
 # TODO: AI Blogger 架构升级（支持多频道画像）
 
 ## 目标

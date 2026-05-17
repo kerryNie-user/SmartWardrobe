@@ -149,3 +149,10 @@ class RecommendLook(BaseModel):
     detail_tags_json = JSONField(null=True)
     breakdown_json = JSONField(null=True)
     locale = CharField(max_length=16, index=True)
+
+
+ALL_MODELS = [
+    User, UserSetting, WardrobeItem, ScheduleItem,
+    Favorite, SocialEngagement, DiscoveryComment,
+    MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem, RecommendLook
+]

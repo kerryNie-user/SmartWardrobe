@@ -6,7 +6,7 @@
 
 - 优先服务前端开发与联调
 - 不依赖 MySQL
-- 使用本地 JSON 文件持久化
+- 使用本地 SQLite 持久化
 - 同源服务 `apps/web` 与 `/api/*`
 
 ## 启动
@@ -22,11 +22,13 @@ zsh ./scripts/dev/start_backend.sh
 - `http://127.0.0.1:8140/index.html`
 - `http://127.0.0.1:8140/api/health`
 
-## 默认数据文件
+## 默认数据
 
-- `services/backend/data/db.json`
+- 开发数据库：`services/backend/data/smartwardrobe.db`
+- 静态种子：`services/backend/data/*_seed.json`
+- 示例媒体：`services/backend/uploads/`
 
-这个文件可以直接删除后重建，适合前端联调、重置账号数据、验证 hydrate/writeback。
+`BACKEND_DATA_FILE` 当前用于确定数据目录，运行时实际 SQLite 文件会落在同目录的 `smartwardrobe.db`。
 
 ## 环境变量
 
@@ -46,6 +48,19 @@ zsh ./scripts/dev/start_backend.sh
 - `GET/POST/DELETE /api/favorites`
 - `GET/POST/PUT/DELETE /api/wardrobe`
 
+## 目录职责
+
+- `server.py`：进程入口、HTTPServer 组装、日志配置。
+- `handler.py`：HTTP 适配器，只做请求分发、响应输出、错误映射。
+- `http/`：API 路由、文件资产服务、响应契约。
+- `storage.py`：`JsonDatabase` 兼容 facade，只组装数据库和 domain mixin。
+- `storage_domains/`：按业务域拆分存储逻辑。
+- `database.py`：Peewee 数据库绑定。
+- `models.py`：Peewee 模型和 `ALL_MODELS` 注册表。
+- `init_db.py`：创建表的维护脚本。
+- `migrate_content_seed.py`：将 JSON seed 迁入 SQLite 的维护脚本。
+- `tests/`：后端 API、启动契约、边界和数据契约测试。
+
 ## 用户识别方式
 
 - `X-User-Id`
@@ -64,7 +79,6 @@ zsh ./scripts/dev/start_backend.sh
 - 正式生产环境
 - 严格鉴权
 - 复杂并发写冲突
-- 完整 service/repository 架构验证
 
 ## 相关目录
 

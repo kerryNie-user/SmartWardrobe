@@ -641,6 +641,15 @@ runTest('New Schedule 删除应先打开自定义确认弹层再执行删除', a
   assert.ok(!titles.includes('Product Review'), 'Event should be removed only after confirming delete');
 });
 
+runTest('Schedule 删除确认弹层应使用固定高层级样式', () => {
+  const cssPath = path.join(__dirname, '..', 'css', 'components.css');
+  const css = fs.readFileSync(cssPath, 'utf8');
+
+  assert.ok(/\.ct-dialog-backdrop\s*\{[\s\S]*position:\s*fixed/.test(css), 'Dialog backdrop should be fixed');
+  assert.ok(/\.ct-dialog-backdrop\s*\{[\s\S]*z-index:\s*80/.test(css), 'Dialog backdrop should sit above the bottom nav');
+  assert.ok(/\.ct-dialog\s*\{[\s\S]*max-height:\s*calc\(100dvh - 48px\)/.test(css), 'Dialog panel should stay within the viewport');
+});
+
 async function main() {
   for (const test of testQueue) {
     try {

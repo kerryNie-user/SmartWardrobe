@@ -5,25 +5,15 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from services.backend.database import db
-from services.backend.models import (
-    User, UserSetting, WardrobeItem, ScheduleItem,
-    Favorite, SocialEngagement, DiscoveryComment,
-    MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem, RecommendLook
-)
+from services.backend.models import ALL_MODELS
 
 def init_db():
     print("Connecting to database...")
     db.connect(reuse_if_open=True)
-    
-    models = [
-        User, UserSetting, WardrobeItem, ScheduleItem,
-        Favorite, SocialEngagement, DiscoveryComment,
-        MediaRecord, MediaUpload, ContentPost, ContentStory, TrendStripItem, RecommendLook
-    ]
-    
+
     print("Creating tables...")
-    db.create_tables(models)
-    
+    db.create_tables(ALL_MODELS)
+
     print("Database initialization complete.")
 
 if __name__ == '__main__':
