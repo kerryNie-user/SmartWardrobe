@@ -16,7 +16,9 @@ function renderPostCards(items) {
     return `
         <ul class="ct-discovery-posts">
             ${items.map((item) => {
-                const images = Array.isArray(item.images) ? item.images : [];
+                const images = (Array.isArray(item.images) ? item.images : [])
+                    .map((url) => String(url || '').trim())
+                    .filter(Boolean);
                 const thumbImages = images.slice(0, 3);
                 const media = thumbImages.length
                     ? `

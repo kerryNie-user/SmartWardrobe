@@ -16,6 +16,8 @@ class TestProfileLoading(unittest.TestCase):
         self.assertIn("严格要求必须是 **10** 个段落", outline_prompt)
         self.assertIn("\"穿搭实操\"", outline_prompt)
         self.assertIn("lookbook_cards_3", outline_prompt)
+        self.assertNotIn("pull_quote_center", outline_prompt)
+        self.assertNotIn("tip_box_rules", outline_prompt)
 
     def test_custom_profile_loads_fashion_news(self):
         runner = PromptChainRunner(prompts_dir="services/ai_blogger/agents", profile_name="fashion_news")

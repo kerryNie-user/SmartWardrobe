@@ -8,7 +8,7 @@ def load_config(config_path="services/ai_blogger/config.json"):
     """
     default_config = {
         "llm_provider": "real",
-        "image_provider": "unsplash_source",
+        "image_provider": "auto",
         "output_dir": "services/ai_blogger/output",
         "rss_feeds": [
             "https://news.google.com/rss/search?q=haute%20couture%20OR%20fashion%20week%20OR%20runway%20show&hl=en-US&gl=US&ceid=US:en",

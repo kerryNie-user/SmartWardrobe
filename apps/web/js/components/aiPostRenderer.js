@@ -28,7 +28,7 @@ function renderListBullets(text) {
     return renderParagraphText(text)
 }
 
-function renderGallery(urls = [], alts = [], columns = 3) {
+function renderGallery(urls = [], alts = [], columns = 3, defaultAlt = '') {
     const safeUrls = (urls || []).map((url) => String(url || '').trim()).filter(Boolean)
     if (!safeUrls.length) return ''
     const safeAlts = (alts || []).map((alt) => String(alt || '').trim())
@@ -36,13 +36,13 @@ function renderGallery(urls = [], alts = [], columns = 3) {
     return `
         <div class="${className}">
             ${safeUrls.map((url, idx) => `
-                <img class="ct-ai-image" src="${escapeHtml(url)}" alt="${escapeHtml(safeAlts[idx] || '')}" loading="lazy">
+                <img class="ct-ai-image" src="${escapeHtml(url)}" alt="${escapeHtml(safeAlts[idx] || String(defaultAlt || '').trim())}" loading="lazy">
             `).join('')}
         </div>
     `
 }
 
-function renderBlock(block) {
+function renderBlock(block, defaultAlt = '') {
     const rawLayout = String(block?.layout || 'text_dense')
     const layout = rawLayout === 'pull_quote_center'
         ? 'quote_pull'
@@ -60,20 +60,20 @@ function renderBlock(block) {
     const text = String(block?.text || '')
     const urls = block?.image_urls || []
     const alts = block?.image_alts || []
+    const firstUrl = String(urls?.[0] || '').trim()
+    const firstAlt = String(alts?.[0] || '').trim() || String(defaultAlt || '').trim()
 
     if (layout === 'hero_full_bleed') {
-        const heroUrl = String(urls?.[0] || '').trim()
         return `
             <section class="ct-ai-block ct-ai-block--hero">
-                ${heroUrl ? `<img class="ct-ai-hero" src="${escapeHtml(heroUrl)}" alt="${escapeHtml(alts?.[0] || '')}" loading="lazy">` : ''}
+                ${firstUrl ? `<img class="ct-ai-hero" src="${escapeHtml(firstUrl)}" alt="${escapeHtml(firstAlt)}" loading="lazy">` : ''}
                 <div class="ct-ai-text">${renderParagraphText(text)}</div>
             </section>
         `
     }
 
     if (layout === 'split_image_left' || layout === 'split_image_right') {
-        const heroUrl = String(urls?.[0] || '').trim()
-        const media = heroUrl ? `<img class="ct-ai-image ct-ai-split__image" src="${escapeHtml(heroUrl)}" alt="${escapeHtml(alts?.[0] || '')}" loading="lazy">` : ''
+        const media = firstUrl ? `<img class="ct-ai-image ct-ai-split__image" src="${escapeHtml(firstUrl)}" alt="${escapeHtml(firstAlt)}" loading="lazy">` : ''
         const body = `<div class="ct-ai-split__text">${renderParagraphText(text)}</div>`
         return `
             <section class="ct-ai-block ct-ai-block--split ct-ai-block--${layout}">
@@ -93,11 +93,11 @@ function renderBlock(block) {
     }
 
     if (layout === 'gallery_2') {
-        return `<section class="ct-ai-block ct-ai-block--gallery">${renderGallery(urls, alts, 2)}</section>`
+        return `<section class="ct-ai-block ct-ai-block--gallery">${renderGallery(urls, alts, 2, defaultAlt)}</section>`
     }
 
     if (layout === 'gallery_3') {
-        return `<section class="ct-ai-block ct-ai-block--gallery">${renderGallery(urls, alts, 3)}</section>`
+        return `<section class="ct-ai-block ct-ai-block--gallery">${renderGallery(urls, alts, 3, defaultAlt)}</section>`
     }
 
     if (layout === 'list_bullets') {
@@ -121,7 +121,7 @@ function renderBlock(block) {
     if (layout === 'text_dense') {
         return `
             <section class="ct-ai-block ct-ai-block--text">
-                ${urls?.length ? `<img class="ct-ai-image" src="${escapeHtml(urls[0])}" alt="${escapeHtml(alts?.[0] || '')}" loading="lazy">` : ''}
+                ${firstUrl ? `<img class="ct-ai-image" src="${escapeHtml(firstUrl)}" alt="${escapeHtml(firstAlt)}" loading="lazy">` : ''}
                 <div class="ct-ai-text">${renderParagraphText(text)}</div>
             </section>
         `
@@ -129,7 +129,7 @@ function renderBlock(block) {
 
     return `
         <section class="ct-ai-block ct-ai-block--fallback" data-ct-ai-layout="${escapeHtml(rawLayout)}">
-            ${urls?.length ? `<img class="ct-ai-image" src="${escapeHtml(urls[0])}" alt="${escapeHtml(alts?.[0] || '')}" loading="lazy">` : ''}
+            ${firstUrl ? `<img class="ct-ai-image" src="${escapeHtml(firstUrl)}" alt="${escapeHtml(firstAlt)}" loading="lazy">` : ''}
             <div class="ct-ai-text">${renderParagraphText(text)}</div>
         </section>
     `
@@ -173,7 +173,7 @@ export function renderAiPost(post, ai, social, detailState = {}) {
             <div class="ct-post-detail__copy">
                 <h1 class="ct-post-detail__title">${escapeHtml(ai?.title || post.title)}</h1>
                 <div class="ct-post-detail__body ct-ai-post__body">
-                    ${effectiveParagraphs.map((block) => renderBlock(block)).join('')}
+                    ${effectiveParagraphs.map((block) => renderBlock(block, heroAlt)).join('')}
                 </div>
                 <div class="ct-post-detail__tags">
                     ${(tags || []).map((tag) => `<span class="ct-post-detail__tag">#${escapeHtml(tag)}</span>`).join('')}

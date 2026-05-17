@@ -170,10 +170,31 @@ class PromptChainRunner:
                         new_queries.append({"search_keyword": str(q), "_direct_url": queue.pop(0)})
                 p["image_queries"] = new_queries
                     
+        style_en = str(final_post.get("style_en") or outline_result.get("style_en") or angle_result.get("style_en") or "street style").strip() or "street style"
+        section_map = {
+            "导语": "introduction",
+            "深度解析": "deep dive",
+            "穿搭实操": "styling tips",
+            "穿搭误区": "common mistakes",
+            "结语": "conclusion"
+        }
+        paragraphs = list(final_post.get("paragraphs", []) or [])
+        for para in paragraphs:
+            if not isinstance(para, dict):
+                continue
+            queries = para.get("image_queries")
+            if isinstance(queries, list) and len(queries) > 0:
+                continue
+            section_name = str(para.get("section_name") or "").strip()
+            section_en = section_map.get(section_name, "fashion editorial")
+            para["image_queries"] = [{
+                "search_keyword": f"{style_en} {section_en} fashion editorial photography".strip()
+            }]
+
         return {
             "metadata": angle_result,
             "title": angle_result.get("angle_title", "Untitled Editorial"),
-            "paragraphs": final_post.get("paragraphs", [])
+            "paragraphs": paragraphs
         }
 
     def _call_llm(self, system_prompt: str, user_input: str, phase: str) -> Dict:

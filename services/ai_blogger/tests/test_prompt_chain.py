@@ -27,3 +27,4 @@ def test_prompt_chain_execution(mock_generate_json):
     result = runner.run_chain(raw_topic="极简风")
     assert result["title"] == "极简主义重塑"
     assert len(result["paragraphs"]) == 1
+    assert len(result["paragraphs"][0].get("image_queries") or []) >= 1

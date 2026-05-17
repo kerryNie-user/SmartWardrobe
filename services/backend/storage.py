@@ -147,15 +147,18 @@ class JsonDatabase:
             return ''
 
     def _resolve_post_hero(self, post_data: dict) -> str:
+        ai = post_data.get('ai')
+        schema = str(ai.get('schema') or '').strip() if isinstance(ai, dict) else ''
+        allow_ai_image_alias = schema == 'ct_ai_post_v1'
         hero = str(post_data.get('heroImage') or '').strip()
         if hero:
-            if hero.startswith('images/'):
+            if allow_ai_image_alias and hero.startswith('images/'):
                 return f"/ai-images/{hero.split('/')[-1]}"
             return hero
         images = post_data.get('images') or []
         if images:
             first = str(images[0] or '').strip()
-            if first.startswith('images/'):
+            if allow_ai_image_alias and first.startswith('images/'):
                 return f"/ai-images/{first.split('/')[-1]}"
             return first
         return self._pick_fallback_ai_image(str(post_data.get('id') or ''))
