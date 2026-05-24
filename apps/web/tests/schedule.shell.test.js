@@ -49,6 +49,96 @@ function runTest(name, fn) {
   testQueue.push({ name, fn });
 }
 
+function formatLocalDateISO(offsetDays = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function buildScheduleFixture(locale = 'en-US') {
+  const upcomingISO = formatLocalDateISO(1);
+  const archiveISO = formatLocalDateISO(-5);
+  const formatParts = (isoDate) => {
+    const date = new Date(`${isoDate}T00:00:00`);
+    if (locale === 'zh-CN') {
+      return {
+        day: isoDate.slice(8, 10),
+        label: `${date.getMonth() + 1}月 / 周${['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}`
+      };
+    }
+    return {
+      day: isoDate.slice(8, 10),
+      label: `${date.toLocaleString('en-US', { month: 'short' })} / ${date.toLocaleString('en-US', { weekday: 'short' })}`
+    };
+  };
+  const upcomingParts = formatParts(upcomingISO);
+  const archiveParts = formatParts(archiveISO);
+
+  return {
+    version: 1,
+    tabs: [
+      { key: 'upcoming', label: locale === 'zh-CN' ? '即将到来' : 'Upcoming', active: true },
+      { key: 'travel', label: locale === 'zh-CN' ? '出行' : 'Travel', active: false },
+      { key: 'archive', label: locale === 'zh-CN' ? '归档' : 'Archive', active: false }
+    ],
+    form: seedData[locale].form,
+    views: {
+      upcoming: {
+        overview: { eyebrow: '', title: '', value: '01', meta: '', note: '' },
+        groups: [
+          {
+            dateISO: upcomingISO,
+            day: upcomingParts.day,
+            label: upcomingParts.label,
+            events: [
+              {
+                id: 'upcoming-product-review-1',
+                dateISO: upcomingISO,
+                tab: 'upcoming',
+                time: '10:00 AM — 01:00 PM',
+                title: 'Product Review',
+                location: 'SoHo Studio A, New York',
+                tags: ['Monolith Suit', 'Derby Shoes'],
+                reminderEnabled: false,
+                version: 1,
+                updatedAt: 1
+              }
+            ]
+          }
+        ]
+      },
+      travel: { overview: { eyebrow: '', title: '', value: '00', meta: '', note: '' }, groups: [] },
+      archive: {
+        overview: { eyebrow: '', title: '', value: '01', meta: '', note: '' },
+        groups: [
+          {
+            dateISO: archiveISO,
+            day: archiveParts.day,
+            label: archiveParts.label,
+            events: [
+              {
+                id: 'archive-fabric-1',
+                dateISO: archiveISO,
+                tab: 'archive',
+                time: '03:00 PM — 05:00 PM',
+                title: 'Fabric Sourcing Walkthrough',
+                location: 'Canal Textile District',
+                tags: ['Wool Blend', 'Material Notes'],
+                reminderEnabled: false,
+                version: 1,
+                updatedAt: 1
+              }
+            ]
+          }
+        ]
+      }
+    }
+  };
+}
+
 runTest('New Schedule 页面应包含第一阶段关键区域', () => {
   const htmlPath = path.join(__dirname, '..', 'schedule.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
@@ -65,7 +155,7 @@ runTest('New Schedule 页面应包含第一阶段关键区域', () => {
   }
 });
 
-runTest('New Schedule 页面应默认显示 Upcoming 并支持切换到 Travel', async () => {
+runTest('New Schedule 页面应默认显示未来三天与历史记录区域', async () => {
   const htmlPath = path.join(__dirname, '..', 'schedule.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
@@ -76,6 +166,7 @@ runTest('New Schedule 页面应默认显示 Upcoming 并支持切换到 Travel',
   global.CustomEvent = dom.window.CustomEvent;
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;
+  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(buildScheduleFixture('en-US')));
 
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'schedulePage.js')).href;
   const { renderSchedulePage } = await import(modulePath);
@@ -83,9 +174,14 @@ runTest('New Schedule 页面应默认显示 Upcoming 并支持切换到 Travel',
   renderSchedulePage();
   await new Promise(resolve => setTimeout(resolve, 100));
   await new Promise(resolve => setTimeout(resolve, 100));
+
+  assert.ok(dom.window.document.querySelector('[data-ct-schedule-timeline]'));
+  assert.ok(dom.window.document.querySelector('[data-ct-schedule-history]'));
+  assert.ok(!dom.window.document.querySelector('.ct-tab-list[role="tablist"]'), 'Schedule should not render tabs');
+  assert.ok(/Next 3 Days|未来三天/.test(dom.window.document.body.textContent), 'Missing upcoming window copy');
 });
 
-runTest('New Schedule 页面应具备 tabs 语义、列表语义且不再渲染图片', async () => {
+runTest('New Schedule 页面应具备列表语义并不再渲染分类切换', async () => {
   const htmlPath = path.join(__dirname, '..', 'schedule.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
@@ -105,8 +201,7 @@ runTest('New Schedule 页面应具备 tabs 语义、列表语义且不再渲染�
   await new Promise(resolve => setTimeout(resolve, 200));
 
   const tablist = dom.window.document.querySelector('.ct-tab-list[role="tablist"]');
-
-  assert.ok(tablist, 'Missing schedule tablist');
+  assert.ok(!tablist, 'Schedule should not render category tabs');
   const groups = dom.window.document.querySelectorAll('ol, ul');
   assert.ok(groups.length > 0, 'Missing schedule list');
   const images = dom.window.document.querySelectorAll('img');
@@ -147,7 +242,7 @@ runTest('New Schedule Event 页面应支持新增并在返回总览后持久化'
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;
 
-  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(seedData['en-US']));
+  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(buildScheduleFixture('en-US')));
 
   let modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'schedulePage.js')).href}?create=1`;
   const { renderSchedulePage: renderSchedulePageFirst } = await import(modulePath);
@@ -173,7 +268,7 @@ runTest('New Schedule Event 页面应支持新增并在返回总览后持久化'
   renderScheduleEventPage();
   await new Promise(resolve => setTimeout(resolve, 100));
 
-  eventDom.window.document.querySelector('[name="tab"]').value = 'travel';
+  eventDom.window.document.querySelector('[name="dateISO"]').value = formatLocalDateISO(1);
   eventDom.window.document.querySelector('[name="title"]').value = 'Studio Breakfast';
   eventDom.window.document.querySelector('[name="location"]').value = 'Cafe';
   const submitEvent = new eventDom.window.Event('submit', { bubbles: true, cancelable: true });
@@ -204,8 +299,6 @@ runTest('New Schedule Event 页面应支持新增并在返回总览后持久化'
   renderSchedulePageNext();
   await new Promise(resolve => setTimeout(resolve, 100));
   await new Promise(resolve => setTimeout(resolve, 200));
-  listDom.window.document.querySelector('[data-tab-key="travel"]').click();
-  await new Promise(resolve => setTimeout(resolve, 100));
 
   const titles = Array.from(listDom.window.document.querySelectorAll('.ct-schedule-card__title')).map((node) => node.textContent.trim());
   assert.ok(titles.includes('Studio Breakfast'), 'Created event should appear on schedule overview');
@@ -223,7 +316,7 @@ runTest('New Schedule Event 页面应通过统一 binding 暴露 sync feedback �
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;
 
-  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(seedData['en-US']));
+  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(buildScheduleFixture('en-US')));
 
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'scheduleEventPage.js')).href;
   const { renderScheduleEventPage } = await import(modulePath);
@@ -286,8 +379,8 @@ runTest('Home 与 Me 应提供进入 Schedule 页的入口', async () => {
   const { renderMePage } = await import(meModulePath);
   renderMePage();
 
-  const meLink = meDom.window.document.querySelector('.ct-me-summary__action[href="schedule.html"]');
-  assert.ok(meLink, 'Missing me schedule summary link');
+  const meLink = meDom.window.document.querySelector('[data-ct-me-entry="schedule"][href="schedule.html"]');
+  assert.ok(meLink, 'Missing me schedule dashboard link');
   assert.strictEqual(meLink.getAttribute('href'), 'schedule.html');
 });
 
@@ -304,7 +397,7 @@ runTest('New Schedule 页面应跟随 app_locale 切换主要文案', async () =
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;
 
-  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(seedData['en-US']));
+  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(buildScheduleFixture('en-US')));
 
   const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'schedulePage.js')).href;
   const { renderSchedulePage } = await import(modulePath);
@@ -312,7 +405,7 @@ runTest('New Schedule 页面应跟随 app_locale 切换主要文案', async () =
 
   assert.strictEqual(dom.window.document.documentElement.lang, 'zh-CN');
   assert.ok(/Schedule|日程/.test(dom.window.document.body.textContent), 'Missing translated text');
-  assert.ok(/Upcoming|即将到来/.test(dom.window.document.body.textContent));
+  assert.ok(/Next 3 Days|未来三天/.test(dom.window.document.body.textContent));
 });
 
 runTest('New Schedule Event 页面表单控件应补齐双语占位与 aria 文案并移除图片字段', async () => {
@@ -332,7 +425,9 @@ runTest('New Schedule Event 页面表单控件应补齐双语占位与 aria 文�
   const { renderScheduleEventPage } = await import(modulePath);
   renderScheduleEventPage();
 
+  assert.ok(dom.window.document.querySelector('[name="dateISO"]'));
   assert.ok(dom.window.document.querySelector('[name="day"]'));
+  assert.ok(dom.window.document.querySelector('[name="label"]'));
   assert.ok(dom.window.document.querySelector('[name="title"]'));
   assert.ok(dom.window.document.querySelector('[name="location"]'));
   assert.ok(dom.window.document.querySelector('[name="tab"]'));
@@ -436,7 +531,7 @@ runTest('New Schedule Event 页面应支持编辑已有事件并在刷新后保�
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;
 
-  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(seedData['en-US']));
+  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(buildScheduleFixture('en-US')));
 
   let modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'scheduleEventPage.js')).href}?edit=1`;
   let { renderScheduleEventPage } = await import(modulePath);
@@ -445,7 +540,6 @@ runTest('New Schedule Event 页面应支持编辑已有事件并在刷新后保�
 
   assert.strictEqual(dom.window.document.querySelector('[name="title"]').value, 'Product Review', 'Edit form should prefill existing title');
   dom.window.document.querySelector('[name="eventId"]').value = 'upcoming-product-review-1';
-  dom.window.document.querySelector('[name="tab"]').value = 'travel';
   dom.window.document.querySelector('[name="title"]').value = 'Product Review Updated';
   dom.window.document.querySelector('[name="location"]').value = 'Tribeca Studio';
 
@@ -482,11 +576,6 @@ runTest('New Schedule Event 页面应支持编辑已有事件并在刷新后保�
   await new Promise(resolve => setTimeout(resolve, 200));
 
   let titles = Array.from(reloadDom.window.document.querySelectorAll('.ct-schedule-card__title')).map((node) => node.textContent.trim());
-  if (!titles.includes('Product Review Updated')) {
-      reloadDom.window.document.querySelector('[data-tab-key="travel"]').click();
-      await new Promise(resolve => setTimeout(resolve, 100));
-      titles = Array.from(reloadDom.window.document.querySelectorAll('.ct-schedule-card__title')).map((node) => node.textContent.trim());
-  }
   assert.ok(titles.includes('Product Review Updated'), 'Edited event should survive page reload');
   assert.ok(/Tribeca Studio/.test(reloadDom.window.document.body.textContent), 'Edited location should survive page reload');
 });
@@ -538,7 +627,7 @@ runTest('New Schedule 页面应支持提醒开关并持久化状态', async () =
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;
 
-  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(seedData['en-US']));
+  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(buildScheduleFixture('en-US')));
 
   let modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'schedulePage.js')).href}?reminder=1`;
   let { renderSchedulePage } = await import(modulePath);
@@ -561,16 +650,12 @@ runTest('New Schedule 页面应支持提醒开关并持久化状态', async () =
   assert.ok(nextToggle && nextToggle.classList.contains('is-active'), 'Reminder toggle should update current page state');
 
   let stored = JSON.parse(dom.window.localStorage.getItem('ct_schedule'));
-  let upcomingGroup = stored ? stored.views.upcoming.groups[0] : null;
-  let toggledEvent = upcomingGroup ? upcomingGroup.events.find(e => e.id === 'upcoming-product-review-1') : null;
-  if (!toggledEvent && stored) {
-    upcomingGroup = stored.views.travel.groups[0];
-    if (upcomingGroup) toggledEvent = upcomingGroup.events.find(e => e.id === 'upcoming-product-review-1');
-  }
-  if (!toggledEvent && stored) {
-    upcomingGroup = stored.views.archive.groups[0];
-    if (upcomingGroup) toggledEvent = upcomingGroup.events.find(e => e.id === 'upcoming-product-review-1');
-  }
+  const toggledEvent = stored
+    ? Object.values(stored.views || {})
+        .flatMap((view) => view.groups || [])
+        .flatMap((group) => group.events || [])
+        .find((e) => e.id === 'upcoming-product-review-1')
+    : null;
   assert.ok(toggledEvent && toggledEvent.reminderEnabled, 'Reminder toggle should persist to localStorage');
 
   const reloadDom = new JSDOM(html, { url: 'http://localhost/schedule.html' });
@@ -606,7 +691,7 @@ runTest('New Schedule 删除应先打开自定义确认弹层再执行删除', a
   global.HTMLElement = dom.window.HTMLElement;
   global.Node = dom.window.Node;
 
-  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(seedData['en-US']));
+  dom.window.localStorage.setItem('ct_schedule', JSON.stringify(buildScheduleFixture('en-US')));
 
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'schedulePage.js')).href}?delete-dialog=1`;
   let { renderSchedulePage } = await import(modulePath);

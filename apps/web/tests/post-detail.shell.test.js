@@ -141,7 +141,7 @@ async function main() {
             subtitle: null,
             tags: ['editorial', 'ai-generated'],
             hero: {
-              image_url: '/ai-images/example.jpg',
+              image_url: 'https://example.com/example.jpg',
               alt: 'Example'
             },
             paragraphs: [
@@ -149,14 +149,14 @@ async function main() {
                 id: 'p1',
                 layout: 'hero_full_bleed',
                 text: 'Intro paragraph',
-                image_urls: ['/ai-images/example.jpg'],
+                image_urls: ['https://example.com/example.jpg'],
                 image_alts: ['Example']
               }
             ]
           },
           tags: ['editorial', 'ai-generated'],
-          heroImage: '/ai-images/example.jpg',
-          images: ['/ai-images/example.jpg'],
+          heroImage: 'https://example.com/example.jpg',
+          images: ['https://example.com/example.jpg'],
           stats: { likes: '0', comments: '0' }
         }],
         editorialTrendStrip: { eyebrow: '', title: '', action: '', items: [] },
@@ -172,7 +172,7 @@ async function main() {
     assert.ok(dom.window.document.querySelector('.ct-ai-post'), 'AI post should render with ai container');
     assert.ok(dom.window.document.querySelector('.ct-ai-block'), 'AI post should render ai blocks');
     const hero = dom.window.document.querySelector('.ct-post-detail__image');
-    assert.ok(hero && hero.getAttribute('src') === '/ai-images/example.jpg', 'AI post hero should use protocol image url');
+    assert.ok(hero && hero.getAttribute('src') === 'https://example.com/example.jpg', 'AI post hero should use protocol image url');
     assert.ok(/AI Protocol Title/.test(dom.window.document.body.textContent));
   });
 

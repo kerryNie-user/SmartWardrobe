@@ -1,3 +1,5 @@
+import { formatCopy, getUiCopy } from './locale.js'
+
 function resolveGeolocation(geolocation) {
     if (geolocation) return geolocation
     if (typeof window === 'undefined') return null
@@ -52,15 +54,11 @@ function extractDistrictLabel(data) {
 function formatRangeLabel({ cityLabel = '', districtLabel = '', precision = 'approximate' }, locale = 'en-US') {
     const city = normalizeLocaleLabel(cityLabel, locale)
     const district = normalizeLocaleLabel(districtLabel, locale)
+    const suffix = getUiCopy(locale).location.preciseSuffix
 
     if (precision === 'precise') {
-        if (locale === 'zh-CN') {
-            if (district) return district.endsWith('附近') ? district : `${district}附近`
-            if (city) return city.endsWith('附近') ? city : `${city}附近`
-        }
-
-        if (district) return district.endsWith(' area') ? district : `${district} area`
-        if (city) return city.endsWith(' area') ? city : `${city} area`
+        if (district) return district.endsWith(suffix) ? district : `${district}${suffix}`
+        if (city) return city.endsWith(suffix) ? city : `${city}${suffix}`
     }
 
     return city || district
@@ -210,7 +208,7 @@ function resolveCapabilityKind(geolocation, secureContext) {
 function extractWeatherCondition(summary, locale = 'en-US') {
     const value = String(summary || '').trim()
     if (!value) {
-        return locale === 'zh-CN' ? '多云' : 'Cloudy'
+        return getUiCopy(locale).weather.cloudy
     }
 
     const separator = value.includes('，') ? '，' : ','
@@ -219,7 +217,7 @@ function extractWeatherCondition(summary, locale = 'en-US') {
         return parts.slice(1).join(separator).trim()
     }
 
-    return locale === 'zh-CN' ? '多云' : 'Cloudy'
+    return getUiCopy(locale).weather.cloudy
 }
 
 export function createLocationAdapter({
@@ -324,8 +322,10 @@ export function createLocationAdapter({
     }
 }
 
-export function formatCurrentAreaLabel(locale = 'en-US') {
-    return locale === 'zh-CN' ? '当前位置，多云' : 'Current Area, Cloudy'
+export function formatCurrentAreaLabel(locale = 'en-US', condition = getUiCopy(locale).weather.cloudy) {
+    return formatCopy(getUiCopy(locale).weather.currentAreaSummary, {
+        condition
+    })
 }
 
 export function applyLocationToWeather(weather, locationResult, locale = 'en-US') {
@@ -341,13 +341,13 @@ export function applyLocationToWeather(weather, locationResult, locale = 'en-US'
                 precision: weather?.location?.precision || 'fallback'
             },
             summary: fallbackLocationLabel
-                ? `${fallbackLocationLabel}${locale === 'zh-CN' ? '，' : ', '}${condition}`
-                : formatCurrentAreaLabel(locale)
+                ? `${fallbackLocationLabel}${getUiCopy(locale).weather.summarySeparator}${condition}`
+                : formatCurrentAreaLabel(locale, condition)
         }
     }
 
     const locationLabel = String(locationResult.place?.rangeLabel || locationResult.place?.cityLabel || fallbackLocationLabel).trim()
-    const separator = locale === 'zh-CN' ? '，' : ', '
+    const separator = getUiCopy(locale).weather.summarySeparator
 
     return {
         ...weather,
@@ -356,7 +356,7 @@ export function applyLocationToWeather(weather, locationResult, locale = 'en-US'
             label: locationLabel || fallbackLocationLabel,
             precision: locationResult.place?.precision || weather?.location?.precision || 'fallback'
         },
-        summary: locationLabel ? `${locationLabel}${separator}${condition}` : formatCurrentAreaLabel(locale)
+        summary: locationLabel ? `${locationLabel}${separator}${condition}` : formatCurrentAreaLabel(locale, condition)
     }
 }
 

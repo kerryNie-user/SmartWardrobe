@@ -63,7 +63,7 @@ export function renderWardrobeDetailPage() {
             bindings: [
                 {
                     key: 'wardrobe',
-                    label: { 'zh-CN': '衣橱', 'en-US': 'Wardrobe' },
+                    domainKey: 'wardrobe',
                     getState: () => getWardrobeSyncState(),
                     subscribe: (listener) => subscribeWardrobeSyncState(listener),
                     retry: (locale) => retryWardrobeSync(locale)

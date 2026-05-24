@@ -7,8 +7,8 @@ export function getFavoritesPageContent(locale) {
             },
             summary: {
                 eyebrow: '收藏总览',
-                title: 'Favorites Archive',
-                note: '把推荐穿搭与帖子收藏聚合成一份可回看的个人选集。'
+                title: '我的收藏',
+                note: '集中保存穿搭与帖子，方便回看和二次搭配。'
             },
             tabs: [
                 { key: 'looks', label: '穿搭', active: true },

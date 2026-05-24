@@ -88,7 +88,7 @@ export function renderFavoritesPage() {
             bindings: [
                 {
                     key: 'favorites',
-                    label: { 'zh-CN': '收藏', 'en-US': 'Favorites' },
+                    domainKey: 'favorites',
                     getState: () => getFavoritesSyncState(),
                     subscribe: (listener) => subscribeFavoritesSyncState(listener),
                     retry: () => retryFavoritesSync()

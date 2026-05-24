@@ -14,7 +14,6 @@ runTest('meSelectors 应聚合五域输入并产出稳定的 Me page selector in
 
   const selectorInput = buildMePageSelectorInput({
     locale: 'zh-CN',
-    activeTab: 'schedule',
     content: {
       profile: { label: '个人资料' },
       tabs: [{ key: 'schedule' }],
@@ -39,7 +38,7 @@ runTest('meSelectors 应聚合五域输入并产出稳定的 Me page selector in
     syncStates: { schedule: { status: 'synced' } }
   });
 
-  assert.strictEqual(selectorInput.activeTab, 'schedule');
+  assert.strictEqual(selectorInput.surface, 'overview');
   assert.strictEqual(selectorInput.favorites.stats.total, 3);
   assert.strictEqual(selectorInput.schedule.feed.length, 1);
   assert.strictEqual(selectorInput.wardrobe.recentItems[0].title, 'Atelier Coat');

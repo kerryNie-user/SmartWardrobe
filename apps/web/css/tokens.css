@@ -10,7 +10,25 @@
     --ct-border: rgba(247, 243, 236, 0.14);
     --ct-border-dark: rgba(17, 17, 17, 0.12);
     --ct-accent: #d5c0a1;
-    --ct-shadow: 0 20px 60px rgba(0, 0, 0, 0.32);
+    --ct-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+    --ct-surface: rgba(255, 255, 255, 0.03);
+    --ct-surface-muted: rgba(255, 255, 255, 0.025);
+    --ct-surface-strong: rgba(255, 255, 255, 0.06);
+    --ct-form-surface: linear-gradient(180deg, rgba(23, 23, 23, 0.92), rgba(10, 10, 10, 0.92));
+    --ct-form-shadow: 0 12px 34px rgba(0, 0, 0, 0.18);
+    --ct-input-background: rgba(255, 255, 255, 0.05);
+    --ct-input-border: rgba(247, 243, 236, 0.16);
+    --ct-input-shadow: inset 0 0 0 1px rgba(247, 243, 236, 0.03);
+    --ct-dialog-background: rgba(20, 20, 20, 0.92);
+    --ct-dialog-scrim: rgba(0, 0, 0, 0.58);
+    --ct-dialog-shadow: 0 18px 54px rgba(0, 0, 0, 0.42);
+    --ct-rule-subtle: rgba(247, 243, 236, 0.1);
+    --ct-rule-medium: rgba(247, 243, 236, 0.18);
+    --ct-placeholder: rgba(247, 243, 236, 0.44);
+    --ct-on-media: #f7f3ec;
+    --ct-on-media-soft: rgba(247, 243, 236, 0.76);
+    --ct-media-control-background: rgba(10, 10, 10, 0.46);
+    --ct-media-control-border: rgba(255, 255, 255, 0.18);
     --ct-font-display: "Manrope", sans-serif;
     --ct-font-editorial: "Cormorant Garamond", serif;
     --ct-space-1: 4px;
@@ -21,13 +39,13 @@
     --ct-space-6: 32px;
     --ct-space-7: 48px;
     --ct-space-8: 64px;
-    --ct-radius: 24px;
+    --ct-radius: 8px;
     --ct-max-width: 760px;
     --ct-page-bg: #0a0a0a;
     --ct-body-background:
-        radial-gradient(circle at top left, rgba(213, 192, 161, 0.12), transparent 30%),
+        radial-gradient(circle at top left, rgba(213, 192, 161, 0.08), transparent 28%),
         linear-gradient(180deg, #171717 0%, #101010 48%, #0a0a0a 100%);
-    --ct-topbar-background: linear-gradient(180deg, rgba(10, 10, 10, 0.92), rgba(10, 10, 10, 0.4));
+    --ct-topbar-background: linear-gradient(180deg, rgba(10, 10, 10, 0.94), rgba(10, 10, 10, 0.62));
     --ct-bottom-shell-background: #0a0a0a;
     --ct-bottom-shell-overlay: linear-gradient(180deg, rgba(10, 10, 10, 0), rgba(10, 10, 10, 0.92) 34%, rgba(10, 10, 10, 1) 100%);
 }
@@ -44,12 +62,26 @@ html[data-ct-theme='light'] {
     --ct-border: rgba(23, 18, 12, 0.12);
     --ct-border-dark: rgba(23, 18, 12, 0.12);
     --ct-accent: #9b7a4f;
-    --ct-shadow: 0 18px 44px rgba(32, 22, 12, 0.12);
+    --ct-shadow: 0 10px 28px rgba(32, 22, 12, 0.08);
+    --ct-surface: rgba(255, 255, 255, 0.54);
+    --ct-surface-muted: rgba(255, 255, 255, 0.44);
+    --ct-surface-strong: rgba(255, 255, 255, 0.72);
+    --ct-form-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.6));
+    --ct-form-shadow: 0 14px 34px rgba(42, 31, 18, 0.08);
+    --ct-input-background: rgba(255, 255, 255, 0.76);
+    --ct-input-border: rgba(23, 18, 12, 0.16);
+    --ct-input-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+    --ct-dialog-background: rgba(255, 255, 255, 0.94);
+    --ct-dialog-scrim: rgba(23, 18, 12, 0.26);
+    --ct-dialog-shadow: 0 18px 54px rgba(42, 31, 18, 0.16);
+    --ct-rule-subtle: rgba(23, 18, 12, 0.1);
+    --ct-rule-medium: rgba(23, 18, 12, 0.16);
+    --ct-placeholder: rgba(23, 18, 12, 0.42);
     --ct-page-bg: #f4ede3;
     --ct-body-background:
-        radial-gradient(circle at top left, rgba(155, 122, 79, 0.12), transparent 26%),
+        radial-gradient(circle at top left, rgba(155, 122, 79, 0.08), transparent 24%),
         linear-gradient(180deg, #fbf8f2 0%, #f5efe7 48%, #ece4d7 100%);
-    --ct-topbar-background: linear-gradient(180deg, rgba(251, 248, 242, 0.96), rgba(251, 248, 242, 0.72));
+    --ct-topbar-background: linear-gradient(180deg, rgba(251, 248, 242, 0.96), rgba(251, 248, 242, 0.84));
     --ct-bottom-shell-background: rgba(244, 237, 227, 0.96);
     --ct-bottom-shell-overlay: linear-gradient(180deg, rgba(244, 237, 227, 0), rgba(244, 237, 227, 0.88) 34%, rgba(244, 237, 227, 1) 100%);
 }

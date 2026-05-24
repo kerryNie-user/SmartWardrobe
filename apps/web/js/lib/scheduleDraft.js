@@ -1,3 +1,5 @@
+import { getUiCopy } from './locale.js'
+
 const SCHEDULE_DRAFT_KEY = 'ct_schedule_draft'
 
 function canUseStorage() {
@@ -12,7 +14,7 @@ export function buildOutfitScheduleDraft(look, { locale = 'en-US', reminderEnabl
         },
         tab: 'upcoming',
         title: look.title,
-        location: locale === 'zh-CN' ? 'CLOSETTWIN 造型档案' : 'ClosetTwin Styling Suite',
+        location: getUiCopy(locale).schedule.draftLocation,
         tags: [...(look.detailTags || [])].slice(0, 3),
         reminderEnabled
     }

@@ -17,10 +17,12 @@
     "hero_full_bleed",
     "pull_quote_center",
     "split_image_text",
-    "image_mosaic_3"
+    "image_mosaic_3",
+    "text_dense"
   ],
-  "visual_strategy": "使用诸如 '1920s Bauhaus architecture detail' 或 'abstract contemporary art installation' 等历史档案、艺术品或建筑细节词汇。",
+  "visual_strategy": "图片应承担历史、艺术或材料证据功能；使用 open access archive、museum textile detail、architecture detail、installation view 等英文关键词，不要只生成抽象氛围图。",
   "kb_files": [
+    "services/ai_blogger/experience/10_smartwardrobe_editorial_prompt_guide.md",
     "services/ai_blogger/experience/03_language_style_toolkit.md",
     "services/ai_blogger/experience/09_image_libraries_and_selection.md"
   ]

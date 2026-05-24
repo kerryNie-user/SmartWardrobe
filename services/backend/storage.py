@@ -37,6 +37,8 @@ class JsonDatabase(
             self._ensure_contentpost_ai_column()
             self._ensure_contentpost_batch_column()
             self._ensure_scheduleitem_image_column()
+            self._ensure_scheduleitem_dateiso_column()
+            self._ensure_wardrobeitem_ai_json_column()
         self._ensure_debug_user()
 
 

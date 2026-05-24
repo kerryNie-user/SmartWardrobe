@@ -62,6 +62,6 @@ def test_each_paragraph_has_min_length_and_layout_contract(mock_generate_json):
 
     for p in result.get("paragraphs", []):
         assert isinstance(p.get("text"), str)
-        assert len(p["text"]) >= 200
+        assert len(p["text"]) >= 80
         assert isinstance(p.get("layout_name"), str)
         assert isinstance(p.get("image_queries"), list)

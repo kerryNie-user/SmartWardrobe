@@ -21,7 +21,7 @@ body.ct-body {
 }
 
 .ct-shell-section {
-    margin-bottom: var(--ct-space-5);
+    margin-bottom: var(--ct-space-4);
 }
 
 .ct-topbar-shell {
@@ -38,10 +38,16 @@ body.ct-body {
     right: 0;
     bottom: 0;
     z-index: 10;
-    padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
     background-color: var(--ct-bottom-shell-background);
     backdrop-filter: blur(24px);
     overflow: hidden;
+}
+
+@media (min-width: 720px) {
+    .ct-shell-section {
+        margin-bottom: var(--ct-space-5);
+    }
 }
 
 .ct-bottom-shell::before {
@@ -50,4 +56,14 @@ body.ct-body {
     inset: -40px 0 0;
     z-index: -1;
     background: var(--ct-bottom-shell-overlay);
+}
+
+@media (min-width: 1024px) {
+    .ct-app {
+        padding-bottom: 0;
+    }
+
+    .ct-bottom-shell {
+        display: none;
+    }
 }

@@ -1,16 +1,23 @@
 import { getScheduleContent } from './backendClient.js'
+import { getUiCopy } from './locale.js'
 
-const DEFAULT_TABS = [
-    { key: 'upcoming', label: 'Upcoming', active: true },
-    { key: 'travel', label: 'Travel', active: false },
-    { key: 'archive', label: 'Archive', active: false }
-]
+const SCHEDULE_TAB_KEYS = ['upcoming', 'travel', 'archive']
 
 const EMPTY_FORM = { labels: {}, placeholders: {}, actions: {}, fallback: {} }
+
+function buildDefaultTabs(locale = 'en-US') {
+    const copy = getUiCopy(locale).schedule.tabs || {}
+    return SCHEDULE_TAB_KEYS.map((key, index) => ({
+        key,
+        label: copy[key] || key,
+        active: index === 0
+    }))
+}
 
 function normalizeEventRecord(event) {
     return {
         ...event,
+        dateISO: event?.dateISO || event?.eventDate || event?.date || '',
         tags: Array.isArray(event?.tags) ? event.tags : [],
         reminderEnabled: Boolean(event?.reminderEnabled)
     }
@@ -96,11 +103,29 @@ function normalizeStoredSchedule(stored) {
     const unwrapped = unwrapUserScopedSchedule(stored)
     if (!unwrapped || typeof unwrapped !== 'object') return null
 
+    const legacyViews = ['upcoming', 'travel', 'archive'].some((key) => unwrapped[key])
+        ? normalizeViews({
+            upcoming: unwrapped.upcoming,
+            travel: unwrapped.travel,
+            archive: unwrapped.archive
+        })
+        : null
+
     if (unwrapped.views && typeof unwrapped.views === 'object') {
         return {
             ...unwrapped,
             views: normalizeViews(unwrapped.views),
-            form: unwrapped.form || EMPTY_FORM
+            form: unwrapped.form || EMPTY_FORM,
+            tabs: unwrapped.tabs || buildDefaultTabs('en-US')
+        }
+    }
+
+    if (legacyViews) {
+        return {
+            ...unwrapped,
+            views: legacyViews,
+            form: unwrapped.form || EMPTY_FORM,
+            tabs: unwrapped.tabs || buildDefaultTabs('en-US')
         }
     }
     return null
@@ -112,6 +137,7 @@ function normalizeEventPayload(evt) {
         tab: evt.tab,
         day: evt.day,
         label: evt.label,
+        dateISO: evt.dateISO || evt.eventDate || evt.date || '',
         time: evt.time || '',
         title: evt.title || '',
         location: evt.location || '',
@@ -218,17 +244,17 @@ export function createScheduleService({
                     ...content,
                     views: normalizeViews(content.views || {}),
                     form: content.form || EMPTY_FORM,
-                    tabs: content.tabs || DEFAULT_TABS
+                    tabs: content.tabs || buildDefaultTabs(nextLocale)
                 } : null)
                 if (currentState) onStateChange(nextLocale)
                 return currentState
             }
 
             const eventViews = buildViewsFromItems(itemsResponse.data?.items || [])
-            const mergedViews = mergeViews(localData?.views || content?.views, eventViews)
+            const mergedViews = mergeViews(content?.views || localData?.views, eventViews)
             currentState = {
-                tabs: localData?.tabs || content?.tabs || DEFAULT_TABS,
-                form: localData?.form || content?.form || EMPTY_FORM,
+                tabs: content?.tabs || localData?.tabs || buildDefaultTabs(nextLocale),
+                form: content?.form || localData?.form || EMPTY_FORM,
                 views: mergedViews
             }
 

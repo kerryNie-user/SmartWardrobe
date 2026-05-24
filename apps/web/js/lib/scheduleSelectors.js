@@ -1,3 +1,6 @@
+import { formatCopy, getUiCopy } from './locale.js'
+import { deriveScheduleCollections } from './scheduleDate.js'
+
 function countEvents(groups = []) {
     return groups.reduce((total, group) => total + group.events.length, 0)
 }
@@ -11,7 +14,7 @@ function resolveViews(scheduleState, views) {
 export function selectScheduleOverview(activeTab, scheduleState) {
     const views = resolveViews(scheduleState)
     const current = views[activeTab] || views.upcoming || {}
-    const groups = current.groups || []
+    const groups = deriveScheduleCollections({ views }, { locale: scheduleState?.locale || 'en-US' }).upcomingGroups
     return {
         ...(current.overview || {}),
         value: String(countEvents(groups)).padStart(2, '0')
@@ -20,24 +23,22 @@ export function selectScheduleOverview(activeTab, scheduleState) {
 
 export function selectScheduleDeleteDialogCopy(locale, deleteCandidate, sharedCopy = { actions: {} }) {
     if (!deleteCandidate) return null
+    const copy = getUiCopy(locale).schedule
     return {
-        eyebrow: locale === 'zh-CN' ? '删除确认' : 'Confirm Delete',
-        title: locale === 'zh-CN' ? '确定删除这条日程吗？' : 'Delete this schedule entry?',
-        description: locale === 'zh-CN'
-            ? `你将删除「${deleteCandidate.title}」，该操作无法撤销。`
-            : `You are about to delete “${deleteCandidate.title}”. This cannot be undone.`,
-        cancelLabel: sharedCopy.actions?.cancel || (locale === 'zh-CN' ? '取消' : 'Cancel'),
-        confirmLabel: sharedCopy.actions?.delete || (locale === 'zh-CN' ? '删除' : 'Delete')
+        eyebrow: copy.deleteConfirmEyebrow,
+        title: copy.deleteConfirmTitle,
+        description: formatCopy(copy.deleteConfirmDescription, { title: deleteCandidate.title }),
+        cancelLabel: sharedCopy.actions?.cancel || '',
+        confirmLabel: sharedCopy.actions?.delete || ''
     }
 }
 
-export function selectScheduleDeleteCandidate(scheduleState, activeTab, eventId) {
+export function selectScheduleDeleteCandidate(scheduleState, activeTabOrEventId, maybeEventId) {
+    const eventId = maybeEventId || activeTabOrEventId
     const views = resolveViews(scheduleState)
-    const currentState = views[activeTab] || views.upcoming || {}
-    const groups = currentState.groups || []
-    for (const group of groups) {
-        const found = group.events.find(e => e.id === eventId);
-        if (found) return found;
+    const collections = deriveScheduleCollections({ views }, { locale: scheduleState?.locale || 'en-US' })
+    for (const event of collections.allEvents) {
+        if (event.id === eventId) return event
     }
     for (const tabKey in views) {
         const fallbackState = views[tabKey] || {}
@@ -52,21 +53,29 @@ export function selectScheduleDeleteCandidate(scheduleState, activeTab, eventId)
 
 export function selectScheduleView({ locale, activeTab, tabs, views, scheduleState, deleteCandidate, sharedCopy }) {
     const resolvedViews = resolveViews(scheduleState, views)
-    const currentView = resolvedViews[activeTab] || resolvedViews.upcoming || {}
-    const currentGroups = currentView.groups || []
+    const currentView = resolvedViews.upcoming || resolvedViews[activeTab] || {}
+    const collections = deriveScheduleCollections({ views: resolvedViews }, { locale })
+    const copy = getUiCopy(locale).schedule
 
     return {
-        tabs: (tabs || []).map(tab => ({
+        tabs: (tabs || []).filter((tab) => tab.key === 'upcoming').map(tab => ({
             ...tab,
-            active: tab.key === activeTab
+            active: true
         })),
-        overview: selectScheduleOverview(activeTab, { views: resolvedViews }),
-        groups: currentGroups,
+        overview: {
+            ...(currentView.overview || {}),
+            title: copy.upcomingTitle || currentView.overview?.title,
+            note: copy.upcomingWindowNote || currentView.overview?.note,
+            value: String(countEvents(collections.upcomingGroups)).padStart(2, '0')
+        },
+        groups: collections.upcomingGroups,
+        historyGroups: collections.historyGroups,
+        historyCount: collections.historyEvents.length,
         deleteDialogCopy: selectScheduleDeleteDialogCopy(locale, deleteCandidate, sharedCopy),
         emptyStateCopy: {
-            title: locale === 'zh-CN' ? '暂无日程' : 'No Schedule Yet',
-            description: locale === 'zh-CN' ? '开始添加你的第一个行程安排。' : 'Start adding your first itinerary.',
-            action: locale === 'zh-CN' ? '添加日程' : 'Add Event'
+            title: getUiCopy(locale).schedule.empty.title,
+            description: getUiCopy(locale).schedule.empty.description,
+            action: getUiCopy(locale).schedule.empty.action
         }
     }
 }

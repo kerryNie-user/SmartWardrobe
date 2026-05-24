@@ -133,40 +133,28 @@ export function renderHomePage() {
             bindings: [
                 {
                     key: 'favorites',
-                    label: {
-                        'zh-CN': '收藏',
-                        'en-US': 'Favorites'
-                    },
+                    domainKey: 'favorites',
                     getState: () => getFavoritesSyncState(),
                     subscribe: (listener) => subscribeFavoritesSyncState(listener),
                     retry: () => retryFavoritesSync()
                 },
                 {
                     key: 'wardrobe',
-                    label: {
-                        'zh-CN': '衣橱',
-                        'en-US': 'Wardrobe'
-                    },
+                    domainKey: 'wardrobe',
                     getState: () => getWardrobeSyncState(),
                     subscribe: (listener) => subscribeWardrobeSyncState(listener),
                     retry: (locale) => retryWardrobeSync(locale)
                 },
                 {
                     key: 'schedule',
-                    label: {
-                        'zh-CN': '日程',
-                        'en-US': 'Schedule'
-                    },
+                    domainKey: 'schedule',
                     getState: () => getScheduleSyncState(),
                     subscribe: (listener) => subscribeScheduleSyncState(listener),
                     retry: (locale) => retryScheduleSync(locale)
                 },
                 {
                     key: 'homeContent',
-                    label: {
-                        'zh-CN': '首页内容',
-                        'en-US': 'Home Content'
-                    },
+                    domainKey: 'homeContent',
                     getState: () => getHomeContentSyncState(),
                     subscribe: (listener) => subscribeHomeContentSyncState(listener),
                     retry: (locale) => retryHomeContentHydration(locale)

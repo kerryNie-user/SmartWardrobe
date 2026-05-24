@@ -5,7 +5,7 @@ import { renderStatePanel } from '../components/statePanel.js'
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js'
 import { renderFormNotice } from '../components/formNotice.js'
 import { getPostDetailContent } from '../data/postDetail.js'
-import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js'
+import { applyLocaleDocument, getLocale, getSharedCopy, getUiCopy } from '../lib/locale.js'
 import { bindPageStores } from '../lib/pageStoreBinding.js'
 import { createPostDetailPageContract } from '../lib/pageContracts.js'
 import { getQueryParam } from '../lib/navigationAdapter.js'
@@ -29,15 +29,17 @@ function inferLocaleFromPostId(postId) {
 }
 
 function renderComments(post) {
-    const sharedCopy = getSharedCopy(getLocale())
+    const locale = getLocale()
+    const sharedCopy = getSharedCopy(locale)
+    const postCopy = getUiCopy(locale).post
     const comments = getPostComments(post)
 
     return `
         <section class="ct-post-comments">
             <h2 class="ct-post-comments__heading">${sharedCopy.actions.viewComments}</h2>
             <form class="ct-post-comments__form" data-ct-post-comment-form>
-                <textarea class="ct-post-comments__input" name="commentBody" placeholder="${getLocale() === 'zh-CN' ? '写下你的评论' : 'Write your comment'}"></textarea>
-                <button class="ct-post-detail__share" type="submit">${getLocale() === 'zh-CN' ? '发布评论' : 'Post Comment'}</button>
+                <textarea class="ct-post-comments__input" name="commentBody" placeholder="${postCopy.commentPlaceholder}"></textarea>
+                <button class="ct-post-detail__share" type="submit">${postCopy.submitComment}</button>
                 <div data-ct-form-notice></div>
             </form>
             <ul class="ct-post-comments__list">
@@ -144,7 +146,7 @@ export function renderPostDetailPage() {
             const shareButton = event.target.closest('[data-ct-post-share]')
             if (shareButton) {
                 const shareUrl = buildCanonicalHref('post-detail.html', { id: activePost.id })
-                shareFeedback = locale === 'zh-CN' ? '链接已复制' : 'Link copied'
+                shareFeedback = getUiCopy(locale).post.linkCopied
                 binding.requestPaint()
                 void shareLink({
                     href: shareUrl,
@@ -170,7 +172,7 @@ export function renderPostDetailPage() {
 
             const formData = new window.FormData(form)
             const validation = validateRequired(formData, [
-                { field: 'commentBody', label: locale === 'zh-CN' ? '评论' : 'Comment' }
+                { field: 'commentBody', label: getUiCopy(locale).post.commentLabel }
             ], locale)
 
             if (!validation.ok) {
@@ -192,8 +194,8 @@ export function renderPostDetailPage() {
             if (noticeRoot) noticeRoot.innerHTML = ''
 
             savePostComment(activePost.id, {
-                author: locale === 'zh-CN' ? '你' : 'You',
-                time: locale === 'zh-CN' ? '刚刚' : 'Just now',
+                author: getUiCopy(locale).post.commentAuthor,
+                time: getUiCopy(locale).post.commentJustNow,
                 body
             })
         }
@@ -226,14 +228,14 @@ export function renderPostDetailPage() {
             bindings: [
                 {
                     key: 'discoverySocial',
-                    label: { 'zh-CN': '发现社交', 'en-US': 'Discovery Social' },
+                    domainKey: 'discoverySocial',
                     getState: () => getDiscoverySocialSyncState(),
                     subscribe: (listener) => subscribeDiscoverySocialSyncState(listener),
                     retry: () => retryDiscoverySocialSync(getLocale())
                 },
                 {
                     key: 'discoveryComments',
-                    label: { 'zh-CN': '帖子评论', 'en-US': 'Post Comments' },
+                    domainKey: 'discoveryComments',
                     getState: () => getDiscoveryCommentSyncState(),
                     subscribe: (listener) => subscribeDiscoveryCommentSyncState(listener),
                     retry: () => retryDiscoveryCommentSync(getLocale())

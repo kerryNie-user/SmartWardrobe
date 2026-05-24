@@ -7,22 +7,16 @@
     gap: 6px 12px;
     min-height: 164px;
     padding: 20px 20px 18px;
-    border-radius: 28px;
+    border-radius: 8px;
     overflow: hidden;
     background:
-        radial-gradient(circle at 76% 26%, rgba(241, 236, 228, 0.16), transparent 34%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+        radial-gradient(circle at 76% 26%, rgba(241, 236, 228, 0.1), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
     border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .ct-home-weather::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 42%),
-        linear-gradient(315deg, rgba(255, 255, 255, 0.02), transparent 55%);
-    pointer-events: none;
+    content: none;
 }
 
 .ct-home-weather > :not(.ct-home-weather__art-disc):not(.ct-home-weather__art-line) {
@@ -68,8 +62,8 @@
     gap: 5px;
     padding: 4px 9px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: var(--ct-surface-strong);
+    border: 1px solid var(--ct-border);
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -97,7 +91,7 @@
     z-index: 1;
     max-width: 120px;
     text-align: center;
-    color: rgba(235, 228, 219, 0.84);
+    color: var(--ct-text-soft);
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -245,7 +239,7 @@
 .ct-home-schedule__link {
     color: var(--ct-accent);
     font-size: 12px;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 
@@ -258,7 +252,7 @@
     margin: 0;
     font-size: 22px;
     font-weight: 700;
-    letter-spacing: -0.04em;
+    letter-spacing: 0;
 }
 
 .ct-home-schedule__meta {
@@ -288,7 +282,7 @@
 
 .ct-feed-card {
     overflow: hidden;
-    border-radius: 32px;
+    border-radius: 8px;
     cursor: pointer;
 }
 
@@ -300,7 +294,7 @@
 
 .ct-feed-card__media {
     position: relative;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 4 / 4.1;
     overflow: hidden;
 }
 
@@ -321,20 +315,21 @@
     border-radius: 999px;
     display: grid;
     place-items: center;
-    background: rgba(10, 10, 10, 0.45);
+    color: var(--ct-on-media);
+    background: var(--ct-media-control-background);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid var(--ct-media-control-border);
 }
 
 .ct-feed-card__favorite.is-active {
     color: #171717;
     background: linear-gradient(180deg, rgba(245, 239, 230, 0.98), rgba(231, 225, 214, 0.94));
-    border-color: rgba(247, 243, 236, 0.38);
+    border-color: var(--ct-border-dark);
 }
 
 .ct-feed-card__content {
-    padding: 22px;
-    background: linear-gradient(180deg, rgba(13, 13, 13, 0.96), rgba(13, 13, 13, 0.86));
+    padding: 16px 18px 18px;
+    background: var(--ct-surface-strong);
 }
 
 .ct-feed-card__tag {
@@ -343,23 +338,23 @@
     color: var(--ct-accent);
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
 }
 
 .ct-feed-card__title {
     margin: 0 0 10px;
-    font-size: 32px;
-    line-height: 0.95;
-    letter-spacing: -0.05em;
-    text-transform: uppercase;
+    font-size: 28px;
+    line-height: 1.06;
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .ct-feed-card__description {
     margin: 0;
     color: var(--ct-text-soft);
     font-size: 14px;
-    line-height: 1.7;
+    line-height: 1.65;
 }
 
 .ct-detail-shell {
@@ -397,10 +392,10 @@
     right: 16px;
     bottom: 16px;
     padding: 28px;
-    border-radius: 32px;
+    border-radius: 8px;
     background: linear-gradient(180deg, rgba(245, 239, 230, 0.98), rgba(231, 225, 214, 0.96));
     color: var(--ct-text-dark);
-    box-shadow: 0 24px 90px rgba(0, 0, 0, 0.42);
+    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.28);
 }
 
 .ct-detail__close {
@@ -427,7 +422,7 @@
 .ct-detail__image {
     margin-top: 20px;
     width: 100%;
-    border-radius: 24px;
+    border-radius: 8px;
     aspect-ratio: 4 / 3;
     object-fit: cover;
 }

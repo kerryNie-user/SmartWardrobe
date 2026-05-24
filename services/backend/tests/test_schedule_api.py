@@ -1,11 +1,23 @@
+import datetime
 import pytest
-import json
 from services.backend.storage import JsonDatabase
 from services.backend.handler import create_handler
 from http.server import HTTPServer
 import threading
 import requests
-import time
+
+
+def _date_iso(offset_days=0):
+    return (datetime.date.today() + datetime.timedelta(days=offset_days)).strftime('%Y-%m-%d')
+
+
+def _date_parts(offset_days=0):
+    date_value = datetime.date.fromisoformat(_date_iso(offset_days))
+    return {
+        'dateISO': _date_iso(offset_days),
+        'day': f'{date_value.day:02d}',
+        'label': f"{date_value.strftime('%b')} / {date_value.strftime('%a')}"
+    }
 
 @pytest.fixture
 def db_storage(tmp_path):
@@ -36,44 +48,53 @@ def test_get_schedule_content_empty_fallback(db_storage):
 def test_get_schedule_content_with_data_sorting(db_storage):
     """When DB has schedules, get_schedule_content should group and sort them correctly."""
     user_id = 'user-096fb511f3ff'
+    future = _date_parts(1)
+    past = _date_parts(-5)
     
-    # Create out-of-order events
     db_storage.create_schedule(user_id, {
-        'tab': 'upcoming',
-        'day': '26',
-        'label': 'Oct / Sat',
+        'dateISO': future['dateISO'],
+        'day': future['day'],
+        'label': future['label'],
         'time': '10:00 AM',
         'title': 'Event B'
     })
     
     db_storage.create_schedule(user_id, {
-        'tab': 'upcoming',
-        'day': '24',
-        'label': 'Oct / Thu',
+        'dateISO': future['dateISO'],
+        'day': future['day'],
+        'label': future['label'],
         'time': '11:00 AM',
         'title': 'Event A2'
     })
     
     db_storage.create_schedule(user_id, {
-        'tab': 'upcoming',
-        'day': '24',
-        'label': 'Oct / Thu',
+        'dateISO': future['dateISO'],
+        'day': future['day'],
+        'label': future['label'],
         'time': '09:00 AM',
         'title': 'Event A1'
+    })
+
+    db_storage.create_schedule(user_id, {
+        'dateISO': past['dateISO'],
+        'day': past['day'],
+        'label': past['label'],
+        'time': '01:00 PM',
+        'title': 'History Event'
     })
     
     content = db_storage.get_schedule_content(user_id, locale='en-US')
     groups = content['views']['upcoming']['groups']
+    history_groups = content['views']['archive']['groups']
     
-    # Should group by day and sort by day -> time
-    assert len(groups) == 2
-    assert groups[0]['day'] == '24'
-    assert groups[1]['day'] == '26'
-    
-    # Check time sorting within the same day
-    assert len(groups[0]['events']) == 2
+    assert len(groups) == 1
+    assert groups[0]['day'] == future['day']
+    assert len(groups[0]['events']) == 3
     assert groups[0]['events'][0]['title'] == 'Event A1'
-    assert groups[0]['events'][1]['title'] == 'Event A2'
+    assert groups[0]['events'][1]['title'] == 'Event B'
+    assert groups[0]['events'][2]['title'] == 'Event A2'
+    assert len(history_groups) == 1
+    assert history_groups[0]['events'][0]['title'] == 'History Event'
 
 def test_get_schedule_content_localization(db_storage):
     """Check if schedule content is properly localized."""
@@ -112,3 +133,4 @@ def test_api_schedules_content(live_server):
     assert 'tabs' in data
     assert 'views' in data
     assert 'upcoming' in data['views']
+    assert 'archive' in data['views']

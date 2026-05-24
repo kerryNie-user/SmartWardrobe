@@ -24,6 +24,7 @@
 - `apps/web/js/lib/`：只放 domain store、service、selector、navigation、sync、auth 等复用逻辑。
 - `apps/web/js/data/`：只放静态文案、页面 copy、种子数据。
 - `services/backend/`：按启动、路由、存储、模型、测试分层，不把业务逻辑散进入口文件。
+- `services/ai_blogger/`：按 pipeline、prompt chain、topic、image、layout、protocol、worker 分层，不把批量生成、渲染、持久化继续堆在入口文件。
 - `tests/`：按页面、store、contract、API 分区，避免测试命名和职责混乱。
 
 ## 实施步骤（TDD）
@@ -49,6 +50,23 @@
 - [x] 11. 将 `storage.py` 收敛为 `JsonDatabase` facade，将账号、日程、收藏、发现、媒体、衣橱、编辑运营和 schema 拆入 `storage_domains/`。
 - [x] 12. 将模型注册表集中到 `models.py` 的 `ALL_MODELS`，避免初始化脚本和存储层重复维护表清单。
 - [x] 13. 更新后端 README 与边界测试，覆盖整个 `services/backend` 目录的职责划分。
+- [x] 14. 将 `services/ai_blogger/run_pipeline.py` 收敛为批量任务编排入口。
+- [x] 15. 将 AI Blogger 配置、选题、生成、图片追踪、HTML 渲染、数据库持久化和报告输出拆入 `services/ai_blogger/pipeline/`。
+- [x] 16. 保留 `run_pipeline.run_batch` 和 `run_pipeline.ImageTracker` 兼容出口，避免 backend 与脚本调用断裂。
+- [x] 17. 新增 AI Blogger pipeline 边界测试，防止入口文件重新堆叠下载、渲染和数据库写入逻辑。
+- [x] 18. 将 SmartWardrobe / ClosetTwin 专属博客提示词、布局规则和图片语义契约沉淀到 `experience/10_smartwardrobe_editorial_prompt_guide.md`。
+- [x] 19. 优化 AI Blogger 三阶段 prompt，让 angle、outline、draft 分别约束读者收益、编辑视角、段落任务、证据类型、布局节奏和图片 alt。
+- [x] 20. 扩展布局 registry 与 HTML 预览渲染，支持 `text_dense`、`list_bullets`，并转义模型生成内容。
+
+---
+
+## 已完成的衣橱收敛
+
+- [x] 衣橱页只保留一个“添加单品”入口，移除“快速新增”和“即时 AI 扫描”。
+- [x] 添加单品页只保留上传照片，去掉标题、分类、尺码、颜色、材质、收藏等手填项。
+- [x] 识图结果只通过模型接口返回并写入记录，前后端预留 `aiJson` 存储与读取接口。
+- [x] 衣橱分类筛选数量改为依据当前已有单品的真实分类统计。
+- [x] 单品页与衣橱页的文案收敛为“上传照片 -> 模型识别回填”的最小接口表达。
 
 ---
 

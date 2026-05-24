@@ -1,4 +1,4 @@
-import { getLocale, getSharedCopy } from '../lib/locale.js';
+import { getLocale, getSharedCopy, getUiCopy } from '../lib/locale.js';
 import { getCurrentPath } from '../lib/navigationAdapter.js';
 
 function normalizeHref(value) {
@@ -25,7 +25,9 @@ function renderControl({ label, icon, href }) {
 }
 
 export function renderTopbar(options = {}) {
-    const sharedCopy = getSharedCopy(getLocale());
+    const locale = getLocale();
+    const sharedCopy = getSharedCopy(locale);
+    const uiCopy = getUiCopy(locale);
     const {
         leftLabel = sharedCopy.topbar.openMenu,
         leftIcon = '≡',
@@ -41,7 +43,7 @@ export function renderTopbar(options = {}) {
     return `
         <div class="ct-topbar">
             ${leftControl}
-            <div class="ct-topbar__brand">CLOSETTWIN</div>
+            <div class="ct-topbar__brand">${uiCopy.brand}</div>
             ${rightControl}
         </div>
     `;

@@ -1,18 +1,21 @@
-import { getLocale, getSharedCopy } from '../lib/locale.js';
+import { getLocale, getSharedCopy, getUiCopy } from '../lib/locale.js';
 import { renderStatePanel } from './statePanel.js';
 import { renderLoadFailedPanel } from './errorPanel.js';
 
-export function renderScheduleTimeline(groups, syncState = null) {
-    const sharedCopy = getSharedCopy(getLocale());
+export function renderScheduleTimeline(groups, syncState = null, options = {}) {
+    const locale = getLocale();
+    const sharedCopy = getSharedCopy(locale);
+    const uiCopy = getUiCopy(locale);
+    const mode = options.mode || 'upcoming';
     if (!groups.length) {
         if (syncState?.status === 'failed') {
             const message = String(syncState?.error || '').trim();
-            return renderLoadFailedPanel(message, getLocale() === 'zh-CN' ? '日程加载失败。' : 'Failed to load schedule.');
+            return renderLoadFailedPanel(message, uiCopy.states.scheduleLoadFailed);
         }
         return renderStatePanel({
             kind: 'empty',
-            eyebrow: sharedCopy.misc.noEvents,
-            description: getLocale() === 'zh-CN' ? '添加一条新日程，开始完善这个时间视图。' : 'Add a new event to start shaping this schedule view.'
+            eyebrow: options.emptyEyebrow || sharedCopy.misc.noEvents,
+            description: options.emptyDescription || uiCopy.states.scheduleEmptyDescription
         });
     }
 
@@ -27,13 +30,15 @@ export function renderScheduleTimeline(groups, syncState = null) {
                     <ul class="ct-schedule-group__events">
                         ${group.events.map((event) => `
                             <li class="ct-schedule-group__event-item">
-                                <article class="ct-schedule-card">
+                                <article class="ct-schedule-card${mode === 'history' ? ' is-history' : ''}">
                                     <div class="ct-schedule-card__content">
                                         <div class="ct-schedule-card__topline">
                                             <span class="ct-schedule-card__time">${event.time}</span>
                                             <div class="ct-schedule-card__controls">
-                                                <button class="ct-schedule-card__toggle js-toggle-reminder${event.reminderEnabled ? ' is-active' : ''}" type="button" data-ct-toggle-schedule-reminder="${event.id}" aria-pressed="${event.reminderEnabled ? 'true' : 'false'}">${getLocale() === 'zh-CN' ? '提醒' : 'Reminder'}</button>
-                                                <a class="ct-schedule-card__edit" href="schedule-event.html?id=${event.id}">${getLocale() === 'zh-CN' ? '编辑' : 'Edit'}</a>
+                                                ${mode === 'history' ? '' : `
+                                                    <button class="ct-schedule-card__toggle js-toggle-reminder${event.reminderEnabled ? ' is-active' : ''}" type="button" data-ct-toggle-schedule-reminder="${event.id}" aria-pressed="${event.reminderEnabled ? 'true' : 'false'}">${uiCopy.schedule.reminder}</button>
+                                                    <a class="ct-schedule-card__edit" href="schedule-event.html?id=${event.id}">${uiCopy.schedule.edit}</a>
+                                                `}
                                                 <button class="ct-schedule-card__delete js-request-delete" type="button" data-ct-delete-schedule="${event.id}" aria-label="${sharedCopy.actions.delete} ${event.title}">${sharedCopy.actions.delete}</button>
                                             </div>
                                         </div>

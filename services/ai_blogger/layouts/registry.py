@@ -65,6 +65,8 @@ class LayoutRegistry:
             LayoutDefinition(name="float_right_photo", images_required=1, params_schema={}),
             LayoutDefinition(name="pull_quote_center", images_required=0, params_schema={}),
             LayoutDefinition(name="tip_box_rules", images_required=0, params_schema={}),
+            LayoutDefinition(name="text_dense", images_required=0, params_schema={}),
+            LayoutDefinition(name="list_bullets", images_required=0, params_schema={}),
             LayoutDefinition(name="lookbook_cards_3", images_required=3, params_schema={}),
             LayoutDefinition(name="image_mosaic_3", images_required=3, params_schema={})
         ]

@@ -8,6 +8,7 @@
 2. **再搭结构**：打开 `04_article_structures_templates.md`，挑一个结构骨架把段落先铺开。
 3. **最后打磨语言 + 排版 + 配图**：分别用 `03_language_style_toolkit.md`、`06_typography_layout_checklist.md`、`07_images_and_visuals.md`。
 4. **需要短内容（推文/线程）时**：直接复制 `05_microcontent_twitter_templates.md` 的模板。
+5. **生成 SmartWardrobe 正式博客前**：先读 `10_smartwardrobe_editorial_prompt_guide.md`，确保文章能落到衣橱动作和 ClosetTwin 的内容气质。
 
 ## 文件导航
 
@@ -20,6 +21,7 @@
 - [`07_images_and_visuals.md`](./07_images_and_visuals.md)：配图策略与图片检索 Query 模板（怎么搜）
 - [`08_case_studies_breakdowns.md`](./08_case_studies_breakdowns.md)：标杆案例拆解（可迁移套路）
 - [`09_image_libraries_and_selection.md`](./09_image_libraries_and_selection.md)：精品图片资源库 + 选图方法 + 版权合规（搜到后怎么选）
+- [`10_smartwardrobe_editorial_prompt_guide.md`](./10_smartwardrobe_editorial_prompt_guide.md)：SmartWardrobe 专属提示词、布局和图片语义规则
 
 ## 维护约定（建议）
 

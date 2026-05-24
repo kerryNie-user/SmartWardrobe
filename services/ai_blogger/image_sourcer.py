@@ -5,8 +5,43 @@ import requests
 import re
 import os
 import json
+from functools import lru_cache
+from urllib.parse import urlparse
 
 logging.basicConfig(level=logging.INFO)
+
+
+def _is_network_url(url: str | None) -> bool:
+    parsed = urlparse(str(url or "").strip())
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _is_low_quality_bing_url(url: str | None) -> bool:
+    parsed = urlparse(str(url or "").strip())
+    host = parsed.netloc.lower().replace("www.", "")
+    path = parsed.path.lower()
+    blocked_hosts = (
+        "youtube.com",
+        "youtu.be",
+        "gifer.com",
+        "giphy.com",
+        "reddit.com",
+        "facebook.com",
+        "fbcdn.net",
+        "lookaside.fbsbx.com",
+        "amazon.com",
+        "media-amazon.com",
+        "pinimg.com",
+        "pinterest.",
+        "ibooks-japan.com",
+        "gystars.com",
+    )
+    if any(blocked in host for blocked in blocked_hosts):
+        return True
+    if path.endswith((".gif", ".svg")) or "/vector/" in path:
+        return True
+    return False
+
 
 def get_image_from_met(query: str) -> str | None:
     """
@@ -26,12 +61,13 @@ def get_image_from_met(query: str) -> str | None:
                 if obj_res.status_code == 200:
                     obj_data = obj_res.json()
                     img_url = obj_data.get("primaryImage") or obj_data.get("primaryImageSmall")
-                    if img_url:
+                    if _is_network_url(img_url):
                         return img_url
     except Exception as e:
         logging.warning(f"Met API Error for '{query}': {e}")
     return None
 
+@lru_cache(maxsize=128)
 def get_pexels_candidates(query: str, per_page: int = 5) -> list[str]:
     """
     Returns high-resolution images from Pexels.
@@ -75,6 +111,94 @@ def get_pexels_candidates(query: str, per_page: int = 5) -> list[str]:
         logging.warning(f"Pexels Scrape Failed for '{query}': {e}")
     return []
 
+
+def _pexels_query_variants(query: str) -> list[str]:
+    q = str(query or "").strip()
+    variants = [q]
+    replacements = [
+        ("trousers", "pants"),
+        ("pants", "trousers"),
+        ("shirt", "blouse"),
+        ("blouse", "shirt"),
+        ("jumpsuit", "romper"),
+        ("blazer", "suit"),
+    ]
+    for old, new in replacements:
+        if old in q.lower():
+            variants.append(re.sub(rf"\b{re.escape(old)}\b", new, q, flags=re.IGNORECASE))
+    simplified = re.sub(r"\b(?:fashion|editorial|photography|outfit)\b", "", q, flags=re.IGNORECASE)
+    simplified = re.sub(r"\s+", " ", simplified).strip()
+    if simplified and simplified != q:
+        variants.append(simplified)
+    for modifier in ("full body", "street style", "portrait", "detail"):
+        if modifier not in q.lower():
+            variants.append(f"{q} {modifier}")
+    out = []
+    for item in variants:
+        item = re.sub(r"\s+", " ", item).strip()
+        if item and item not in out:
+            out.append(item)
+    return out
+
+
+def _pexels_photo_cluster(url: str | None) -> str:
+    match = re.search(r"/photos/(\d+)/", str(url or ""))
+    if not match:
+        return ""
+    try:
+        # Consecutive Pexels IDs often come from one shoot. Prefer other clusters first
+        # so one article does not look like repeated crops of the same image.
+        return str(int(match.group(1)) // 10)
+    except ValueError:
+        return ""
+
+
+@lru_cache(maxsize=128)
+def get_pexels_candidates_multi(query: str, per_page: int = 5) -> list[str]:
+    grouped_urls = []
+    for variant in _pexels_query_variants(query):
+        urls = []
+        for url in get_pexels_candidates(variant, per_page=per_page):
+            if _is_network_url(url) and url not in urls:
+                urls.append(url)
+        if urls:
+            grouped_urls.append(urls)
+
+    prioritized = []
+    deferred = []
+    seen_urls = set()
+    seen_clusters = set()
+    max_group_len = max((len(group) for group in grouped_urls), default=0)
+    for index in range(max_group_len):
+        for group in grouped_urls:
+            if index >= len(group):
+                continue
+            url = group[index]
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+            cluster = _pexels_photo_cluster(url)
+            if cluster and cluster in seen_clusters:
+                deferred.append(url)
+                continue
+            if cluster:
+                seen_clusters.add(cluster)
+            prioritized.append(url)
+            if len(prioritized) >= per_page:
+                return prioritized[:per_page]
+
+    for url in deferred:
+        if url not in prioritized:
+            prioritized.append(url)
+        if len(prioritized) >= per_page:
+            break
+    return prioritized[:per_page]
+
+
+def _bing_fallback_enabled() -> bool:
+    return str(os.getenv("AI_BLOGGER_ENABLE_BING_FALLBACK", "")).strip().lower() in {"1", "true", "yes"}
+
+
 def get_bing_candidates(query: str, per_page: int = 5) -> list[str]:
     """
     使用 Bing 搜索真实图片，并通过去重和随机抽样提高多样性。
@@ -86,7 +210,7 @@ def get_bing_candidates(query: str, per_page: int = 5) -> list[str]:
     import json
 
     # 策略 1: 视角关键词轮换 (打破默认聚合逻辑)
-    perspectives = ["", " backstage", " close-up details", " runway full body", " street style"]
+    perspectives = ["", " full body outfit", " fashion editorial", " portrait outfit"]
     enhanced_query = f"{query}{random.choice(perspectives)}"
     logging.info(f"Bing Search Query: {enhanced_query}")
     
@@ -141,6 +265,9 @@ def get_bing_candidates(query: str, per_page: int = 5) -> list[str]:
                 img_domain = urlparse(img_url).netloc.lower().replace("www.", "")
                 source_domain = urlparse(source_url).netloc.lower().replace("www.", "") if source_url else ""
                 
+                if not _is_network_url(img_url) or _is_low_quality_bing_url(img_url):
+                    continue
+
                 if img_domain in seen_domains or (source_domain and source_domain in seen_domains):
                     continue
                     
@@ -163,44 +290,39 @@ def get_bing_candidates(query: str, per_page: int = 5) -> list[str]:
 def get_image_candidates(query: str, config: dict, per_page: int = 5, force_ai: bool = False) -> list[dict]:
     """
     Returns a prioritized list of image dictionary objects.
-    Priority 1: The Met (if vintage/art/history)
-    Priority 2: Pexels Real Images
-    Priority 3: Trae AI Text-to-Image Generation (Fallback)
+    Priority 1: Pexels real images for consistent editorial quality
+    Priority 2: The Met (if vintage/art/history)
+    Priority 3: Bing Search Images as network fallback
     """
     q = query or "high fashion editorial photography"
     candidates = []
-    
-    if not force_ai:
-        remaining_slots = per_page
-        
-        # 1. The Met (Highest priority for historical/artistic queries)
-        if any(kw in q.lower() for kw in ["vintage", "history", "art", "retro"]):
-            met_url = get_image_from_met(q)
-            if met_url:
+
+    remaining_slots = per_page
+
+    # 1. Pexels search (higher visual consistency for fashion editorials)
+    if remaining_slots > 0:
+        pexels_urls = get_pexels_candidates_multi(q, per_page=remaining_slots)
+        for url in pexels_urls:
+            if _is_network_url(url):
+                candidates.append({"source_type": "pexels", "original_url": url, "search_query": q})
+        remaining_slots -= len(candidates)
+
+    # 2. The Met (only for historical/artistic queries)
+    if remaining_slots > 0 and any(kw in q.lower() for kw in ["vintage", "history", "art", "retro"]):
+        met_url = get_image_from_met(q)
+        if met_url:
+            if _is_network_url(met_url):
                 candidates.append({"source_type": "met", "original_url": met_url, "search_query": q})
                 remaining_slots -= 1
-                
-        # 2. Bing Search (For real event/news/runway photos)
-        if remaining_slots > 0:
-            bing_urls = get_bing_candidates(q, per_page=remaining_slots)
-            for url in bing_urls:
+
+    # 3. Bing Search (network fallback, opt-in because generic image search can return low-quality diagrams or unrelated media)
+    if remaining_slots > 0 and _bing_fallback_enabled():
+        bing_urls = get_bing_candidates(q, per_page=remaining_slots)
+        added = 0
+        for url in bing_urls:
+            if _is_network_url(url):
                 candidates.append({"source_type": "bing", "original_url": url, "search_query": q})
-            remaining_slots -= len(bing_urls)
-        
-        # 3. Pexels search (Fallback for general high-quality stock photography)
-        if remaining_slots > 0:
-            pexels_urls = get_pexels_candidates(q, per_page=remaining_slots)
-            for url in pexels_urls:
-                candidates.append({"source_type": "pexels", "original_url": url, "search_query": q})
-    
-    # 3. Trae AI Fallbacks (Guaranteed to return an image, but generated)
-    image_size = config.get("image_size", "portrait_4_3")
-    
-    # We add 2 AI fallback variations at the very end of the list
-    for i in range(2):
-        variation = f" variation {random.randint(1, 99999)}" if i > 0 else ""
-        final_q = urllib.parse.quote(q + variation)
-        trae_api_url = f"https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt={final_q}&image_size={image_size}"
-        candidates.append({"source_type": "trae_ai", "original_url": trae_api_url, "search_query": urllib.parse.unquote(final_q)})
-        
+                added += 1
+        remaining_slots -= added
+
     return candidates

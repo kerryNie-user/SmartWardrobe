@@ -2,7 +2,7 @@ import { renderTopbar } from '../components/topbar.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
 import { getProfilePageContent } from '../data/profile.js';
-import { applyLocaleDocument, getLocale } from '../lib/locale.js';
+import { applyLocaleDocument, getLocale, getUiCopy } from '../lib/locale.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createProfilePageContract } from '../lib/pageContracts.js';
 import { buildProfilePageSelectorInput } from '../lib/profileSelectors.js';
@@ -13,11 +13,15 @@ import { hydrateSettings, subscribeSettingsStore } from '../lib/settingsStore.js
 import { renderLoadFailedPanel } from '../components/errorPanel.js';
 
 function renderProfileSummary(content, profile, stats, wardrobeCount) {
+    const avatar = profile.avatar
+        ? `<img class="ct-profile-summary__avatar" src="${profile.avatar}" alt="${profile.name}">`
+        : `<span class="ct-profile-summary__avatar-placeholder" aria-hidden="true">${String(profile.name || 'CT').trim().slice(0, 2).toUpperCase()}</span>`;
+
     return `
         <section class="ct-profile-summary" data-ct-profile-summary>
             <div class="ct-profile-summary__hero">
                 <div class="ct-profile-summary__avatar-frame">
-                    <img class="ct-profile-summary__avatar" src="${profile.avatar}" alt="${profile.name}">
+                    ${avatar}
                 </div>
                 <div class="ct-profile-summary__copy">
                     <span class="ct-eyebrow">${content.hero.eyebrow}</span>
@@ -111,7 +115,7 @@ export function renderProfilePage() {
             const sync = contract.sync
             if (sync.failedDomains?.length) {
                 const state = getProfileSyncState()
-                summaryRoot.innerHTML = renderLoadFailedPanel(state?.error, locale === 'zh-CN' ? '资料加载失败。' : 'Failed to load profile.')
+                summaryRoot.innerHTML = renderLoadFailedPanel(state?.error, getUiCopy(locale).states.profileLoadFailed)
             } else {
                 const summaryView = contract.derivedView.summary;
                 summaryRoot.innerHTML = renderProfileSummary(
@@ -127,7 +131,7 @@ export function renderProfilePage() {
             const sync = contract.sync
             if (sync.failedDomains?.length) {
                 const state = getFavoritesSyncState()
-                previewRoot.innerHTML = renderLoadFailedPanel(state?.error, locale === 'zh-CN' ? '收藏预览加载失败。' : 'Failed to load favorites preview.')
+                previewRoot.innerHTML = renderLoadFailedPanel(state?.error, getUiCopy(locale).states.favoritesPreviewLoadFailed)
             } else {
                 previewRoot.innerHTML = renderProfilePreviewCollection(content, contract.derivedView.previewItems);
             }
@@ -161,21 +165,21 @@ export function renderProfilePage() {
             bindings: [
                 {
                     key: 'profile',
-                    label: { 'zh-CN': '资料', 'en-US': 'Profile' },
+                    domainKey: 'profile',
                     getState: () => getProfileSyncState(),
                     subscribe: (listener) => subscribeProfileSyncState(listener),
                     retry: (nextLocale) => retryProfileSync(nextLocale)
                 },
                 {
                     key: 'favorites',
-                    label: { 'zh-CN': '收藏', 'en-US': 'Favorites' },
+                    domainKey: 'favorites',
                     getState: () => getFavoritesSyncState(),
                     subscribe: (listener) => subscribeFavoritesSyncState(listener),
                     retry: () => retryFavoritesSync()
                 },
                 {
                     key: 'wardrobe',
-                    label: { 'zh-CN': '衣橱', 'en-US': 'Wardrobe' },
+                    domainKey: 'wardrobe',
                     getState: () => getWardrobeSyncState(),
                     subscribe: (listener) => subscribeWardrobeSyncState(listener),
                     retry: (nextLocale) => retryWardrobeSync(nextLocale)

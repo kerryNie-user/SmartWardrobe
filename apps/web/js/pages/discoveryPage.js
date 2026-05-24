@@ -4,12 +4,14 @@ import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
 import { renderTrendStrip } from '../components/trendStrip.js';
 import { renderDiscoveryFeed } from '../components/discoveryFeed.js';
 import { renderBottomNav } from '../components/bottomNav.js';
-import { applyLocaleDocument, getLocale } from '../lib/locale.js';
+import { applyLocaleDocument, getLocale, getUiCopy } from '../lib/locale.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createDiscoveryPageContract } from '../lib/pageContracts.js';
 import { getDiscoveryContent } from '../data/discovery.js';
 import { getDiscoverySocialSyncState, getPostSocialState, hydrateDiscoverySocial, retryDiscoverySocialSync, subscribeDiscoverySocialStore, subscribeDiscoverySocialSyncState, toggleDiscoveryPostLike } from '../lib/discoverySocialStore.js';
 import { getDiscoveryViewSnapshot, getDiscoveryViewSyncState, hydrateDiscoveryView, retryDiscoveryViewHydration, setDiscoveryQuery, subscribeDiscoveryViewStore, subscribeDiscoveryViewSyncState } from '../lib/discoveryViewStore.js';
+import { restoreDiscoveryScrollState, saveDiscoveryScrollState } from '../lib/discoveryScrollState.js';
+import { installVerticalDragScroll } from '../lib/verticalDragScroll.js';
 
 const DISCOVERY_PANEL_ID = 'ct-discovery-feed-panel';
 
@@ -42,6 +44,8 @@ export function renderDiscoveryPage() {
     const bottomNavRoot = document.querySelector('[data-ct-bottom-nav]');
     const syncFeedbackRoot = ensureSyncFeedbackRoot(topbarRoot, 'discovery');
     const listenerCleanups = [];
+    const dragScrollBinding = installVerticalDragScroll(document);
+    listenerCleanups.push(() => dragScrollBinding.teardown());
 
     const paint = () => {
         const locale = getLocale();
@@ -71,8 +75,9 @@ export function renderDiscoveryPage() {
         if (!feedRoot) return;
         feedRoot.id = DISCOVERY_PANEL_ID;
         feedRoot.setAttribute('role', 'region');
-        feedRoot.setAttribute('aria-label', locale === 'zh-CN' ? '发现内容' : 'Discovery feed');
+        feedRoot.setAttribute('aria-label', getUiCopy(locale).domains.discoveryView);
         feedRoot.innerHTML = renderDiscoveryFeed(contract.derivedView.feed.items, getDiscoveryViewSyncState());
+        restoreDiscoveryScrollState(feedRoot);
     };
 
     if (searchRoot) {
@@ -92,6 +97,14 @@ export function renderDiscoveryPage() {
                 const postId = likeButton.getAttribute('data-ct-toggle-post-like');
                 toggleDiscoveryPostLike(postId);
                 return;
+            }
+
+            const postLink = event.target.closest('[data-ct-post-link]');
+            if (postLink) {
+                const post = postLink.closest('[data-post-id]');
+                saveDiscoveryScrollState({
+                    postId: post?.getAttribute('data-post-id') || ''
+                });
             }
         };
         feedRoot.addEventListener('click', handleFeedClick);
@@ -115,14 +128,14 @@ export function renderDiscoveryPage() {
             bindings: [
                 {
                     key: 'discoveryView',
-                    label: { 'zh-CN': '发现视图', 'en-US': 'Discovery View' },
+                    domainKey: 'discoveryView',
                     getState: () => getDiscoveryViewSyncState(),
                     subscribe: (listener) => subscribeDiscoveryViewSyncState(listener),
                     retry: () => retryDiscoveryViewHydration(getLocale())
                 },
                 {
                     key: 'discoverySocial',
-                    label: { 'zh-CN': '发现社交', 'en-US': 'Discovery Social' },
+                    domainKey: 'discoverySocial',
                     getState: () => getDiscoverySocialSyncState(),
                     subscribe: (listener) => subscribeDiscoverySocialSyncState(listener),
                     retry: () => retryDiscoverySocialSync(getLocale())

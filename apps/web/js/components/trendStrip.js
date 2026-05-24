@@ -14,7 +14,7 @@ export function renderTrendStrip(section) {
                 ${section.items.map((item) => `
                     <li class="ct-trend-strip__item">
                         <article class="ct-trend-card">
-                            <img class="ct-trend-card__image" src="${item.image}" alt="${item.title}">
+                            <img class="ct-trend-card__image" src="${item.image}" alt="${item.title}" draggable="false">
                             <div class="ct-trend-card__overlay">
                                 <span class="ct-trend-card__tag">${item.tag}</span>
                                 <h3 class="ct-trend-card__title">${item.title}</h3>

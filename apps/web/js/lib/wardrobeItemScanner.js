@@ -1,0 +1,146 @@
+const SCAN_ENDPOINT_STORAGE_KEY = 'ct_wardrobe_scan_endpoint'
+
+export const WARDROBE_SCAN_STATUS = Object.freeze({
+    READY: 'ready',
+    UNAVAILABLE: 'unavailable',
+    ERROR: 'error'
+})
+
+function normalizeEndpoint(value) {
+    return String(value || '').trim()
+}
+
+function readStoredEndpoint() {
+    if (typeof window === 'undefined') return ''
+    try {
+        return normalizeEndpoint(window.localStorage?.getItem(SCAN_ENDPOINT_STORAGE_KEY))
+    } catch {
+        return ''
+    }
+}
+
+function resolveEndpoint(options = {}) {
+    return normalizeEndpoint(options.endpoint)
+        || normalizeEndpoint(typeof window !== 'undefined' ? window.__CT_WARDROBE_SCAN_ENDPOINT__ : '')
+        || readStoredEndpoint()
+}
+
+function resolveFetch(options = {}) {
+    if (typeof options.fetchImpl === 'function') return options.fetchImpl
+    if (typeof window !== 'undefined' && typeof window.fetch === 'function') return window.fetch.bind(window)
+    if (typeof globalThis.fetch === 'function') return globalThis.fetch
+    return null
+}
+
+function normalizeArray(value) {
+    return Array.isArray(value)
+        ? value.map((item) => String(item || '').trim()).filter(Boolean)
+        : []
+}
+
+function pickObject(payload) {
+    if (!payload || typeof payload !== 'object') return {}
+    return payload.item || payload.wardrobeItem || payload.result || payload.data || payload
+}
+
+function normalizeScannedItem(payload) {
+    const item = pickObject(payload)
+    const image = item.image || item.imageUrl || item.image_url || item.photoUrl || item.photo_url || item.imageData || item.image_data || ''
+    const tags = normalizeArray(item.tags || item.aiTags || item.ai_tags)
+    return {
+        id: item.id || '',
+        title: item.title || item.name || '',
+        category: item.category || item.type || '',
+        size: item.size || '',
+        color: item.color || '',
+        material: item.material || '',
+        image,
+        filter: item.filter || item.filterKey || item.filter_key || '',
+        favorite: Boolean(item.favorite),
+        tags,
+        aiMetadata: item.aiMetadata || item.ai_metadata || item.metadata || null
+    }
+}
+
+function buildMetadata(file, extra = {}) {
+    return {
+        fileName: file?.name || '',
+        fileType: file?.type || '',
+        fileSize: Number(file?.size || 0),
+        ...extra
+    }
+}
+
+export async function scanWardrobePhoto(file, options = {}) {
+    const endpoint = resolveEndpoint(options)
+    const request = resolveFetch(options)
+    const FormDataClass = typeof window !== 'undefined' ? window.FormData : globalThis.FormData
+
+    if (!file || !String(file.type || '').startsWith('image/')) {
+        return {
+            ok: false,
+            status: WARDROBE_SCAN_STATUS.ERROR,
+            source: 'wardrobe-item-scanner',
+            item: {},
+            raw: null,
+            metadata: buildMetadata(file, { reason: 'invalid-image-file' })
+        }
+    }
+
+    if (!endpoint || !request || typeof FormDataClass !== 'function') {
+        return {
+            ok: false,
+            status: WARDROBE_SCAN_STATUS.UNAVAILABLE,
+            source: 'wardrobe-item-scanner',
+            item: {},
+            raw: null,
+            metadata: buildMetadata(file, { reason: 'scan-endpoint-not-configured' })
+        }
+    }
+
+    const formData = new FormDataClass()
+    formData.append('photo', file, file.name || 'wardrobe-photo')
+
+    try {
+        const response = await request(endpoint, {
+            method: 'POST',
+            body: formData
+        })
+        const payload = await response.json().catch(() => null)
+
+        if (!response.ok) {
+            return {
+                ok: false,
+                status: WARDROBE_SCAN_STATUS.ERROR,
+                source: 'wardrobe-item-scanner',
+                item: {},
+                raw: payload,
+                metadata: buildMetadata(file, {
+                    reason: payload?.error?.code || payload?.error || 'scan-request-failed',
+                    status: response.status
+                })
+            }
+        }
+
+        return {
+            ok: true,
+            status: WARDROBE_SCAN_STATUS.READY,
+            source: 'wardrobe-item-scanner',
+            item: normalizeScannedItem(payload),
+            raw: payload,
+            metadata: buildMetadata(file, { endpoint })
+        }
+    } catch (error) {
+        return {
+            ok: false,
+            status: WARDROBE_SCAN_STATUS.ERROR,
+            source: 'wardrobe-item-scanner',
+            item: {},
+            raw: null,
+            metadata: buildMetadata(file, {
+                reason: 'scan-request-error',
+                message: error?.message || ''
+            })
+        }
+    }
+}

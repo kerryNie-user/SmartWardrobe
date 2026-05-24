@@ -44,7 +44,7 @@ async function main() {
     assert.ok(/title/i.test(notice.textContent), 'Expected title validation message');
   });
 
-  await runTest('Wardrobe Item 空标题提交应展示校验提示', async () => {
+  await runTest('Wardrobe Item 空照片提交应展示校验提示', async () => {
     const dom = createDom('wardrobe-item.html', 'http://localhost/wardrobe-item.html');
 
     global.window = dom.window;
@@ -59,12 +59,11 @@ async function main() {
     const { renderWardrobeItemPage } = await import(modulePath);
     renderWardrobeItemPage();
 
-    dom.window.document.querySelector('[name="title"]').value = '';
     dom.window.document.querySelector('[data-ct-wardrobe-item-form]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
 
     const notice = dom.window.document.querySelector('[data-ct-form-notice]');
     assert.ok(notice, 'Missing form notice root');
-    assert.ok(/title/i.test(notice.textContent), 'Expected title validation message');
+    assert.ok(/照片|photo/i.test(notice.textContent), 'Expected photo validation message');
   });
 
   await runTest('Wardrobe Item 带未知 id 时应提示并阻止提交', async () => {
@@ -91,7 +90,7 @@ async function main() {
     assert.strictEqual(submit.disabled, true, 'Submit should be disabled when item id is invalid');
   });
 
-  await runTest('Wardrobe Quick Add 空标题提交应展示校验提示', async () => {
+  await runTest('Wardrobe 页面不应再渲染内联新增表单', async () => {
     const dom = createDom('wardrobe.html', 'http://localhost/wardrobe.html');
 
     global.window = dom.window;
@@ -106,12 +105,8 @@ async function main() {
     const { renderWardrobePage } = await import(modulePath);
     renderWardrobePage();
 
-    dom.window.document.querySelector('[data-ct-add-wardrobe]').click();
-    dom.window.document.querySelector('[data-ct-wardrobe-form]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
-
-    const notice = dom.window.document.querySelector('[data-ct-wardrobe-form] [data-ct-form-notice]');
-    assert.ok(notice, 'Missing form notice root');
-    assert.ok(/title/i.test(notice.textContent), 'Expected title validation message');
+    assert.strictEqual(dom.window.document.querySelector('[data-ct-wardrobe-form]'), null, 'Inline wardrobe form should be removed');
+    assert.strictEqual(dom.window.document.querySelector('[data-ct-add-wardrobe]'), null, 'Quick add button should be removed');
   });
 
   await runTest('Login 空账号提交应展示校验提示', async () => {

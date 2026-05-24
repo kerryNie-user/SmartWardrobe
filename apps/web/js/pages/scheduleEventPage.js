@@ -2,12 +2,13 @@ import { renderTopbar } from '../components/topbar.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
 import { bindFormNoticeActions, renderFormNotice } from '../components/formNotice.js';
-import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js';
+import { applyLocaleDocument, getLocale, getSharedCopy, getUiCopy } from '../lib/locale.js';
 import { navigateTo } from '../lib/navigation.js';
 import { getQueryParam } from '../lib/navigationAdapter.js';
 import { getFormFeedbackCopy, focusFirstInvalidField, setFormSubmitting, validateRequired } from '../lib/formValidation.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createScheduleEventPageContract } from '../lib/pageContracts.js';
+import { formatScheduleDateParts, getDefaultScheduleDateISO, normalizeScheduleDateInput, resolveScheduleDate } from '../lib/scheduleDate.js';
 import { getScheduleState, createScheduleEvent, getScheduleEventById, getScheduleSyncState, hydrateSchedule, retryScheduleSync, subscribeScheduleStore, subscribeScheduleSyncState, updateScheduleEvent } from '../lib/scheduleStore.js';
 import { clearScheduleDraft, getScheduleDraft } from '../lib/scheduleDraft.js';
 
@@ -17,34 +18,33 @@ function getEventId() {
 
 function renderScheduleEventForm(content, locale, event) {
     const sharedCopy = getSharedCopy(locale);
+    const uiCopy = getUiCopy(locale);
     const isEditing = Boolean(event?.id);
-    const { form: formCopy = {}, tabs: tabsCopy = [] } = content;
+    const eventPageCopy = uiCopy.schedule.eventPage;
+    const resolvedDate = event ? resolveScheduleDate(event, event) : null;
+    const dateISO = event?.dateISO || resolvedDate?.dateISO || getDefaultScheduleDateISO();
+    const dateParts = dateISO ? formatScheduleDateParts(dateISO, locale) : null;
+    const dayValue = dateParts?.day || event?.day || '';
+    const labelValue = dateParts?.label || event?.label || '';
 
     return `
         <section class="ct-schedule-event-shell">
             <form class="ct-schedule-form" data-ct-schedule-event-form>
                 <input type="hidden" name="eventId" value="${event?.id || ''}">
+                <input type="hidden" name="tab" value="upcoming">
+                <input type="hidden" name="day" value="${dayValue}">
+                <input type="hidden" name="label" value="${labelValue}">
                 <div class="ct-schedule-form__header">
                     <div>
-                        <span class="ct-eyebrow">${isEditing ? (locale === 'zh-CN' ? '编辑日程' : 'Edit Event') : (locale === 'zh-CN' ? '新增日程' : 'Add Event')}</span>
-                        <h1 class="ct-schedule-form__heading">${isEditing ? (locale === 'zh-CN' ? '更新这条提醒事项' : 'Update this schedule entry') : (locale === 'zh-CN' ? '创建一条新提醒事项' : 'Create a new schedule entry')}</h1>
+                        <span class="ct-eyebrow">${isEditing ? eventPageCopy.editEyebrow : eventPageCopy.addEyebrow}</span>
+                        <h1 class="ct-schedule-form__heading">${isEditing ? eventPageCopy.editTitle : eventPageCopy.addTitle}</h1>
                     </div>
-                    <p class="ct-schedule-form__intro">${locale === 'zh-CN' ? '只保留时间、地点、标签与提醒开关，适合作为纯日程系统使用。' : 'A plain schedule entry: time, location, tags, and an optional reminder.'}</p>
+                    <p class="ct-schedule-form__intro">${eventPageCopy.intro}</p>
                 </div>
                 <div class="ct-schedule-form__grid">
                     <div class="ct-schedule-form__field">
-                        <label for="ct-schedule-tab">${content.form.labels.tab}</label>
-                        <select id="ct-schedule-tab" name="tab" aria-label="${content.form.labels.tab}">
-                            ${content.tabs.map((tab) => `<option value="${tab.key}"${event?.tab === tab.key ? ' selected' : ''}>${tab.label}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="ct-schedule-form__field">
-                        <label for="ct-schedule-day">${content.form.labels.day}</label>
-                        <input id="ct-schedule-day" name="day" type="text" value="${event?.day || ''}" placeholder="${content.form.placeholders.day}" aria-label="${content.form.labels.day}">
-                    </div>
-                    <div class="ct-schedule-form__field">
-                        <label for="ct-schedule-label">${content.form.labels.dateLabel}</label>
-                        <input id="ct-schedule-label" name="label" type="text" value="${event?.label || ''}" placeholder="${content.form.placeholders.dateLabel}" aria-label="${content.form.labels.dateLabel}">
+                        <label for="ct-schedule-date">${content.form.labels.date || content.form.labels.dateLabel}</label>
+                        <input id="ct-schedule-date" name="dateISO" type="date" value="${dateISO}" aria-label="${content.form.labels.date || content.form.labels.dateLabel}">
                     </div>
                     <div class="ct-schedule-form__field">
                         <label for="ct-schedule-time">${content.form.labels.time}</label>
@@ -65,13 +65,13 @@ function renderScheduleEventForm(content, locale, event) {
                     <div class="ct-schedule-form__field is-full">
                         <label class="ct-schedule-form__toggle">
                             <input name="reminderEnabled" type="checkbox"${event?.reminderEnabled ? ' checked' : ''}>
-                            <span>${content.form.labels.reminder || (locale === 'zh-CN' ? '提醒' : 'Reminder')}</span>
+                            <span>${content.form.labels.reminder || uiCopy.schedule.reminder}</span>
                         </label>
                     </div>
                 </div>
                 <div class="ct-schedule-form__actions">
                     <a class="ct-schedule-form__cancel" href="schedule.html">${sharedCopy.actions.cancel}</a>
-                    <button class="ct-schedule-form__submit" type="submit">${isEditing ? (content.form.actions?.update || (locale === 'zh-CN' ? '更新日程' : 'Update Event')) : (content.form.actions?.save || sharedCopy.actions.saveEvent)}</button>
+                    <button class="ct-schedule-form__submit" type="submit">${isEditing ? (content.form.actions?.update || eventPageCopy.updateAction) : (content.form.actions?.save || sharedCopy.actions.saveEvent)}</button>
                 </div>
                 <div data-ct-form-notice></div>
             </form>
@@ -100,12 +100,11 @@ export function renderScheduleEventPage() {
         isInvalidEventId = Boolean(eventId) && !event;
         const copy = getFormFeedbackCopy(locale);
         if (isInvalidEventId) {
+            const missingCopy = getUiCopy(locale).schedule.missing;
             formNotice = {
                 tone: 'error',
-                title: locale === 'zh-CN' ? '未找到日程' : 'Schedule event not found',
-                message: locale === 'zh-CN'
-                    ? '当前链接的日程不存在，无法继续编辑。'
-                    : 'This schedule event does not exist and cannot be edited.',
+                title: missingCopy.title,
+                message: missingCopy.message,
                 actions: [
                     { key: 'continue-create', label: copy.actions.continueCreate },
                     { key: 'leave', label: copy.actions.back, variant: 'secondary' }
@@ -215,7 +214,8 @@ export function renderScheduleEventPage() {
 
         const nextId = String(formData.get('eventId') || '').trim();
         const payload = {
-            tab: String(formData.get('tab') || 'upcoming'),
+            tab: 'upcoming',
+            dateISO: String(formData.get('dateISO') || '').trim() || getDefaultScheduleDateISO(),
             day: String(formData.get('day') || '').trim() || content.form.fallback.day,
             label: String(formData.get('label') || '').trim() || content.form.fallback.dateLabel,
             time: String(formData.get('time') || '').trim() || content.form.fallback.time,
@@ -227,6 +227,12 @@ export function renderScheduleEventPage() {
                 .filter(Boolean),
             reminderEnabled: formData.get('reminderEnabled') === 'on'
         };
+        const dateParts = normalizeScheduleDateInput(payload, locale);
+        if (dateParts) {
+            payload.dateISO = dateParts.dateISO;
+            payload.day = dateParts.day;
+            payload.label = dateParts.label;
+        }
         if (nextId) {
             payload.id = nextId;
         }
@@ -337,7 +343,7 @@ export function renderScheduleEventPage() {
             bindings: [
                 {
                     key: 'schedule',
-                    label: { 'zh-CN': '日程', 'en-US': 'Schedule' },
+                    domainKey: 'schedule',
                     getState: () => getScheduleSyncState(),
                     subscribe: (listener) => subscribeScheduleSyncState(listener),
                     retry: (locale) => retryScheduleSync(locale)

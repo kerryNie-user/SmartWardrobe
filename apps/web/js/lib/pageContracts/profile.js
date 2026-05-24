@@ -4,6 +4,7 @@ import {
     createStaticEmpty,
     createSyncSemantics
 } from './shared.js'
+import { getUiCopy } from '../locale.js'
 
 export function createProfilePageContract({
     content,
@@ -49,6 +50,7 @@ export function createProfileEditPageContract({
     syncStates = {}
 }) {
     const sync = createSyncSemantics(syncStates, ['profile'])
+    const copy = getUiCopy(locale)
     return {
         state: {
             status
@@ -58,7 +60,7 @@ export function createProfileEditPageContract({
             profile,
             status,
             topbar: {
-                leftLabel: locale === 'zh-CN' ? '返回资料' : 'Back to profile',
+                leftLabel: copy.topbar.backToProfile,
                 leftHref: 'profile.html',
                 rightLabel: content.topbar?.rightLabel || ''
             }

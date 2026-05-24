@@ -15,9 +15,12 @@ class TestProfileLoading(unittest.TestCase):
         outline_prompt = runner.prompts.get("phase2_outline", "")
         self.assertIn("严格要求必须是 **10** 个段落", outline_prompt)
         self.assertIn("\"穿搭实操\"", outline_prompt)
-        self.assertIn("lookbook_cards_3", outline_prompt)
-        self.assertNotIn("pull_quote_center", outline_prompt)
-        self.assertNotIn("tip_box_rules", outline_prompt)
+        self.assertIn("tip_box_rules", outline_prompt)
+        self.assertIn("list_bullets", outline_prompt)
+        self.assertIn("SmartWardrobe", outline_prompt)
+        self.assertIn("lookbook_cards_3", runner.profile["layout_pool"])
+        self.assertIn("image_mosaic_3", runner.profile["layout_pool"])
+        self.assertNotIn("pull_quote_center", runner.profile["layout_pool"])
 
     def test_custom_profile_loads_fashion_news(self):
         runner = PromptChainRunner(prompts_dir="services/ai_blogger/agents", profile_name="fashion_news")
@@ -27,7 +30,9 @@ class TestProfileLoading(unittest.TestCase):
         outline_prompt = runner.prompts.get("phase2_outline", "")
         self.assertIn("严格输出 **3到5** 个段落", outline_prompt)
         self.assertIn("\"事件还原\"", outline_prompt)
-        self.assertNotIn("lookbook_cards_3", outline_prompt)
+        self.assertIn("text_dense", outline_prompt)
+        self.assertIn("SmartWardrobe", outline_prompt)
+        self.assertNotIn("lookbook_cards_3", runner.profile["layout_pool"])
 
     def test_custom_profile_loads_aesthetic_essay(self):
         runner = PromptChainRunner(prompts_dir="services/ai_blogger/agents", profile_name="aesthetic_essay")
@@ -37,7 +42,9 @@ class TestProfileLoading(unittest.TestCase):
         outline_prompt = runner.prompts.get("phase2_outline", "")
         self.assertIn("**6到8** 个段落", outline_prompt)
         self.assertIn("\"概念溯源\"", outline_prompt)
-        self.assertNotIn("lookbook_cards_3", outline_prompt)
+        self.assertIn("text_dense", outline_prompt)
+        self.assertIn("SmartWardrobe", outline_prompt)
+        self.assertNotIn("lookbook_cards_3", runner.profile["layout_pool"])
 
 if __name__ == '__main__':
     unittest.main()

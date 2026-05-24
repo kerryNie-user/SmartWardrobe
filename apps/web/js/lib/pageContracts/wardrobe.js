@@ -7,26 +7,23 @@ import {
     createStaticEmpty,
     createSyncSemantics
 } from './shared.js'
+import { getUiCopy } from '../locale.js'
 
 export function createWardrobePageContract({
     activeTab,
     query,
-    isFormOpen,
     content,
     items,
     searchedItems,
     syncStates = {}
 }) {
     const tabs = buildTabState(activeTab, content.tabs, 'ct-wardrobe-tab', PANEL_IDS.wardrobe)
-    const visibleItems = activeTab === 'all'
-        ? searchedItems
-        : searchedItems.filter((item) => item.filter === activeTab)
+    const visibleItems = searchedItems
     const sync = createSyncSemantics(syncStates, ['wardrobe'])
     return {
         state: {
             tab: activeTab,
-            query,
-            isFormOpen
+            query
         },
         derivedView: {
             hero: content.hero,
@@ -60,6 +57,7 @@ export function createWardrobeItemPageContract({
     syncStates = {}
 }) {
     const sync = createSyncSemantics(syncStates, ['wardrobe'])
+    const copy = getUiCopy(locale)
     return {
         state: {
             itemId,
@@ -69,13 +67,12 @@ export function createWardrobeItemPageContract({
         derivedView: {
             item,
             pageCopy,
-            tabs: content.tabs,
             form: content.form,
             submitLabel,
             topbar: {
-                leftLabel: locale === 'zh-CN' ? '返回衣橱' : 'Back to wardrobe',
+                leftLabel: copy.topbar.backToWardrobe,
                 leftHref: 'wardrobe.html',
-                rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
+                rightLabel: copy.topbar.openProfile,
                 rightHref: 'profile.html'
             }
         },
@@ -98,6 +95,7 @@ export function createWardrobeDetailPageContract({
     syncStates = {}
 }) {
     const sync = createSyncSemantics(syncStates, ['wardrobe'])
+    const copy = getUiCopy(locale)
     return {
         state: {
             itemId
@@ -105,18 +103,18 @@ export function createWardrobeDetailPageContract({
         derivedView: {
             item,
             topbar: {
-                leftLabel: locale === 'zh-CN' ? '返回衣橱' : 'Back to wardrobe',
+                leftLabel: copy.topbar.backToWardrobe,
                 leftHref: 'wardrobe.html',
-                rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
+                rightLabel: copy.topbar.openProfile,
                 rightHref: 'profile.html'
             },
             missingState: item ? null : {
                 kind: 'error',
-                eyebrow: locale === 'zh-CN' ? '单品不存在' : 'Missing Item',
-                title: locale === 'zh-CN' ? '这件单品暂时不可用' : 'This wardrobe item is unavailable',
-                description: locale === 'zh-CN' ? '请返回衣橱重新选择单品。' : 'Return to wardrobe and choose another item.',
+                eyebrow: copy.wardrobe.detailMissing.eyebrow,
+                title: copy.wardrobe.detailMissing.title,
+                description: copy.wardrobe.detailMissing.description,
                 action: {
-                    label: locale === 'zh-CN' ? '返回衣橱' : 'Back to wardrobe',
+                    label: copy.topbar.backToWardrobe,
                     href: 'wardrobe.html'
                 }
             }

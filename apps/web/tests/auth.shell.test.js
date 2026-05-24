@@ -95,7 +95,7 @@ async function main() {
 
     const session = JSON.parse(dom.window.localStorage.getItem('ct_auth_session'));
     assert.ok(session, 'Missing debug auth session');
-    assert.strictEqual(session.user.emailOrMobile, 'api-nova@example.com');
+    assert.strictEqual(session.user.emailOrMobile, 'member@closettwin.local');
     assert.strictEqual(dom.window.document.documentElement.getAttribute('data-ct-redirect'), null);
   });
 

@@ -4,7 +4,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { renderSettingsProfile } from '../components/settingsProfile.js';
 import { renderSettingsPanel } from '../components/settingsPanel.js';
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
-import { applyLocaleDocument } from '../lib/locale.js';
+import { applyLocaleDocument, getUiCopy } from '../lib/locale.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createSettingsPageContract } from '../lib/pageContracts.js';
 import { buildSettingsPageSelectorInput } from '../lib/settingsSelectors.js';
@@ -51,7 +51,7 @@ export function renderSettingsPage() {
         if (profileRoot) {
             const state = getProfileSyncState()
             if (state?.status === 'failed') {
-                profileRoot.innerHTML = renderLoadFailedPanel(state?.error, locale === 'zh-CN' ? '资料加载失败。' : 'Failed to load profile.')
+                profileRoot.innerHTML = renderLoadFailedPanel(state?.error, getUiCopy(locale).states.profileLoadFailed)
             } else {
                 profileRoot.innerHTML = renderSettingsProfile(contract.derivedView.profile);
             }
@@ -59,7 +59,7 @@ export function renderSettingsPage() {
         if (panelRoot) {
             const state = getSettingsSyncState()
             if (state?.status === 'failed') {
-                panelRoot.innerHTML = renderLoadFailedPanel(state?.error, locale === 'zh-CN' ? '设置加载失败。' : 'Failed to load settings.')
+                panelRoot.innerHTML = renderLoadFailedPanel(state?.error, getUiCopy(locale).states.settingsLoadFailed)
             } else {
                 panelRoot.innerHTML = renderSettingsPanel(contract.derivedView.panel);
             }
@@ -95,14 +95,14 @@ export function renderSettingsPage() {
             bindings: [
                 {
                     key: 'profile',
-                    label: { 'zh-CN': '资料', 'en-US': 'Profile' },
+                    domainKey: 'profile',
                     getState: () => getProfileSyncState(),
                     subscribe: (listener) => subscribeProfileSyncState(listener),
                     retry: (nextLocale) => retryProfileSync(nextLocale)
                 },
                 {
                     key: 'settings',
-                    label: { 'zh-CN': '设置', 'en-US': 'Settings' },
+                    domainKey: 'settings',
                     getState: () => getSettingsSyncState(),
                     subscribe: (listener) => subscribeSettingsSyncState(listener),
                     retry: () => retrySettingsSync()

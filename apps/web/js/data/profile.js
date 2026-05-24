@@ -30,8 +30,8 @@ export function getProfilePageContent(locale) {
                     bio: '简介'
                 },
                 placeholders: {
-                    avatar: '/uploads/profile/elara-vance.jpg',
-                    name: 'Elara Vance',
+                    avatar: '粘贴头像图片链接',
+                    name: '你的名字',
                     bio: '写一点你的轮廓偏好、城市气质与材质关注点。'
                 },
                 fallback: {
@@ -78,9 +78,9 @@ export function getProfilePageContent(locale) {
                 name: 'Display Name',
                 bio: 'Bio'
             },
-            placeholders: {
-                avatar: '/uploads/profile/elara-vance.jpg',
-                name: 'Elara Vance',
+                placeholders: {
+                avatar: 'Paste an avatar image URL',
+                name: 'Your name',
                 bio: 'Write a few lines about your silhouette bias, city mood, and material focus.'
             },
             fallback: {

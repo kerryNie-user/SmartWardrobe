@@ -7,6 +7,29 @@ from .shared import load_json_seed
 
 
 class DiscoveryMixin:
+    def _build_editorial_trend_strip_from_posts(self, editorials, seed_strip, normalized_locale):
+        items = []
+        for post in editorials[:3]:
+            image = str(post.get('heroImage') or '').strip()
+            if not image:
+                continue
+            items.append({
+                'tag': post.get('author') or '',
+                'title': post.get('title') or '',
+                'description': post.get('description') or '',
+                'image': image
+            })
+
+        if not items:
+            return None
+
+        return {
+            'eyebrow': seed_strip.get('eyebrow') or ('Editorial Signal' if normalized_locale == 'en-US' else '编辑信号'),
+            'title': seed_strip.get('title') or ('Featured Editorials' if normalized_locale == 'en-US' else '编辑精选'),
+            'action': seed_strip.get('action') or ('Refresh' if normalized_locale == 'en-US' else '刷新'),
+            'items': items
+        }
+
     def get_discovery_content(self, locale='en-US'):
         normalized_locale = 'zh-CN' if locale == 'zh-CN' else 'en-US'
 
@@ -31,6 +54,8 @@ class DiscoveryMixin:
                         'comments': p.stats_comments or '0'
                     }
                 }
+                if str((post_data['ai'] or {}).get('schema') or '').strip() == 'ct_ai_post_v1':
+                    post_data['images'] = self._network_image_list(post_data['images'])
                 post_data['heroImage'] = self._resolve_post_hero(post_data)
                 if post_data['heroImage'] and post_data['heroImage'] not in post_data['images']:
                     post_data['images'] = [post_data['heroImage'], *post_data['images']]
@@ -45,14 +70,21 @@ class DiscoveryMixin:
             'image': t.image
         } for t in editorial_trend_items]
         
-        editorial_trend_strip = {
-            'title': 'Featured Editorials' if normalized_locale == 'en-US' else '编辑精选',
-            'items': editorial_trend_strip_items
-        } if editorial_trend_strip_items else None
-
         # For static/seed data
         discovery_content_seed = load_json_seed('discovery_content_seed.json')
         seed_data = discovery_content_seed.get(normalized_locale) or discovery_content_seed.get('en-US') or {}
+        seed_editorial_trend_strip = seed_data.get('editorialTrendStrip') or {}
+
+        editorial_trend_strip = None
+        if editorials:
+            editorial_trend_strip = self._build_editorial_trend_strip_from_posts(editorials, seed_editorial_trend_strip, normalized_locale)
+        elif editorial_trend_strip_items:
+            editorial_trend_strip = {
+                'eyebrow': seed_editorial_trend_strip.get('eyebrow') or ('Editorial Signal' if normalized_locale == 'en-US' else '编辑信号'),
+                'title': seed_editorial_trend_strip.get('title') or ('Featured Editorials' if normalized_locale == 'en-US' else '编辑精选'),
+                'action': seed_editorial_trend_strip.get('action') or ('Refresh' if normalized_locale == 'en-US' else '刷新'),
+                'items': editorial_trend_strip_items
+            }
 
         content = deepcopy(seed_data)
         
@@ -61,8 +93,8 @@ class DiscoveryMixin:
             content.pop(key, None)
             
         content.update({
-            'editorialTrendStrip': editorial_trend_strip if editorial_trend_strip else seed_data.get('editorialTrendStrip', None),
-            'editorials': editorials if editorials else seed_data.get('editorials', []),
+            'editorialTrendStrip': editorial_trend_strip,
+            'editorials': editorials,
             'searchPlaceholder': {
                 'editorials': 'HOT SEARCHES · STYLE GUIDE · TRENDS' if normalized_locale == 'en-US' else '热门搜索 · 穿搭指南 · 趋势解析'
             }

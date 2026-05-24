@@ -1,3 +1,5 @@
+import { formatCopy, getUiCopy } from '../lib/locale.js'
+
 const SYNC_STATUS_PRIORITY = {
     conflict: 6,
     failed: 5,
@@ -6,55 +8,6 @@ const SYNC_STATUS_PRIORITY = {
     loading: 2,
     synced: 1,
     idle: 0
-}
-
-const SYNC_COPY = {
-    'zh-CN': {
-        eyebrow: 'Lite Backend',
-        status: {
-            loading: '正在加载远端数据',
-            syncing: '正在同步本地改动',
-            synced: '已与远端同步',
-            stale: '远端不可用，当前显示本地缓存',
-            failed: '写回失败，需要重试',
-            conflict: '远端版本冲突，已回退确认态'
-        },
-        description: {
-            loading: '同步范围：{domains}',
-            syncing: '正在写回：{domains}',
-            synced: '最近同步：{domains}',
-            stale: '可继续浏览本地数据，并重试：{domains}',
-            failed: '请重试以下领域：{domains}',
-            conflict: '请刷新或重试以下领域：{domains}'
-        },
-        actions: {
-            retryAll: '重试全部',
-            retryDomain: '重试 {domain}'
-        }
-    },
-    'en-US': {
-        eyebrow: 'Lite Backend',
-        status: {
-            loading: 'Loading remote data',
-            syncing: 'Syncing local changes',
-            synced: 'Synced with remote',
-            stale: 'Remote unavailable, showing local cache',
-            failed: 'Writeback failed and needs retry',
-            conflict: 'Remote conflict detected and reverted'
-        },
-        description: {
-            loading: 'Domains: {domains}',
-            syncing: 'Writing back: {domains}',
-            synced: 'Recently synced: {domains}',
-            stale: 'Using local cache and can retry: {domains}',
-            failed: 'Retry these domains: {domains}',
-            conflict: 'Refresh or retry these domains: {domains}'
-        },
-        actions: {
-            retryAll: 'Retry All',
-            retryDomain: 'Retry {domain}'
-        }
-    }
 }
 
 function resolveLocale(locale) {
@@ -67,8 +20,11 @@ function resolveLabel(label, locale) {
     return label[resolveLocale(locale)] || label['en-US'] || ''
 }
 
-function fillTemplate(template, values) {
-    return Object.entries(values).reduce((result, [key, value]) => result.replace(`{${key}}`, value), template)
+function resolveDomainLabel(binding, locale) {
+    if (binding.domainKey) {
+        return getUiCopy(locale).domains?.[binding.domainKey] || binding.domainKey
+    }
+    return resolveLabel(binding.label, locale)
 }
 
 export function ensureSyncFeedbackRoot(anchor, key = 'page') {
@@ -89,7 +45,7 @@ export function buildSyncFeedbackSummary(bindings = [], locale = 'en-US') {
     const activeBindings = bindings
         .map((binding) => ({
             ...binding,
-            label: resolveLabel(binding.label, locale),
+            label: resolveDomainLabel(binding, locale),
             status: binding.state?.status || 'idle'
         }))
         .filter((binding) => !['idle', 'synced'].includes(binding.status))
@@ -102,8 +58,7 @@ export function buildSyncFeedbackSummary(bindings = [], locale = 'en-US') {
         SYNC_STATUS_PRIORITY[binding.status] > SYNC_STATUS_PRIORITY[highest] ? binding.status : highest
     ), activeBindings[0].status)
 
-    const localeKey = resolveLocale(locale)
-    const copy = SYNC_COPY[localeKey]
+    const copy = getUiCopy(locale).sync
     const affectedBindings = activeBindings.filter((binding) => binding.status === status)
     const retryableBindings = activeBindings.filter((binding) => (
         ['stale', 'failed', 'conflict'].includes(binding.status) && typeof binding.retry === 'function'
@@ -114,13 +69,13 @@ export function buildSyncFeedbackSummary(bindings = [], locale = 'en-US') {
         status,
         eyebrow: copy.eyebrow,
         title: copy.status[status],
-        description: fillTemplate(copy.description[status], {
+        description: formatCopy(copy.description[status], {
             domains: domainList
         }),
         retryAllLabel: retryableBindings.length ? copy.actions.retryAll : null,
         retryDomains: retryableBindings.map((binding) => ({
             key: binding.key,
-            label: fillTemplate(copy.actions.retryDomain, {
+            label: formatCopy(copy.actions.retryDomain, {
                 domain: binding.label
             })
         }))

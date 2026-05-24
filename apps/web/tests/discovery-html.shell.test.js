@@ -16,7 +16,7 @@ runTest('Discovery HTML 应提供 zh-CN 静态语义', () => {
   const doc = dom.window.document;
 
   assert.strictEqual(doc.documentElement.getAttribute('lang'), 'zh-CN');
-  assert.strictEqual(doc.title, 'CLOSETTWIN — 发现');
+  assert.strictEqual(doc.title, 'CLOSETTWIN');
 });
 
 async function main() {

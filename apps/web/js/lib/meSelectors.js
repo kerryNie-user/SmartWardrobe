@@ -1,6 +1,5 @@
 export function buildMePageSelectorInput({
     locale,
-    activeTab,
     content,
     profile,
     favoritesStats,
@@ -17,7 +16,7 @@ export function buildMePageSelectorInput({
 }) {
     return {
         locale,
-        activeTab,
+        surface: 'overview',
         content,
         profile,
         favorites: {

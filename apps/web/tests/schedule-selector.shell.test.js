@@ -8,6 +8,12 @@ function runTest(name, fn) {
   testQueue.push({ name, fn });
 }
 
+function formatLocalDateISO(offsetDays = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 runTest('scheduleSelectors 应产出 overview、delete candidate 与 dialog copy', async () => {
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'scheduleSelectors.js')).href}?selector=1`;
   const {
@@ -20,7 +26,10 @@ runTest('scheduleSelectors 应产出 overview、delete candidate 与 dialog copy
     views: {
       upcoming: {
         overview: { label: 'Upcoming' },
-        groups: [{ events: [{ id: 'review-1', title: 'Product Review' }, { id: 'review-2', title: 'Travel Review' }] }]
+        groups: [{ dateISO: formatLocalDateISO(1), events: [
+          { id: 'review-1', title: 'Product Review', dateISO: formatLocalDateISO(1) },
+          { id: 'review-2', title: 'Travel Review', dateISO: formatLocalDateISO(1) }
+        ] }]
       }
     }
   };

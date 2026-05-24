@@ -217,7 +217,7 @@ export function renderProfileEditPage() {
             bindings: [
                 {
                     key: 'profile',
-                    label: { 'zh-CN': '资料', 'en-US': 'Profile' },
+                    domainKey: 'profile',
                     getState: () => getProfileSyncState(),
                     subscribe: (listener) => subscribeProfileSyncState(listener),
                     retry: (nextLocale) => retryProfileSync(nextLocale)

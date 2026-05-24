@@ -7,35 +7,25 @@ const WARDROBE_COPY = {
             { key: 'essentials', label: 'Essentials', active: false }
         ],
         hero: {
-            eyebrow: '',
-            title: '',
-            note: '',
+            eyebrow: 'Wardrobe',
+            title: 'Personal Archive',
+            note: 'Keep pieces, proportions, and materials organized before they become outfits.',
         },
         items: [],
         form: {
             labels: {
-                title: 'Title',
-                category: 'Category',
-                filter: 'Filter',
-                size: 'Size',
-                color: 'Color',
-                material: 'Material',
-                image: 'Image',
-                favorite: 'Favorite Piece'
+                photo: 'Photo'
             },
-            placeholders: {
-                title: 'Travel Bomber',
-                category: 'Outerwear',
-                size: 'M',
-                color: 'Graphite',
-                material: 'Nylon',
-                image: '/uploads/wardrobe/wool-trench.jpg'
+            actions: {
+                savePhoto: 'Save Photo'
+            },
+            notes: {
+                uploadOnly: 'Upload one clear garment photo. Model-recognition data is returned by the interface and saved with the wardrobe record.'
             },
             fallback: {
-                category: 'Essentials',
-                size: 'M',
-                color: 'Black',
-                material: 'Wool'
+                title: 'Pending Recognition Item',
+                category: 'Uncategorized',
+                filter: 'uncategorized'
             }
         }
     },
@@ -47,35 +37,25 @@ const WARDROBE_COPY = {
             { key: 'essentials', label: '基础款', active: false }
         ],
         hero: {
-            eyebrow: '',
-            title: '',
-            note: '',
+            eyebrow: '衣橱',
+            title: '个人衣橱档案',
+            note: '整理单品、版型与材质，让搭配和出行规划更稳定。',
         },
         items: [],
         form: {
             labels: {
-                title: '标题',
-                category: '分类',
-                filter: '筛选',
-                size: '尺码',
-                color: '颜色',
-                material: '材质',
-                image: '图片',
-                favorite: '收藏单品'
+                photo: '上传照片'
             },
-            placeholders: {
-                title: '旅行飞行员夹克',
-                category: '外套',
-                size: 'M',
-                color: '石墨灰',
-                material: '尼龙',
-                image: '/uploads/wardrobe/wool-trench.jpg'
+            actions: {
+                savePhoto: '保存照片'
+            },
+            notes: {
+                uploadOnly: '只上传一张清晰单品照片。单品识别信息由模型接口回传，并随衣橱记录保存。'
             },
             fallback: {
-                category: '基础款',
-                size: 'M',
-                color: '黑色',
-                material: '羊毛'
+                title: '待识别单品',
+                category: '未分类',
+                filter: 'uncategorized'
             }
         }
     }

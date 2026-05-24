@@ -4,6 +4,7 @@ import {
     createStaticEmpty,
     createSyncSemantics
 } from './shared.js'
+import { getUiCopy } from '../locale.js'
 
 export function createPostDetailPageContract({
     locale,
@@ -15,6 +16,7 @@ export function createPostDetailPageContract({
     syncStates = {}
 }) {
     const sync = createSyncSemantics(syncStates, ['discoverySocial', 'discoveryComments'])
+    const copy = getUiCopy(locale)
     return {
         state: {
             postId,
@@ -22,9 +24,9 @@ export function createPostDetailPageContract({
         },
         derivedView: {
             topbar: {
-                leftLabel: locale === 'zh-CN' ? '返回发现' : 'Back to discovery',
+                leftLabel: copy.topbar.backToDiscovery,
                 leftHref: 'discovery.html',
-                rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
+                rightLabel: copy.topbar.openProfile,
                 rightHref: 'profile.html'
             },
             article: post,
@@ -32,11 +34,11 @@ export function createPostDetailPageContract({
             comments,
             missingState: post ? null : {
                 kind: 'error',
-                eyebrow: locale === 'zh-CN' ? '帖子未找到' : 'Post Missing',
-                title: locale === 'zh-CN' ? '当前帖子不存在' : 'This post is unavailable',
-                description: locale === 'zh-CN' ? '请返回发现页重新选择帖子。' : 'Return to discovery and choose another post.',
+                eyebrow: copy.post.missing.eyebrow,
+                title: copy.post.missing.title,
+                description: copy.post.missing.description,
                 action: {
-                    label: locale === 'zh-CN' ? '返回发现' : 'Back to discovery',
+                    label: copy.topbar.backToDiscovery,
                     href: 'discovery.html'
                 }
             }

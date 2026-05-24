@@ -2,18 +2,18 @@
   "users": [
     {
       "id": "user-096fb511f3ff",
-      "name": "API Nova",
-      "emailOrMobile": "api-nova@example.com",
+      "name": "ClosetTwin 用户",
+      "emailOrMobile": "member@closettwin.local",
       "password": "password123",
-      "avatar": "/uploads/profile/elara-vance.jpg",
-      "bio": "Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies."
+      "avatar": "",
+      "bio": ""
     }
   ],
   "profiles": {
     "user-096fb511f3ff": {
-      "name": "API Nova",
-      "bio": "Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies.",
-      "avatar": "/uploads/profile/elara-vance.jpg"
+      "name": "ClosetTwin 用户",
+      "bio": "",
+      "avatar": ""
     }
   },
   "settings": {
@@ -187,7 +187,7 @@
               "body": "The silhouette is incredible. It feels like wearing architecture."
             },
             {
-              "author": "Nova_Studio",
+              "author": "ClosetTwin_Studio",
               "time": "45M AGO",
               "body": "Is this from the new archive drop? The lapel stitching looks extremely distinct."
             }
@@ -348,7 +348,7 @@
               "body": "这个轮廓太强了，像是在穿建筑。"
             },
             {
-              "author": "Nova_Studio",
+              "author": "ClosetTwin_Studio",
               "time": "45分钟前",
               "body": "这是新档案系列吗？领驳缝线很有辨识度。"
             }

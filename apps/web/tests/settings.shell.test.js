@@ -70,14 +70,10 @@ runTest('Me 页面应提供进入 Settings 页的入口', async () => {
   renderMePage();
 
   const topbarLink = meDom.window.document.querySelector('.ct-icon-button[href="settings.html"]');
-  const settingsTab = meDom.window.document.querySelector('[data-tab-key="settings"]');
-  assert.ok(settingsTab, 'Missing settings tab');
-  settingsTab.click();
-
-  const summaryLink = meDom.window.document.querySelector('[data-ct-settings-entry]');
+  const summaryLink = meDom.window.document.querySelector('[data-ct-me-entry="settings"]');
 
   assert.ok(topbarLink, 'Missing topbar settings link');
-  assert.ok(summaryLink, 'Missing settings summary link');
+  assert.ok(summaryLink, 'Missing settings dashboard link');
   assert.strictEqual(summaryLink.getAttribute('href'), 'settings.html');
 });
 

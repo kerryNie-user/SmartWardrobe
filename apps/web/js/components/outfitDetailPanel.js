@@ -1,8 +1,10 @@
-import { getLocale, getSharedCopy } from '../lib/locale.js'
+import { getLocale, getSharedCopy, getUiCopy } from '../lib/locale.js'
 import { buildOutfitDetailHref } from '../lib/routes.js'
 
 export function renderOutfitDetailPanel(look, isSaved, alternatives = []) {
-    const sharedCopy = getSharedCopy(getLocale())
+    const locale = getLocale()
+    const sharedCopy = getSharedCopy(locale)
+    const outfitCopy = getUiCopy(locale).outfit
 
     return `
         <article class="ct-outfit-detail">
@@ -18,7 +20,7 @@ export function renderOutfitDetailPanel(look, isSaved, alternatives = []) {
                     ${look.detailTags.map((tag) => `<span class="ct-outfit-detail__tag">${tag}</span>`).join('')}
                 </div>
                 <section class="ct-outfit-detail__breakdown">
-                    <h2 class="ct-outfit-detail__heading">${getLocale() === 'zh-CN' ? '搭配拆解' : 'The Breakdown'}</h2>
+                    <h2 class="ct-outfit-detail__heading">${outfitCopy.breakdown}</h2>
                     <ul class="ct-outfit-detail__list">
                         ${look.breakdown.map((item) => `
                             <li class="ct-outfit-detail__item">
@@ -35,7 +37,7 @@ export function renderOutfitDetailPanel(look, isSaved, alternatives = []) {
                 </div>
                 ${alternatives.length ? `
                     <section class="ct-outfit-detail__alternatives" data-ct-outfit-alternatives>
-                        <h2 class="ct-outfit-detail__heading">${getLocale() === 'zh-CN' ? '替代搭配' : 'Alternative Pairings'}</h2>
+                        <h2 class="ct-outfit-detail__heading">${outfitCopy.alternatives}</h2>
                         <div class="ct-outfit-detail__alternative-grid">
                             ${alternatives.map((item) => `
                                 <a class="ct-outfit-detail__alternative-card" data-ct-outfit-alternative-card href="${buildOutfitDetailHref(item.id)}">

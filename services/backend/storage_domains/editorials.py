@@ -1,10 +1,61 @@
+from copy import deepcopy
 import time
+from urllib.parse import urlparse
 
 from ..database import db
 from ..models import ContentPost
 
 
 class EditorialAdminMixin:
+    def _is_network_image_url(self, value) -> bool:
+        parsed = urlparse(str(value or '').strip())
+        return parsed.scheme in {'http', 'https'} and bool(parsed.netloc)
+
+    def _network_image_list(self, values) -> list[str]:
+        out = []
+        for value in values or []:
+            url = str(value or '').strip()
+            if self._is_network_image_url(url) and url not in out:
+                out.append(url)
+        return out
+
+    def _sanitize_ai_media_payload(self, ai_json):
+        if not isinstance(ai_json, dict):
+            return ai_json
+        if str(ai_json.get('schema') or '').strip() != 'ct_ai_post_v1':
+            return ai_json
+
+        sanitized = deepcopy(ai_json)
+        first_network_url = ''
+        for paragraph in sanitized.get('paragraphs', []) or []:
+            if not isinstance(paragraph, dict):
+                continue
+            urls = paragraph.get('image_urls') or paragraph.get('imageUrls') or []
+            alts = paragraph.get('image_alts') or paragraph.get('imageAlts') or []
+            captions = paragraph.get('image_captions') or paragraph.get('imageCaptions') or paragraph.get('captions') or []
+            filtered_urls = []
+            filtered_alts = []
+            filtered_captions = []
+            for idx, url in enumerate(urls):
+                clean_url = str(url or '').strip()
+                if not self._is_network_image_url(clean_url):
+                    continue
+                if not first_network_url:
+                    first_network_url = clean_url
+                filtered_urls.append(clean_url)
+                filtered_alts.append(str(alts[idx] or '').strip() if idx < len(alts) else '')
+                filtered_captions.append(captions[idx] if idx < len(captions) else '')
+            paragraph['image_urls'] = filtered_urls
+            paragraph['image_alts'] = filtered_alts
+            paragraph['image_captions'] = filtered_captions
+
+        hero = sanitized.get('hero') if isinstance(sanitized.get('hero'), dict) else {}
+        hero_url = str(hero.get('image_url') or '').strip()
+        if not self._is_network_image_url(hero_url):
+            hero['image_url'] = first_network_url
+        sanitized['hero'] = hero
+        return sanitized
+
     def _normalize_ai_payload(self, ai_json, post):
         if not ai_json:
             return None
@@ -15,51 +66,34 @@ class EditorialAdminMixin:
             tags = ai_json.get('tags') or post.tags_json or []
             locale = post.locale
             paragraphs = ai_json.get('paragraphs') or []
-            return normalize_ai_post_v1(
+            normalized = normalize_ai_post_v1(
                 title=title,
                 locale=locale,
                 paragraphs=paragraphs,
                 hero_image_url=hero_url,
                 tags=tags
             )
+            return self._sanitize_ai_media_payload(normalized)
         except Exception:
-            return ai_json
-
-    def _pick_fallback_ai_image(self, post_id: str) -> str:
-        try:
-            from pathlib import Path
-            project_root = Path(__file__).resolve().parents[3]
-            image_dir = project_root / 'services' / 'ai_blogger' / 'output' / 'images'
-            if not image_dir.exists():
-                return ''
-            files = sorted([
-                p.name
-                for p in image_dir.iterdir()
-                if p.is_file() and p.suffix.lower() in {'.jpg', '.jpeg', '.png', '.webp'}
-            ])
-            if not files:
-                return ''
-            idx = abs(hash(post_id)) % len(files)
-            return f"/ai-images/{files[idx]}"
-        except Exception:
-            return ''
+            return self._sanitize_ai_media_payload(ai_json)
 
     def _resolve_post_hero(self, post_data: dict) -> str:
         ai = post_data.get('ai')
         schema = str(ai.get('schema') or '').strip() if isinstance(ai, dict) else ''
-        allow_ai_image_alias = schema == 'ct_ai_post_v1'
         hero = str(post_data.get('heroImage') or '').strip()
-        if hero:
-            if allow_ai_image_alias and hero.startswith('images/'):
-                return f"/ai-images/{hero.split('/')[-1]}"
-            return hero
         images = post_data.get('images') or []
+        if schema == 'ct_ai_post_v1':
+            candidates = [hero, *images]
+            for candidate in candidates:
+                clean_url = str(candidate or '').strip()
+                if self._is_network_image_url(clean_url):
+                    return clean_url
+            return ''
+        if hero:
+            return hero
         if images:
-            first = str(images[0] or '').strip()
-            if allow_ai_image_alias and first.startswith('images/'):
-                return f"/ai-images/{first.split('/')[-1]}"
-            return first
-        return self._pick_fallback_ai_image(str(post_data.get('id') or ''))
+            return str(images[0] or '').strip()
+        return ''
 
     def regenerate_editorials(self, *, locale: str = 'all', limit: int = 0, dry_run: bool = False, update_time: bool = False, batch_id: str | None = None, skip_if_ai: bool = False):
         from datetime import datetime
@@ -113,7 +147,7 @@ class EditorialAdminMixin:
                 if skip_if_ai and p.ai_json and isinstance(p.ai_json, dict):
                     schema = str(p.ai_json.get('schema') or '').strip()
                     hero = str(p.hero_image or '').strip()
-                    if schema == 'ct_ai_post_v1' and hero:
+                    if schema == 'ct_ai_post_v1' and self._is_network_image_url(hero):
                         if dry_run:
                             item['status'] = 'skipped'
                         else:
@@ -138,6 +172,7 @@ class EditorialAdminMixin:
                 tracker = ImageTracker(images_dir=str(images_dir), max_images_total=50, download_images=True)
                 paragraph_images = {}
                 paragraph_alts = {}
+                paragraph_captions = {}
                 for p_idx, para in enumerate(raw_paragraphs):
                     layout_name = str(para.get('layout_name') or '').strip()
                     queries = list(para.get('image_queries', []) or [])
@@ -148,32 +183,37 @@ class EditorialAdminMixin:
                         paragraph_images.setdefault(p_idx, []).append(url)
                         if alt:
                             paragraph_alts.setdefault(p_idx, []).append(alt)
+                        if isinstance(q, dict):
+                            caption = str(q.get('image_caption') or q.get('caption') or '').strip()
+                            if caption:
+                                paragraph_captions.setdefault(p_idx, []).append(caption)
 
                 protocol_paragraphs = []
                 for p_idx, para in enumerate(raw_paragraphs):
-                    section_name = str(para.get('section_name', '') or '').strip()
                     text_val = str(para.get('text', '') or '').strip()
-                    merged_text = f"{section_name} — {text_val}" if section_name else text_val
                     protocol_paragraphs.append({
                         'layout_name': para.get('layout_name') or '',
-                        'text': merged_text,
+                        'text': text_val,
                         'image_urls': paragraph_images.get(p_idx, []),
-                        'image_alts': paragraph_alts.get(p_idx, [])
+                        'image_alts': paragraph_alts.get(p_idx, []),
+                        'image_captions': paragraph_captions.get(p_idx, [])
                     })
 
                 hero_url = paragraph_images.get(0, [None])[0] or ''
-                ai_json = normalize_ai_post_v1(
-                    title=chain.get('title') or p.title,
-                    locale=p.locale,
-                    paragraphs=protocol_paragraphs,
-                    hero_image_url=hero_url,
-                    tags=unique_preserve(p.tags_json or ['editorial', 'ai-generated'])
+                ai_json = self._sanitize_ai_media_payload(
+                    normalize_ai_post_v1(
+                        title=chain.get('title') or p.title,
+                        locale=p.locale,
+                        paragraphs=protocol_paragraphs,
+                        hero_image_url=hero_url,
+                        tags=unique_preserve(p.tags_json or ['editorial', 'ai-generated'])
+                    )
                 )
 
                 all_images = []
                 for urls in paragraph_images.values():
                     all_images.extend(urls)
-                all_images = unique_preserve(all_images)
+                all_images = self._network_image_list(unique_preserve(all_images))
                 item['imageCount'] = len(all_images)
 
                 if dry_run:

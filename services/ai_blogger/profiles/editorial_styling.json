@@ -17,11 +17,15 @@
     "split_image_text",
     "float_left_photo",
     "float_right_photo",
+    "tip_box_rules",
+    "text_dense",
+    "list_bullets",
     "lookbook_cards_3",
     "image_mosaic_3"
   ],
-  "visual_strategy": "使用诸如 'minimalist white shirt street style' 这样具体的街拍关键词。",
+  "visual_strategy": "图片必须服务于穿搭参考和可见时尚变量；优先使用 full-body street style、fabric detail、outfit ideas、flatlay、editorial styling 等具体英文关键词，避免只写 fashion。",
   "kb_files": [
+    "services/ai_blogger/experience/10_smartwardrobe_editorial_prompt_guide.md",
     "services/ai_blogger/experience/04_article_structures_templates.md",
     "services/ai_blogger/experience/06_typography_layout_checklist.md"
   ]

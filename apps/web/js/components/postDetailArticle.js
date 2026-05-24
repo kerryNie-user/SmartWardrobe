@@ -1,7 +1,9 @@
-import { getLocale, getSharedCopy } from '../lib/locale.js'
+import { getLocale, getSharedCopy, getUiCopy } from '../lib/locale.js'
 
 export function renderPostDetailArticle(post, social, detailState = {}) {
-    const sharedCopy = getSharedCopy(getLocale())
+    const locale = getLocale()
+    const sharedCopy = getSharedCopy(locale)
+    const uiCopy = getUiCopy(locale)
     const heroUrl = post.heroImage || post.images?.[0] || ''
 
     return `
@@ -33,7 +35,7 @@ export function renderPostDetailArticle(post, social, detailState = {}) {
             <div class="ct-post-detail__actions">
                 <button class="ct-post-detail__like${social.isLiked ? ' is-active' : ''}" data-ct-post-like type="button" aria-pressed="${social.isLiked ? 'true' : 'false'}">♥ ${social.likesDisplay || post.stats.likes}</button>
                 <span>✦ ${social.commentsDisplay || post.stats.comments}</span>
-                <button class="ct-post-detail__share" data-ct-post-share type="button">${getLocale() === 'zh-CN' ? '↗ 分享' : '↗ Share'}</button>
+                <button class="ct-post-detail__share" data-ct-post-share type="button">${uiCopy.post.shareLabel}</button>
                 <button class="ct-post-detail__bookmark${social.isSaved ? ' is-active' : ''}" data-ct-post-bookmark type="button" aria-pressed="${social.isSaved ? 'true' : 'false'}">${social.isSaved ? '♥' : '♡'} ${sharedCopy.actions.savePost}</button>
             </div>
             <p class="ct-post-detail__feedback" data-ct-post-share-feedback>${detailState.shareFeedback || ''}</p>

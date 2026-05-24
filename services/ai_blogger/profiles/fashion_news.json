@@ -17,10 +17,13 @@
     "split_image_text",
     "float_left_photo",
     "float_right_photo",
-    "pull_quote_center"
+    "pull_quote_center",
+    "text_dense",
+    "tip_box_rules"
   ],
-  "visual_strategy": "使用诸如 'runway show SS25 model close up' 或 'fashion designer portrait' 等现场、秀场、人物关键词。",
+  "visual_strategy": "新闻配图优先使用 seed_material 中的真实图片；额外检索时使用 runway show、designer portrait、backstage detail、collection detail 等事实相关英文词，避免生成与新闻无关的氛围图。",
   "kb_files": [
+    "services/ai_blogger/experience/10_smartwardrobe_editorial_prompt_guide.md",
     "services/ai_blogger/experience/06_typography_layout_checklist.md"
   ]
 }

@@ -36,12 +36,14 @@ class WardrobeItem(BaseModel):
     image = CharField(max_length=256, null=True)
     filter_value = CharField(max_length=128, null=True)
     favorite = BooleanField(default=False)
+    ai_json = JSONField(null=True)
     created_at = DateTimeField(default=datetime.datetime.now)
 
 class ScheduleItem(BaseModel):
     id = CharField(max_length=64, primary_key=True)
     user_id = CharField(max_length=64, index=True)
     tab = CharField(max_length=32, null=True)
+    dateISO = CharField(max_length=16, null=True)
     day = CharField(max_length=32, null=True)
     label = CharField(max_length=64, null=True)
     time = CharField(max_length=32, null=True)

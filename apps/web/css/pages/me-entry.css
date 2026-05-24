@@ -1,0 +1,157 @@
+.ct-me-entry-body {
+    --ct-entry-surface: rgba(255, 255, 255, 0.035);
+    --ct-entry-surface-strong: rgba(255, 255, 255, 0.06);
+    --ct-entry-pill: rgba(255, 255, 255, 0.05);
+    --ct-entry-shadow: 0 14px 34px rgba(0, 0, 0, 0.14);
+    overflow-x: hidden;
+}
+
+html[data-ct-theme='light'] .ct-me-entry-body {
+    --ct-entry-surface: rgba(255, 255, 255, 0.42);
+    --ct-entry-surface-strong: rgba(255, 255, 255, 0.66);
+    --ct-entry-pill: rgba(255, 255, 255, 0.58);
+    --ct-entry-shadow: 0 14px 30px rgba(42, 31, 18, 0.08);
+}
+
+.ct-me-entry-body .ct-shell {
+    width: min(calc(100vw - 32px), var(--ct-max-width));
+    min-width: 0;
+}
+
+.ct-me-entry-body .ct-topbar {
+    width: min(calc(100vw - 32px), var(--ct-max-width));
+}
+
+.ct-me-entry-body :is(section, article, div, ul, ol, li, form, dl, p, h1, h2, h3, a, button, span) {
+    min-width: 0;
+}
+
+.ct-me-entry-body .ct-shell-section {
+    min-width: 0;
+    margin-bottom: 22px;
+}
+
+.ct-me-entry-body :is(.ct-schedule-shell, .ct-wardrobe-shell, .ct-favorites-shell, .ct-settings-panel-shell) {
+    width: 100%;
+    min-width: 0;
+}
+
+.ct-me-entry-body :is(
+    .ct-schedule-overview__title,
+    .ct-wardrobe-hero__title,
+    .ct-favorites-summary__title,
+    .ct-settings-profile__name,
+    .ct-settings-panel__heading,
+    .ct-state-panel__title
+) {
+    letter-spacing: 0;
+    line-height: 1.05;
+    text-transform: none;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+}
+
+.ct-me-entry-body :is(.ct-schedule-overview__title, .ct-wardrobe-hero__title, .ct-favorites-summary__title) {
+    font-family: var(--ct-font-editorial);
+    font-size: 38px;
+    font-weight: 600;
+}
+
+.ct-me-entry-body :is(.ct-settings-profile__name, .ct-settings-panel__heading, .ct-state-panel__title) {
+    font-size: 28px;
+}
+
+.ct-me-entry-body :is(
+    .ct-schedule-overview__note,
+    .ct-wardrobe-hero__note,
+    .ct-favorites-summary__note,
+    .ct-favorites-empty__copy,
+    .ct-favorites-card__subtitle,
+    .ct-settings-profile__bio,
+    .ct-state-panel__description
+) {
+    max-width: 62ch;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+    .ct-me-entry-body :is(
+        .ct-tab-list,
+        .ct-state-panel,
+        .ct-schedule-card,
+        .ct-wardrobe-form,
+        .ct-wardrobe-archive[data-ct-layout="grid"] .ct-wardrobe-card,
+    .ct-wardrobe-archive[data-ct-layout="list"] .ct-wardrobe-card,
+    .ct-favorites-summary,
+    .ct-favorites-card,
+    .ct-favorites-empty,
+    .ct-settings-item,
+    .ct-settings-action
+) {
+    border-radius: 8px;
+    background: var(--ct-entry-surface);
+    box-shadow: var(--ct-entry-shadow);
+}
+
+.ct-me-entry-body :is(.ct-tab-list, .ct-state-panel) {
+    box-shadow: none;
+}
+
+.ct-me-entry-body .ct-tab-list {
+    padding: 6px;
+}
+
+.ct-me-entry-body .ct-tab {
+    min-height: 48px;
+    border-color: var(--ct-border);
+    background: var(--ct-entry-pill);
+    box-shadow: none;
+}
+
+.ct-me-entry-body .ct-tab.is-active {
+    background: var(--ct-panel);
+    border-color: var(--ct-border-dark);
+    box-shadow: none;
+}
+
+.ct-me-entry-body .ct-search-bar__surface {
+    border-color: var(--ct-border);
+    background: var(--ct-entry-surface-strong);
+    box-shadow: none;
+}
+
+.ct-me-entry-body .ct-search-bar__input {
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.ct-me-entry-body :is([data-ct-schedule-tabs], [data-ct-favorites-tabs], [data-ct-wardrobe-tabs]) .ct-tab-list__track {
+    display: flex !important;
+    gap: 10px;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.ct-me-entry-body :is([data-ct-schedule-tabs], [data-ct-favorites-tabs], [data-ct-wardrobe-tabs]) .ct-tab {
+    flex: 1 1 0;
+    width: 100%;
+    padding-inline: 10px;
+}
+
+.ct-me-entry-body :is([data-ct-schedule-tabs], [data-ct-favorites-tabs], [data-ct-wardrobe-tabs]) .ct-tab__label {
+    letter-spacing: 0;
+}
+
+@media (max-width: 520px) {
+    .ct-me-entry-body :is(.ct-schedule-overview__title, .ct-wardrobe-hero__title, .ct-favorites-summary__title) {
+        font-size: 34px;
+    }
+
+    .ct-me-entry-body :is(.ct-settings-profile__name, .ct-settings-panel__heading, .ct-state-panel__title) {
+        font-size: 26px;
+    }
+
+    .ct-me-entry-body .ct-shell-section {
+        margin-bottom: 18px;
+    }
+}

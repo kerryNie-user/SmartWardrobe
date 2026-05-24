@@ -21,14 +21,23 @@ class DiscoveryHeroMappingContractTest(unittest.TestCase):
         if db_path and os.path.exists(db_path):
             os.remove(db_path)
 
-    def test_ai_post_images_prefix_maps_to_ai_images(self):
+    def test_ai_post_rejects_local_image_aliases(self):
         post_data = {
             "id": "post-1",
             "ai": {"schema": "ct_ai_post_v1"},
             "heroImage": "images/foo.jpg",
             "images": []
         }
-        assert self.storage._resolve_post_hero(post_data) == "/ai-images/foo.jpg"
+        assert self.storage._resolve_post_hero(post_data) == ""
+
+    def test_ai_post_uses_network_image_from_candidates(self):
+        post_data = {
+            "id": "post-1",
+            "ai": {"schema": "ct_ai_post_v1"},
+            "heroImage": "images/foo.jpg",
+            "images": ["https://example.com/network.jpg"]
+        }
+        assert self.storage._resolve_post_hero(post_data) == "https://example.com/network.jpg"
 
     def test_non_ai_post_keeps_web_images_prefix(self):
         post_data = {

@@ -96,6 +96,39 @@ SmartWardrobe 的代码边界以“页面薄、领域清、接口少”为准：
 - 后端路由和文件服务不再堆回 `handler.py`。
 - 后端业务存储逻辑不再堆回 `storage.py`。
 
+### AI Blogger
+
+公开入口：
+
+- `services/ai_blogger/run_pipeline.py`
+- `services/ai_blogger/chain_runner.py`
+- `services/ai_blogger/image_sourcer.py`
+
+内部实现：
+
+- `services/ai_blogger/pipeline/`
+- `services/ai_blogger/topic/`
+- `services/ai_blogger/layouts/`
+- `services/ai_blogger/metrics/`
+- `services/ai_blogger/protocol/`
+- `services/ai_blogger/experience/`
+
+规则：
+
+- `run_pipeline.py` 只负责批量任务编排和 CLI 入口。
+- `pipeline/config.py` 只负责配置归一和输出文件路径。
+- `pipeline/topics.py` 只负责选题、新闻 seed 和 profile 驱动的标题来源。
+- `pipeline/generation.py` 只负责把标题转换成文章结果。
+- `pipeline/images.py` 只负责图片下载、去重和图片指标。
+- `pipeline/html_renderer.py` 只负责 HTML 输出，不写数据库。
+- `pipeline/persistence.py` 只负责将生成结果写入 `ContentPost`。
+- `pipeline/reporting.py` 只负责报告结构和报告文件输出。
+- `run_pipeline.ImageTracker` 保留兼容 re-export，但实现不再放在入口文件。
+- `experience/10_smartwardrobe_editorial_prompt_guide.md` 是 SmartWardrobe 专属博客提示词和布局规则的知识源。
+- `agents/*` 只定义 prompt chain 契约，不写图片下载、HTML 渲染或数据库逻辑。
+- `profiles/*.json` 只组合栏目、布局池、视觉策略和 KB 文件，不内联长提示词正文。
+- HTML 预览必须转义模型生成的标题、正文、布局属性和图片 alt，避免 LLM 输出破坏预览页。
+
 ## 禁止依赖
 
 - `apps/web/js/pages/*` 不允许导入 `apps/web/js/lib/*/localRepository.js`
@@ -106,3 +139,5 @@ SmartWardrobe 的代码边界以“页面薄、领域清、接口少”为准：
 - `apps/web/js/lib/*Store.js` 不允许导入 `apps/web/js/components/*`
 
 这些规则由 `apps/web/tests/module-boundaries.shell.test.js` 覆盖。
+
+AI Blogger 入口边界由 `services/ai_blogger/tests/test_pipeline_boundaries.py` 覆盖。

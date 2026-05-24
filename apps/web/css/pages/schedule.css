@@ -18,18 +18,21 @@
 }
 
 .ct-schedule-overview__action,
+.ct-schedule-card__toggle,
+.ct-schedule-card__edit,
+.ct-schedule-card__delete,
 .ct-schedule-event__toggle,
 .ct-schedule-event__edit,
 .ct-schedule-event__delete,
 .ct-schedule-form__submit,
 .ct-schedule-form__cancel {
     border: 1px solid var(--ct-border);
-    background: rgba(255, 255, 255, 0.03);
-    box-shadow: var(--ct-shadow);
+    background: var(--ct-surface);
+    box-shadow: none;
     border-radius: 999px;
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 
@@ -40,10 +43,10 @@
 
 .ct-schedule-overview__title {
     margin: 0;
-    font-size: 40px;
-    line-height: 0.94;
-    letter-spacing: -0.07em;
-    text-transform: uppercase;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .ct-schedule-overview__metric {
@@ -62,7 +65,7 @@
     color: var(--ct-text-soft);
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
 }
 
@@ -75,7 +78,7 @@
 
 .ct-schedule-timeline {
     display: grid;
-    gap: 28px;
+    gap: 24px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -84,6 +87,46 @@
 .ct-schedule-group {
     display: grid;
     gap: 16px;
+}
+
+.ct-schedule-history {
+    display: grid;
+    gap: 16px;
+    padding-top: 10px;
+    border-top: 1px solid var(--ct-border);
+}
+
+.ct-schedule-history__header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.ct-schedule-history__title {
+    margin: 4px 0 0;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: 0;
+}
+
+.ct-schedule-history__count {
+    color: var(--ct-text-soft);
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+.ct-schedule-history__note {
+    margin: 0;
+    max-width: 680px;
+    color: var(--ct-text-soft);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.ct-schedule-history__list .ct-schedule-timeline {
+    gap: 18px;
 }
 
 .ct-schedule-group__date {
@@ -102,26 +145,59 @@
     color: var(--ct-text-soft);
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
 }
 
 .ct-schedule-group__events {
     display: grid;
-    gap: 18px;
+    gap: 14px;
     margin: 0;
     padding: 0;
     list-style: none;
+}
+
+.ct-schedule-card {
+    display: grid;
+    overflow: hidden;
+    border: 1px solid var(--ct-border);
+    border-radius: 8px;
+    background: var(--ct-surface-muted);
+    box-shadow: none;
+}
+
+.ct-schedule-card.is-history {
+    background: var(--ct-surface);
+}
+
+.ct-schedule-card__content {
+    display: grid;
+    gap: 12px;
+    padding: 20px;
+}
+
+.ct-schedule-card__topline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.ct-schedule-card__controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
 }
 
 .ct-schedule-event {
     display: grid;
     gap: 18px;
     border: 1px solid var(--ct-border);
-    border-radius: 30px;
+    border-radius: 8px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.03);
-    box-shadow: var(--ct-shadow);
+    background: var(--ct-surface);
+    box-shadow: none;
 }
 
 .ct-schedule-event__content {
@@ -141,7 +217,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 6px;
 }
 
 .ct-schedule-dialog {
@@ -155,16 +231,16 @@
 .ct-schedule-dialog__scrim {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.58);
+    background: var(--ct-dialog-scrim);
 }
 
 .ct-schedule-dialog__panel {
     position: relative;
     width: min(calc(100% - 32px), 420px);
     border: 1px solid var(--ct-border);
-    border-radius: 30px;
-    background: rgba(20, 20, 20, 0.92);
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    border-radius: 8px;
+    background: var(--ct-dialog-background);
+    box-shadow: var(--ct-dialog-shadow);
     padding: 22px;
     display: grid;
     gap: 14px;
@@ -174,7 +250,7 @@
     margin: 0;
     font-size: 26px;
     line-height: 1;
-    letter-spacing: -0.06em;
+    letter-spacing: 0;
 }
 
 .ct-schedule-dialog__copy {
@@ -193,12 +269,12 @@
 .ct-schedule-dialog__confirm {
     border-radius: 999px;
     padding: 12px 16px;
-    border: 1px solid rgba(247, 243, 236, 0.16);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--ct-input-border);
+    background: var(--ct-surface-strong);
     color: var(--ct-text);
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 
@@ -208,10 +284,11 @@
 }
 
 .ct-schedule-event__time,
+.ct-schedule-card__time,
 .ct-schedule-event__tag {
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 
@@ -219,12 +296,75 @@
     color: var(--ct-text-soft);
 }
 
+.ct-schedule-card__time {
+    color: var(--ct-text-soft);
+}
+
+.ct-schedule-card__title {
+    margin: 0;
+    font-size: 27px;
+    line-height: 1.02;
+    letter-spacing: 0;
+    text-wrap: balance;
+}
+
+.ct-schedule-card__location {
+    margin: 0;
+    color: var(--ct-text-soft);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.ct-schedule-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 4px 0 0;
+    list-style: none;
+}
+
+.ct-schedule-card__tag {
+    padding: 7px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--ct-border);
+    color: var(--ct-text-soft);
+    font-size: 11px;
+}
+
+.ct-schedule-card__toggle,
+.ct-schedule-card__edit,
+.ct-schedule-card__delete {
+    padding: 8px 10px;
+}
+
+.ct-schedule-card__edit {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    background: transparent;
+    border-color: transparent;
+}
+
+.ct-schedule-card__toggle.is-active {
+    background: var(--ct-panel);
+    color: var(--ct-text-dark);
+    border-color: var(--ct-border-dark);
+}
+
+.ct-schedule-card__delete {
+    color: rgba(255, 143, 143, 0.82);
+    background: transparent;
+    border-color: transparent;
+}
+
 .ct-schedule-event__title {
     margin: 0;
     font-size: 28px;
-    line-height: 0.96;
-    letter-spacing: -0.06em;
-    text-transform: uppercase;
+    line-height: 1.02;
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .ct-schedule-event__location {
@@ -246,8 +386,7 @@
 .ct-schedule-event__toggle,
 .ct-schedule-event__edit,
 .ct-schedule-event__delete {
-    padding: 10px 14px;
-    padding-top: 6px;
+    padding: 8px 10px;
 }
 
 .ct-schedule-event__edit {
@@ -255,27 +394,55 @@
     align-items: center;
     text-decoration: none;
     color: inherit;
+    background: transparent;
+    border-color: transparent;
 }
 
 .ct-schedule-event__toggle.is-active {
-    background: linear-gradient(180deg, rgba(245, 239, 230, 0.98), rgba(231, 225, 214, 0.94));
+    background: var(--ct-panel);
     color: var(--ct-text-dark);
-    border-color: rgba(247, 243, 236, 0.38);
+    border-color: var(--ct-border-dark);
+}
+
+.ct-schedule-event__delete {
+    color: rgba(255, 143, 143, 0.82);
+    background: transparent;
+    border-color: transparent;
+}
+
+@media (max-width: 520px) {
+    .ct-schedule-overview__header {
+        display: grid;
+        gap: 14px;
+    }
+
+    .ct-schedule-overview__action {
+        justify-self: start;
+    }
+
+    .ct-schedule-card__topline {
+        display: grid;
+        gap: 10px;
+    }
+
+    .ct-schedule-card__controls {
+        justify-content: flex-start;
+    }
 }
 
 .ct-schedule-event__tag {
     padding: 8px 12px;
     border-radius: 999px;
     border: 1px solid var(--ct-border);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--ct-surface-strong);
 }
 
 .ct-schedule-form,
 .ct-schedule-empty {
     border: 1px solid var(--ct-border);
-    border-radius: 30px;
-    background: linear-gradient(180deg, rgba(23, 23, 23, 0.92), rgba(10, 10, 10, 0.92));
-    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28);
+    border-radius: 8px;
+    background: var(--ct-form-surface);
+    box-shadow: var(--ct-form-shadow);
 }
 
 .ct-schedule-form {
@@ -292,15 +459,15 @@
     display: grid;
     gap: 10px;
     padding-bottom: 18px;
-    border-bottom: 1px solid rgba(247, 243, 236, 0.08);
+    border-bottom: 1px solid var(--ct-rule-subtle);
 }
 
 .ct-schedule-form__heading {
     margin: 0;
     font-size: 28px;
-    line-height: 0.98;
-    letter-spacing: -0.05em;
-    text-transform: uppercase;
+    line-height: 1.02;
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .ct-schedule-form__intro {
@@ -329,7 +496,7 @@
     color: var(--ct-text-soft);
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 
@@ -338,10 +505,10 @@
     align-items: center;
     gap: 10px;
     padding: 14px 16px;
-    border: 1px solid rgba(247, 243, 236, 0.16);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.05);
-    box-shadow: inset 0 0 0 1px rgba(247, 243, 236, 0.03);
+    border: 1px solid var(--ct-input-border);
+    border-radius: 8px;
+    background: var(--ct-input-background);
+    box-shadow: var(--ct-input-shadow);
 }
 
 .ct-schedule-form__toggle input {
@@ -352,12 +519,12 @@
 .ct-schedule-form__field input,
 .ct-schedule-form__field select {
     width: 100%;
-    border: 1px solid rgba(247, 243, 236, 0.16);
-    border-radius: 18px;
+    border: 1px solid var(--ct-input-border);
+    border-radius: 8px;
     padding: 14px 16px;
     color: var(--ct-text);
-    background: rgba(255, 255, 255, 0.05);
-    box-shadow: inset 0 0 0 1px rgba(247, 243, 236, 0.03);
+    background: var(--ct-input-background);
+    box-shadow: var(--ct-input-shadow);
 }
 
 .ct-schedule-form__actions {
@@ -373,9 +540,9 @@
 }
 
 .ct-schedule-form__submit {
-    background: linear-gradient(180deg, rgba(245, 239, 230, 0.98), rgba(231, 225, 214, 0.94));
+    background: var(--ct-panel);
     color: var(--ct-text-dark);
-    border-color: rgba(247, 243, 236, 0.38);
+    border-color: var(--ct-border-dark);
 }
 
 .ct-schedule-empty {

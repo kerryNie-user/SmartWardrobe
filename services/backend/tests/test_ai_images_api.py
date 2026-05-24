@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 import threading
 import unittest
@@ -14,6 +15,11 @@ class AiImagesApiTest(unittest.TestCase):
     def setUp(self):
         self.db_path = Path(tempfile.mkdtemp()) / "test.db"
         os.environ["SQLITE_DB"] = str(self.db_path)
+        self._old_ai_image_dir = os.environ.get("SMARTWARDROBE_AI_IMAGE_DIR")
+        self._old_ai_blogger_image_dir = os.environ.get("AI_BLOGGER_IMAGE_DIR")
+        os.environ.pop("SMARTWARDROBE_AI_IMAGE_DIR", None)
+        os.environ.pop("AI_BLOGGER_IMAGE_DIR", None)
+        self._extra_temp_dirs = []
         db.init(str(self.db_path))
         if db.is_closed():
             db.connect()
@@ -47,6 +53,16 @@ class AiImagesApiTest(unittest.TestCase):
             db.close()
         if self.db_path.exists():
             os.remove(self.db_path)
+        for temp_dir in self._extra_temp_dirs:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        if self._old_ai_image_dir is None:
+            os.environ.pop("SMARTWARDROBE_AI_IMAGE_DIR", None)
+        else:
+            os.environ["SMARTWARDROBE_AI_IMAGE_DIR"] = self._old_ai_image_dir
+        if self._old_ai_blogger_image_dir is None:
+            os.environ.pop("AI_BLOGGER_IMAGE_DIR", None)
+        else:
+            os.environ["AI_BLOGGER_IMAGE_DIR"] = self._old_ai_blogger_image_dir
 
     def request_file(self, path):
         req = request.Request(f'{self.base_url}{path}', method='GET')
@@ -60,6 +76,17 @@ class AiImagesApiTest(unittest.TestCase):
         status, content = self.request_file('/ai-images/test_ai_image.jpg')
         self.assertEqual(status, 200)
         self.assertEqual(content, b'fake-ai-image-content')
+
+    def test_serve_ai_images_uses_env_configured_directory(self):
+        custom_dir = Path(tempfile.mkdtemp())
+        self._extra_temp_dirs.append(custom_dir)
+        custom_image = custom_dir / 'env_test.jpg'
+        custom_image.write_bytes(b'env-configured-image')
+        os.environ['SMARTWARDROBE_AI_IMAGE_DIR'] = str(custom_dir)
+
+        status, content = self.request_file('/ai-images/env_test.jpg')
+        self.assertEqual(status, 200)
+        self.assertEqual(content, b'env-configured-image')
 
     def test_serve_ai_images_returns_404_for_missing_file(self):
         status, _ = self.request_file('/ai-images/missing_image.jpg')

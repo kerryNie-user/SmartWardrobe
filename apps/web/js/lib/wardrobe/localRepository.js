@@ -7,6 +7,7 @@ export function normalizeWardrobeItem(item = {}) {
     return {
         favorite: false,
         image: '',
+        aiJson: null,
         ...item
     }
 }

@@ -143,7 +143,6 @@ runTest('pageContracts 应为核心页面输出统一 contract shape', async () 
     locale: 'en-US',
     activeTab: 'all',
     query: '',
-    isFormOpen: false,
     content: { tabs: [{ key: 'all' }, { key: 'essentials' }], hero: { title: 'Wardrobe' } },
     items: [{ id: 'coat-1', title: 'Atelier Coat', category: 'Outerwear', material: 'Wool', filter: 'essentials' }],
     searchedItems: [{ id: 'coat-1', title: 'Atelier Coat', category: 'Outerwear', material: 'Wool', filter: 'essentials' }],
@@ -157,8 +156,8 @@ runTest('pageContracts 应为核心页面输出统一 contract shape', async () 
     content: {
       tabs: [{ key: 'all', label: 'All' }],
       form: {
-        placeholders: { title: 'Title', image: './image.jpg' },
-        fallback: { category: 'Outerwear', size: 'M', color: 'Black', material: 'Wool' }
+        labels: { photo: 'Photo' },
+        fallback: { title: 'Pending Recognition Item', category: 'Uncategorized', filter: 'uncategorized' }
       }
     },
     item: { category: '', title: '', size: '', color: '', material: '', image: '', filter: 'essentials', favorite: false },
@@ -292,7 +291,6 @@ runTest('Home / Wardrobe / Schedule contract 应显式暴露 loading、empty、e
     locale: 'zh-CN',
     activeTab: 'all',
     query: 'coat',
-    isFormOpen: false,
     content: { tabs: [{ key: 'all' }, { key: 'essentials' }], hero: { title: '衣橱' } },
     items: [],
     searchedItems: [],
@@ -405,8 +403,8 @@ runTest('Profile Edit / Schedule Event / Wardrobe Item / Wardrobe Detail contrac
     content: {
       tabs: [{ key: 'all', label: 'All' }],
       form: {
-        placeholders: { title: 'Title', image: './image.jpg' },
-        fallback: { category: 'Outerwear', size: 'M', color: 'Black', material: 'Wool' }
+        labels: { photo: 'Photo' },
+        fallback: { title: 'Pending Recognition Item', category: 'Uncategorized', filter: 'uncategorized' }
       }
     },
     item: { category: '', title: '', size: '', color: '', material: '', image: '', filter: 'essentials', favorite: false },
@@ -434,6 +432,26 @@ runTest('Profile Edit / Schedule Event / Wardrobe Item / Wardrobe Detail contrac
   assert.strictEqual(wardrobeItem.loading.backgroundSyncing, true);
   assert.strictEqual(wardrobeDetail.empty.kind, 'noData');
   assert.strictEqual(wardrobeDetail.empty.active, true);
+});
+
+runTest('Wardrobe contract 不应对已筛选的真实分类结果二次过滤', async () => {
+  const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'pageContracts.js')).href}?wardrobe-category=1`;
+  const { createWardrobePageContract } = await import(modulePath);
+
+  const wardrobe = createWardrobePageContract({
+    locale: 'zh-CN',
+    activeTab: 'cat-25163-34955',
+    query: '',
+    content: { tabs: [{ key: 'all' }, { key: 'cat-25163-34955' }], hero: { title: '衣橱' } },
+    items: [{ id: 'bag-1', title: 'City Bag', category: '手袋', material: 'Leather', filter: '' }],
+    searchedItems: [{ id: 'bag-1', title: 'City Bag', category: '手袋', material: 'Leather', filter: '' }],
+    syncStates: {
+      wardrobe: { status: 'synced' }
+    }
+  });
+
+  assert.strictEqual(wardrobe.derivedView.archiveItems.length, 1);
+  assert.strictEqual(wardrobe.derivedView.archiveItems[0].id, 'bag-1');
 });
 
 runTest('Discovery / Post Detail contract 应暴露 feed、详情与 sync 语义', async () => {

@@ -3,7 +3,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from services.backend.database import db
+from services.backend.init_db import init_db
+from services.backend.models import User
 from services.backend.server import create_server
+from services.backend.storage import JsonDatabase
+from services.backend.storage_domains.shared import DEBUG_USER
 
 
 class FakeServer:
@@ -29,6 +34,33 @@ class ServerStartupContractTest(unittest.TestCase):
 
             assert data_file.parent.exists()
             assert server.server_address == ('127.0.0.1', 8150)
+
+    def test_debug_user_bootstrap_accepts_existing_legacy_user_id(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            db_path = Path(tmp_dir) / "legacy.db"
+            if not db.is_closed():
+                db.close()
+            db.init(str(db_path))
+            db.connect()
+            try:
+                init_db()
+                User.create(
+                    id=DEBUG_USER['id'],
+                    name='ClosetTwin 用户',
+                    emailOrMobile='member@closettwin.local',
+                    password='password123',
+                    avatar='',
+                    bio=''
+                )
+
+                JsonDatabase(str(db_path))
+
+                users = list(User.select().where(User.id == DEBUG_USER['id']))
+                assert len(users) == 1
+                assert users[0].emailOrMobile == 'member@closettwin.local'
+            finally:
+                if not db.is_closed():
+                    db.close()
 
 
 if __name__ == "__main__":

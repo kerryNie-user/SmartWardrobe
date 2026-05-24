@@ -20,6 +20,7 @@ async function main() {
     const htmlPath = path.join(__dirname, '..', 'wardrobe-item.html');
     const html = fs.readFileSync(htmlPath, 'utf8');
     const dom = new JSDOM(html, { url: 'http://localhost/wardrobe-item.html' });
+    dom.window.localStorage.setItem('app_locale', 'zh-CN');
 
     global.window = dom.window;
     global.document = dom.window.document;
@@ -102,10 +103,20 @@ async function main() {
     assert.strictEqual(dom.window.document.querySelector('[data-ct-wardrobe-image-preview]'), null);
   });
 
-  await runTest('New Wardrobe Item 页面应支持新增模式保存到 store', async () => {
+  await runTest('New Wardrobe Item 页面应支持上传照片并保存识别结果', async () => {
     const htmlPath = path.join(__dirname, '..', 'wardrobe-item.html');
     const html = fs.readFileSync(htmlPath, 'utf8');
     const dom = new JSDOM(html, { url: 'http://localhost/wardrobe-item.html' });
+    dom.window.localStorage.setItem('app_locale', 'zh-CN');
+
+    class FakeFileReader {
+      readAsDataURL() {
+        this.result = 'data:image/png;base64,preview-image';
+        if (typeof this.onload === 'function') {
+          this.onload({ target: { result: this.result } });
+        }
+      }
+    }
 
     global.window = dom.window;
     global.document = dom.window.document;
@@ -114,29 +125,45 @@ async function main() {
     global.HTMLElement = dom.window.HTMLElement;
     global.Node = dom.window.Node;
     global.FormData = dom.window.FormData;
+    global.FileReader = FakeFileReader;
+    dom.window.FileReader = FakeFileReader;
 
     let modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'wardrobeItemPage.js')).href;
     let { renderWardrobeItemPage } = await import(modulePath);
     renderWardrobeItemPage();
 
-    dom.window.document.querySelector('[name="title"]').value = 'Archive Coat';
-    dom.window.document.querySelector('[name="category"]').value = 'Outerwear';
-    dom.window.document.querySelector('[name="filter"]').value = 'outerwear';
-    dom.window.document.querySelector('[name="size"]').value = 'L';
-    dom.window.document.querySelector('[name="color"]').value = 'Ink';
-    dom.window.document.querySelector('[name="material"]').value = 'Wool';
-    dom.window.document.querySelector('[name="image"]').value = '/uploads/wardrobe/wool-trench.jpg';
+    const fileInput = dom.window.document.querySelector('[name="imageFile"]');
+    Object.defineProperty(fileInput, 'files', {
+      configurable: true,
+      value: [{ name: 'archive-coat.png', type: 'image/png', size: 18 }]
+    });
+    fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+
     dom.window.document.querySelector('form[data-ct-wardrobe-item-form]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
 
     const stored = JSON.parse(dom.window.localStorage.getItem('ct_wardrobe'));
     const storedItems = stored.users?.guest || stored;
-    assert.ok(storedItems.some((item) => item.title === 'Archive Coat'), 'New wardrobe item should be saved');
+    assert.strictEqual(storedItems[0].title, '待识别单品');
+    assert.strictEqual(storedItems[0].category, '未分类');
+    assert.strictEqual(storedItems[0].aiJson.status, 'unavailable');
   });
 
-  await runTest('New Wardrobe Item 页面应支持编辑模式回填并覆盖原数据', async () => {
+  await runTest('New Wardrobe Item 页面应支持编辑模式替换照片并保留识别字段', async () => {
     const htmlPath = path.join(__dirname, '..', 'wardrobe-item.html');
     const html = fs.readFileSync(htmlPath, 'utf8');
     const dom = new JSDOM(html, { url: 'http://localhost/wardrobe-item.html?id=trench-001' });
+
+    class FakeFileReader {
+      readAsDataURL() {
+        this.result = 'data:image/png;base64,preview-image';
+        if (typeof this.onload === 'function') {
+          this.onload({ target: { result: this.result } });
+        }
+      }
+    }
 
     dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify([
       {
@@ -159,19 +186,29 @@ async function main() {
     global.HTMLElement = dom.window.HTMLElement;
     global.Node = dom.window.Node;
     global.FormData = dom.window.FormData;
+    global.FileReader = FakeFileReader;
+    dom.window.FileReader = FakeFileReader;
 
     let modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'wardrobeItemPage.js')).href;
     let { renderWardrobeItemPage } = await import(modulePath);
     renderWardrobeItemPage();
 
-    assert.strictEqual(dom.window.document.querySelector('[name="title"]').value, 'Wool Trench');
+    const fileInput = dom.window.document.querySelector('[name="imageFile"]');
+    Object.defineProperty(fileInput, 'files', {
+      configurable: true,
+      value: [{ name: 'wool-trench-updated.png', type: 'image/png', size: 21 }]
+    });
+    fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
 
-    dom.window.document.querySelector('[name="title"]').value = 'Wool Trench Updated';
     dom.window.document.querySelector('form[data-ct-wardrobe-item-form]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
 
     const stored = JSON.parse(dom.window.localStorage.getItem('ct_wardrobe'));
     const storedItems = stored.users?.guest || stored;
-    assert.strictEqual(storedItems[0].title, 'Wool Trench Updated');
+    assert.strictEqual(storedItems[0].id, 'trench-001');
+    assert.strictEqual(storedItems[0].title, 'Wool Trench');
+    assert.ok(storedItems[0].image.includes('preview-image') || storedItems[0].image.includes('data:image/png;base64'), 'Updated image should be saved');
   });
 
   await runTest('New Wardrobe Item 页面应支持本地上传预览并保存', async () => {
@@ -209,13 +246,14 @@ async function main() {
       value: [{ name: 'preview.png', type: 'image/png' }]
     });
     fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
 
     const preview = dom.window.document.querySelector('[data-ct-wardrobe-image-preview]');
     assert.ok(preview, 'Missing wardrobe upload preview');
     assert.strictEqual(preview.getAttribute('src'), 'data:image/png;base64,preview-image');
 
-    dom.window.document.querySelector('[name="title"]').value = 'Upload Look';
     dom.window.document.querySelector('form[data-ct-wardrobe-item-form]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
 
     const stored = JSON.parse(dom.window.localStorage.getItem('ct_wardrobe'));
     const storedItems = stored.users?.guest || stored;

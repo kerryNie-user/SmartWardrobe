@@ -1,11 +1,10 @@
 import { getMeContent } from '../data/me.js';
 import { renderTopbar } from '../components/topbar.js';
-import { renderSecondaryTabs } from '../components/secondaryTabs.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { renderProfileHero } from '../components/profileHero.js';
-import { renderMeSummaryGrid } from '../components/meSummaryGrid.js';
+import { renderMeDashboard } from '../components/meDashboard.js';
 import { ensureSyncFeedbackRoot } from '../components/syncFeedback.js';
-import { applyLocaleDocument, getLocale, getSharedCopy } from '../lib/locale.js';
+import { applyLocaleDocument, getLocale, getUiCopy } from '../lib/locale.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { createMePageContract } from '../lib/pageContracts.js';
 import { buildMePageSelectorInput } from '../lib/meSelectors.js';
@@ -19,19 +18,14 @@ export function renderMePage() {
     const topbarRoot = document.querySelector('[data-ct-topbar]');
     const syncFeedbackRoot = ensureSyncFeedbackRoot(topbarRoot, 'me');
     const heroRoot = document.querySelector('[data-ct-profile-hero]');
-    const tabsRoot = document.querySelector('[data-ct-me-tabs]');
-    const summaryRoot = document.querySelector('[data-ct-me-summary]');
+    const dashboardRoot = document.querySelector('[data-ct-me-dashboard]');
     const bottomNavRoot = document.querySelector('[data-ct-bottom-nav]');
-
-    let activeTab = 'schedule';
 
     const paint = () => {
         const locale = getLocale();
-        const sharedCopy = getSharedCopy(locale);
         const content = getMeContent(locale);
         const selectorInput = buildMePageSelectorInput({
             locale,
-            activeTab,
             content,
             profile: getProfile(locale),
             favoritesStats: getFavoritesStats(),
@@ -57,7 +51,7 @@ export function renderMePage() {
         applyLocaleDocument('me', locale);
         if (topbarRoot) {
             topbarRoot.innerHTML = renderTopbar({
-                rightLabel: locale === 'zh-CN' ? '打开设置' : 'Open Settings',
+                rightLabel: getUiCopy(locale).topbar.openSettings,
                 rightIcon: '⚙',
                 rightHref: 'settings.html'
             });
@@ -66,13 +60,8 @@ export function renderMePage() {
             heroRoot.innerHTML = renderProfileHero(contract.derivedView.hero);
         }
         if (bottomNavRoot) bottomNavRoot.innerHTML = renderBottomNav('me');
-        const activeTabState = contract.derivedView.tabs.find((tab) => tab.active) || contract.derivedView.tabs[0];
-        if (tabsRoot) tabsRoot.innerHTML = renderSecondaryTabs(contract.derivedView.tabs, sharedCopy.tabs.me);
-        if (summaryRoot) {
-            summaryRoot.id = activeTabState.panelId;
-            summaryRoot.setAttribute('role', 'tabpanel');
-            summaryRoot.setAttribute('aria-labelledby', activeTabState.tabId);
-            summaryRoot.innerHTML = renderMeSummaryGrid(contract.derivedView.summary, contract.derivedView.stats);
+        if (dashboardRoot) {
+            dashboardRoot.innerHTML = renderMeDashboard(contract.derivedView.dashboard);
         }
     };
 
@@ -99,35 +88,35 @@ export function renderMePage() {
             bindings: [
                 {
                     key: 'profile',
-                    label: { 'zh-CN': '资料', 'en-US': 'Profile' },
+                    domainKey: 'profile',
                     getState: () => getProfileSyncState(),
                     subscribe: (listener) => subscribeProfileSyncState(listener),
                     retry: (locale) => retryProfileSync(locale)
                 },
                 {
                     key: 'favorites',
-                    label: { 'zh-CN': '收藏', 'en-US': 'Favorites' },
+                    domainKey: 'favorites',
                     getState: () => getFavoritesSyncState(),
                     subscribe: (listener) => subscribeFavoritesSyncState(listener),
                     retry: () => retryFavoritesSync()
                 },
                 {
                     key: 'wardrobe',
-                    label: { 'zh-CN': '衣橱', 'en-US': 'Wardrobe' },
+                    domainKey: 'wardrobe',
                     getState: () => getWardrobeSyncState(),
                     subscribe: (listener) => subscribeWardrobeSyncState(listener),
                     retry: (locale) => retryWardrobeSync(locale)
                 },
                 {
                     key: 'settings',
-                    label: { 'zh-CN': '设置', 'en-US': 'Settings' },
+                    domainKey: 'settings',
                     getState: () => getSettingsSyncState(),
                     subscribe: (listener) => subscribeSettingsSyncState(listener),
                     retry: () => retrySettingsSync()
                 },
                 {
                     key: 'schedule',
-                    label: { 'zh-CN': '日程', 'en-US': 'Schedule' },
+                    domainKey: 'schedule',
                     getState: () => getScheduleSyncState(),
                     subscribe: (listener) => subscribeScheduleSyncState(listener),
                     retry: (locale) => retryScheduleSync(locale)
@@ -135,15 +124,6 @@ export function renderMePage() {
             ]
         }
     });
-
-    if (tabsRoot) {
-        tabsRoot.addEventListener('click', (event) => {
-            const target = event.target.closest('[data-tab-key]');
-            if (!target) return;
-            activeTab = target.getAttribute('data-tab-key') || 'schedule';
-            binding.paintNow();
-        });
-    }
 
     return binding;
 }

@@ -7,7 +7,7 @@ import {
     buildShowAlternativesAction,
     buildToggleSaveLookAction
 } from '../lib/actions/outfitDetailActions.js'
-import { applyLocaleDocument, getLocale } from '../lib/locale.js'
+import { applyLocaleDocument, getLocale, getUiCopy } from '../lib/locale.js'
 import { buildHomeRecommendationInput } from '../lib/homeSelectors.js'
 import { getQueryParam } from '../lib/navigationAdapter.js'
 import { bindPageStores } from '../lib/pageStoreBinding.js'
@@ -53,11 +53,12 @@ export function renderOutfitDetailPage() {
         applyLocaleDocument('outfitDetail', locale)
 
         if (topbarRoot) {
+            const uiCopy = getUiCopy(locale)
             topbarRoot.innerHTML = renderTopbar({
-                leftLabel: locale === 'zh-CN' ? '返回首页' : 'Back to home',
+                leftLabel: uiCopy.topbar.backToHome,
                 leftIcon: '←',
                 leftHref: 'index.html',
-                rightLabel: locale === 'zh-CN' ? '打开个人资料' : 'Open profile',
+                rightLabel: uiCopy.topbar.openProfile,
                 rightIcon: '◐',
                 rightHref: 'profile.html'
             })

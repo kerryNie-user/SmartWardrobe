@@ -29,6 +29,12 @@ function createJsonResponse(payload, status = 200) {
   };
 }
 
+function formatLocalDateISO(offsetDays = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function createFetchStub(config = {}) {
   const requests = [];
   const failureMap = config.failureMap || {};
@@ -63,7 +69,7 @@ function createFetchStub(config = {}) {
     },
     schedules: {
       'user-1': [
-        { id: 'remote-schedule', tab: 'travel', day: '31', label: 'Oct / Thu', time: '09:30 AM — 11:00 AM', title: 'Remote Schedule', location: 'Le Marais', tags: ['Notebook'], reminderEnabled: true, version: 2, updatedAt: 222 }
+        { id: 'remote-schedule', tab: 'upcoming', dateISO: formatLocalDateISO(1), day: formatLocalDateISO(1).slice(8, 10), label: 'Date Window', time: '09:30 AM — 11:00 AM', title: 'Remote Schedule', location: 'Le Marais', tags: ['Notebook'], reminderEnabled: true, version: 2, updatedAt: 222 }
       ]
     }
   };
@@ -261,9 +267,7 @@ async function main() {
     assert.strictEqual(getScheduleSyncState().status, 'synced');
 
     createScheduleEvent({
-      tab: 'travel',
-      day: '30',
-      label: 'Oct / Wed',
+      dateISO: formatLocalDateISO(1),
       time: '03:00 PM — 05:00 PM',
       title: 'Backend Sync Event',
       location: 'Canal District',
@@ -388,9 +392,7 @@ async function main() {
 
     await hydrateSchedule('en-US');
     createScheduleEvent({
-      tab: 'travel',
-      day: '30',
-      label: 'Oct / Wed',
+      dateISO: formatLocalDateISO(1),
       time: '03:00 PM — 05:00 PM',
       title: 'Retry Schedule Event',
       location: 'Canal District',

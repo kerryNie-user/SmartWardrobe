@@ -1,14 +1,14 @@
-import { getLocale } from '../lib/locale.js'
+import { getLocale, getUiCopy } from '../lib/locale.js'
 import { renderStatePanel } from './statePanel.js'
 
 export function renderLoadFailedPanel(message, fallback = null) {
     const locale = getLocale()
+    const copy = getUiCopy(locale).states
     const safeMessage = String(message || '').trim()
-    const description = safeMessage || (locale === 'zh-CN' ? '加载失败，请稍后重试。' : 'Failed to load. Please try again.')
+    const description = safeMessage || copy.loadFailedDescription
     return renderStatePanel({
         kind: 'error',
-        eyebrow: locale === 'zh-CN' ? '加载失败' : 'Load Failed',
+        eyebrow: copy.loadFailedTitle,
         description: fallback ? `${description} ${fallback}`.trim() : description
     })
 }
-

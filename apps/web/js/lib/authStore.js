@@ -1,14 +1,16 @@
 import { AUTH_USERS_KEY, clearAuthSession, CURRENT_USER_KEY, getStoredAuthSession, SESSION_KEY, syncStoredAuthUser, writeAuthJson, writeAuthSession } from './authIdentity.js'
+import { getUiCopy } from './locale.js'
 
 const USERS_KEY = AUTH_USERS_KEY
 const DEBUG_SESSION_KEY = 'ct_debug_auto_login'
+const DEBUG_USER_COPY = getUiCopy('en-US').defaults.debugUser
 const DEBUG_USER = {
     id: 'user-096fb511f3ff',
-    name: 'API Nova',
-    emailOrMobile: 'api-nova@example.com',
+    name: DEBUG_USER_COPY.name,
+    emailOrMobile: DEBUG_USER_COPY.emailOrMobile,
     password: 'password123',
-    avatar: '/uploads/profile/elara-vance.jpg',
-    bio: 'Curating a digital archive of architectural silhouettes, neutral tailoring, and quietly radical texture studies.'
+    avatar: DEBUG_USER_COPY.avatar,
+    bio: DEBUG_USER_COPY.bio
 }
 
 function readJson(key) {
@@ -113,11 +115,12 @@ async function postAuth(path, payload) {
 }
 
 function normalizeUser(rawUser, payload) {
+    const defaultUser = getUiCopy('en-US').defaults.debugUser
     return {
         id: rawUser?.id || `user-${Date.now()}`,
-        name: rawUser?.name || payload.name || 'Closet Twin',
+        name: rawUser?.name || payload.name || defaultUser.name,
         emailOrMobile: rawUser?.emailOrMobile || payload.emailOrMobile,
-        avatar: rawUser?.avatar || '/uploads/profile/elara-vance.jpg',
+        avatar: rawUser?.avatar || defaultUser.avatar,
         bio: rawUser?.bio || '',
         password: rawUser?.password || payload.password || ''
     }

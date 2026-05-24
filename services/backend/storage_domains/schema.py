@@ -43,18 +43,41 @@ class SchemaMixin:
         except Exception:
             return
 
+    def _ensure_scheduleitem_dateiso_column(self):
+        try:
+            cursor = db.execute_sql("PRAGMA table_info(scheduleitem);")
+            columns = [row[1] for row in cursor.fetchall()]
+            if 'dateISO' in columns:
+                return
+            db.execute_sql('ALTER TABLE scheduleitem ADD COLUMN dateISO VARCHAR(16);')
+        except Exception:
+            return
+
+    def _ensure_wardrobeitem_ai_json_column(self):
+        try:
+            cursor = db.execute_sql("PRAGMA table_info(wardrobeitem);")
+            columns = [row[1] for row in cursor.fetchall()]
+            if 'ai_json' in columns:
+                return
+            db.execute_sql('ALTER TABLE wardrobeitem ADD COLUMN ai_json TEXT;')
+        except Exception:
+            return
+
     def _ensure_debug_user(self):
         try:
-            user = User.get(User.emailOrMobile == DEBUG_USER['emailOrMobile'])
+            user = User.get(User.id == DEBUG_USER['id'])
         except DoesNotExist:
-            user = User.create(
-                id=DEBUG_USER['id'],
-                name=DEBUG_USER['name'],
-                emailOrMobile=DEBUG_USER['emailOrMobile'],
-                password=DEBUG_USER['password'],
-                avatar=DEBUG_USER['avatar'],
-                bio=DEBUG_USER['bio']
-            )
+            try:
+                user = User.get(User.emailOrMobile == DEBUG_USER['emailOrMobile'])
+            except DoesNotExist:
+                user = User.create(
+                    id=DEBUG_USER['id'],
+                    name=DEBUG_USER['name'],
+                    emailOrMobile=DEBUG_USER['emailOrMobile'],
+                    password=DEBUG_USER['password'],
+                    avatar=DEBUG_USER['avatar'],
+                    bio=DEBUG_USER['bio']
+                )
         try:
             UserSetting.get(UserSetting.user_id == user.id)
         except DoesNotExist:

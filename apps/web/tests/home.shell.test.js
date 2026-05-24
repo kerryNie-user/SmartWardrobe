@@ -10,6 +10,12 @@ function runTest(name, fn) {
   testQueue.push({ name, fn });
 }
 
+function formatLocalDateISO(offsetDays = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 runTest('New 首页应包含第一阶段 Home 壳层关键区域', () => {
   const htmlPath = path.join(__dirname, '..', 'index.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
@@ -101,6 +107,14 @@ runTest('New 首页 tabs 与推荐流应具备语义结构且图片走本地资�
   const image = dom.window.document.querySelector('.ct-feed-card__image');
   assert.ok(image, 'Missing feed image');
   assert.ok(!/^https?:/i.test(image.getAttribute('src')), 'Feed image should use local asset');
+});
+
+runTest('New 首页推荐卡片应使用更紧凑的图片占比与内容留白', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'pages', 'home.css'), 'utf8');
+
+  assert.match(css, /\.ct-feed-card__media[\s\S]*aspect-ratio:\s*4\s*\/\s*4\.1;/, 'Home feed card image should use a tighter portrait crop');
+  assert.match(css, /\.ct-feed-card__content[\s\S]*padding:\s*16px\s+18px\s+18px;/, 'Home feed card content should be more compact');
+  assert.match(css, /\.ct-feed-card__title[\s\S]*font-size:\s*28px;/, 'Home feed card title should be slightly smaller');
 });
 
 runTest('New 首页应跟随 app_locale 切换主要文案', async () => {
@@ -219,6 +233,8 @@ runTest('共享底部 dock 应由 shell 层处理安全区贴底', () => {
   assert.ok(/\.ct-bottom-shell[\s\S]*env\(safe-area-inset-bottom\)/.test(layoutCss), 'ct-bottom-shell should handle safe area');
   assert.ok(/100dvh/.test(layoutCss), 'Layout should use dynamic viewport height');
   assert.ok(/\.ct-bottom-shell::before/.test(layoutCss), 'Bottom shell should use pseudo element background');
+  assert.ok(/@media\s*\(min-width:\s*1024px\)[\s\S]*\.ct-app[\s\S]*padding-bottom:\s*0/.test(layoutCss), 'Desktop app shell should not keep mobile bottom padding');
+  assert.ok(/@media\s*\(min-width:\s*1024px\)[\s\S]*\.ct-bottom-shell[\s\S]*display:\s*none/.test(layoutCss), 'Desktop should hide bottom shell');
 });
 
 runTest('Home 顶部无菜单实现时应使用空占位壳', async () => {
@@ -533,11 +549,13 @@ runTest('New 首页日程卡片应读取持久化 Schedule 摘要', async () => 
           upcoming: {
             groups: [
               {
-                day: '04',
-                label: 'Apr / Fri',
+                dateISO: formatLocalDateISO(1),
+                day: formatLocalDateISO(1).slice(8, 10),
+                label: 'Date Window',
                 events: [
                   {
                     id: 'atelier-review',
+                    dateISO: formatLocalDateISO(1),
                     time: '08:30 AM — 09:30 AM',
                     title: 'Atelier Review',
                     location: 'Lower East Studio',
@@ -587,11 +605,13 @@ runTest('New 首页日程卡片应读取真实最近的跨 tab 事件', async ()
           upcoming: {
             groups: [
               {
-                day: '20',
-                label: 'Apr / Sun',
+                dateISO: formatLocalDateISO(2),
+                day: formatLocalDateISO(2).slice(8, 10),
+                label: 'Date Window',
                 events: [
                   {
                     id: 'late-upcoming',
+                    dateISO: formatLocalDateISO(2),
                     time: '11:00 AM — 12:00 PM',
                     title: 'Late Upcoming',
                     location: 'Studio West',
@@ -605,11 +625,13 @@ runTest('New 首页日程卡片应读取真实最近的跨 tab 事件', async ()
           travel: {
             groups: [
               {
-                day: '03',
-                label: 'Apr / Thu',
+                dateISO: formatLocalDateISO(1),
+                day: formatLocalDateISO(1).slice(8, 10),
+                label: 'Date Window',
                 events: [
                   {
                     id: 'early-travel',
+                    dateISO: formatLocalDateISO(1),
                     time: '07:30 AM — 09:00 AM',
                     title: 'Early Travel',
                     location: 'Terminal 1',

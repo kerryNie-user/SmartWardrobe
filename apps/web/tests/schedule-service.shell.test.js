@@ -126,7 +126,7 @@ runTest('scheduleService 应处理 hydrate、conflict 与 retry 语义', async (
   assert.strictEqual(syncController.getState().status, 'synced');
 });
 
-runTest('scheduleService 应忽略 legacy 存储结构', async () => {
+runTest('scheduleService 应兼容 legacy 存储结构并迁移为 views', async () => {
   const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'scheduleService.js')).href}?service=legacy=1`;
   const { createScheduleService } = await import(modulePath);
 
@@ -160,7 +160,10 @@ runTest('scheduleService 应忽略 legacy 存储结构', async () => {
     syncController
   });
 
-  assert.strictEqual(service.getState(), null);
+  const state = service.getState();
+  assert.ok(state);
+  assert.ok(state.views.upcoming);
+  assert.strictEqual(state.views.upcoming.groups[0].events[0].id, 'event-1');
 });
 
 async function main() {

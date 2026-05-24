@@ -15,6 +15,7 @@ export function renderSecondaryTabs(tabs, label = 'Section Tabs') {
                         tabindex="${tab.active ? '0' : '-1'}"
                     >
                         <span class="ct-tab__label">${tab.label}</span>
+                        ${typeof tab.count === 'number' ? `<span class="ct-tab__count">${String(tab.count).padStart(2, '0')}</span>` : ''}
                     </button>
                 `).join('')}
             </div>

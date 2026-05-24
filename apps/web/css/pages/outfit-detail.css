@@ -6,9 +6,9 @@
 .ct-outfit-detail__media,
 .ct-outfit-detail__content {
     border: 1px solid var(--ct-border);
-    border-radius: 32px;
-    background: rgba(255, 255, 255, 0.03);
-    box-shadow: var(--ct-shadow);
+    border-radius: 8px;
+    background: var(--ct-surface);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     overflow: hidden;
 }
 
@@ -28,8 +28,9 @@
     bottom: 18px;
     border-radius: 999px;
     padding: 13px 18px;
-    border: 1px solid rgba(247, 243, 236, 0.32);
-    background: rgba(10, 10, 10, 0.46);
+    border: 1px solid var(--ct-media-control-border);
+    color: var(--ct-on-media);
+    background: var(--ct-media-control-background);
     backdrop-filter: blur(18px);
     font-size: 11px;
     font-weight: 700;
@@ -86,7 +87,7 @@
 .ct-outfit-detail__tag {
     padding: 8px 12px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--ct-surface-strong);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.18em;
@@ -105,7 +106,7 @@
     display: grid;
     gap: 6px;
     padding-top: 14px;
-    border-top: 1px solid rgba(247, 243, 236, 0.1);
+    border-top: 1px solid var(--ct-rule-subtle);
 }
 
 .ct-outfit-detail__item-title {
@@ -131,7 +132,7 @@
 }
 
 .ct-outfit-detail__secondary {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--ct-surface);
 }
 
 .ct-outfit-detail__alternatives {
@@ -148,16 +149,16 @@
     display: grid;
     gap: 10px;
     padding: 14px;
-    border: 1px solid rgba(247, 243, 236, 0.1);
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--ct-rule-subtle);
+    border-radius: 8px;
+    background: var(--ct-surface);
 }
 
 .ct-outfit-detail__alternative-image {
     width: 100%;
     aspect-ratio: 4 / 5;
     object-fit: cover;
-    border-radius: 18px;
+    border-radius: 8px;
 }
 
 .ct-outfit-detail__alternative-title {

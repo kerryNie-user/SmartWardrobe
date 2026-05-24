@@ -119,10 +119,45 @@ runTest('New Wardrobe 页面应具备 tabs 语义、列表语义并使用本地�
   assert.ok(!/^https?:/i.test(image.getAttribute('src')), 'Wardrobe image should use local asset');
 });
 
-runTest('New Wardrobe 页面应支持添加并删除衣物', async () => {
+runTest('New Wardrobe 页面应按真实分类生成筛选数量', async () => {
   const htmlPath = path.join(__dirname, '..', 'wardrobe.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
+
+  dom.window.localStorage.setItem('ct_wardrobe', JSON.stringify({
+    version: 1,
+    users: {
+      guest: [
+        { id: 'coat-1', category: '外套', filter: 'outerwear', title: 'Coat One', image: '/uploads/wardrobe/wool-trench.jpg' },
+        { id: 'coat-2', category: '外套', filter: 'outerwear', title: 'Coat Two', image: '/uploads/shared/editorial-look-01.jpg' },
+        { id: 'shoe-1', category: '鞋履', filter: 'footwear', title: 'Shoe One', image: '/uploads/wardrobe/wool-trench.jpg' }
+      ]
+    }
+  }));
+
+  global.window = dom.window;
+  global.document = dom.window.document;
+  global.localStorage = dom.window.localStorage;
+  global.CustomEvent = dom.window.CustomEvent;
+  global.HTMLElement = dom.window.HTMLElement;
+  global.Node = dom.window.Node;
+
+  const modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'wardrobePage.js')).href;
+  const { renderWardrobePage } = await import(modulePath);
+  renderWardrobePage();
+
+  const tabs = Array.from(dom.window.document.querySelectorAll('[data-ct-wardrobe-tabs] [role="tab"]'));
+  assert.strictEqual(tabs.length, 3, 'Wardrobe tabs should include all plus unique categories');
+  assert.strictEqual(dom.window.document.querySelector('[data-tab-key="all"] .ct-tab__count').textContent, '03');
+  assert.strictEqual(dom.window.document.querySelector('[data-tab-key="outerwear"] .ct-tab__count').textContent, '02');
+  assert.strictEqual(dom.window.document.querySelector('[data-tab-key="footwear"] .ct-tab__count').textContent, '01');
+});
+
+runTest('New Wardrobe 页面应只保留独立添加入口并支持删除衣物', async () => {
+  const htmlPath = path.join(__dirname, '..', 'wardrobe.html');
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
+  dom.window.localStorage.setItem('app_locale', 'zh-CN');
 
   
   if (!dom.window.localStorage.getItem('ct_wardrobe')) {
@@ -147,35 +182,22 @@ runTest('New Wardrobe 页面应支持添加并删除衣物', async () => {
   const { renderWardrobePage } = await import(modulePath);
   renderWardrobePage();
 
-  const openButton = dom.window.document.querySelector('[data-ct-add-wardrobe]');
-  assert.ok(openButton, 'Missing add wardrobe button');
-  openButton.click();
+  const addLink = dom.window.document.querySelector('[data-ct-add-wardrobe-link]');
+  assert.ok(addLink, 'Missing add wardrobe link');
+  assert.strictEqual(addLink.getAttribute('href'), 'wardrobe-item.html');
+  assert.strictEqual(dom.window.document.querySelector('[data-ct-add-wardrobe]'), null, 'Quick add button should be removed');
+  assert.strictEqual(dom.window.document.querySelector('[data-ct-wardrobe-form]'), null, 'Inline add form should be removed');
+  assert.ok(!/Quick Add|快速新增|Instant AI Scan|即时 AI 扫描/i.test(dom.window.document.body.textContent), 'Removed add modes should not render');
 
-  dom.window.document.querySelector('[name="title"]').value = 'Travel Bomber';
-  dom.window.document.querySelector('[name="category"]').value = 'Outerwear';
-  dom.window.document.querySelector('[name="filter"]').value = 'outerwear';
-  dom.window.document.querySelector('[name="size"]').value = 'L';
-  dom.window.document.querySelector('[name="color"]').value = 'Graphite';
-  dom.window.document.querySelector('[name="material"]').value = 'Nylon';
-  dom.window.document.querySelector('[name="image"]').value = '/uploads/wardrobe/wool-trench.jpg';
-  dom.window.document.querySelector('[name="favorite"]').checked = true;
+  const firstTitle = dom.window.document.querySelector('.ct-wardrobe-card__title');
+  assert.ok(firstTitle, 'Seed wardrobe item should appear');
 
-  const form = dom.window.document.querySelector('[data-ct-wardrobe-form]');
-  assert.ok(form, 'Missing wardrobe form');
-  form.dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
-
-  const outerwearTab = dom.window.document.querySelector('[data-tab-key="outerwear"]');
-  outerwearTab.click();
-
-  const addedTitle = Array.from(dom.window.document.querySelectorAll('.ct-wardrobe-card__title')).find((node) => /Travel Bomber/i.test(node.textContent));
-  assert.ok(addedTitle, 'Added wardrobe item should appear');
-
-  const deleteButton = addedTitle.closest('.ct-wardrobe-card').querySelector('[data-ct-delete-wardrobe]');
+  const deleteButton = firstTitle.closest('.ct-wardrobe-card').querySelector('[data-ct-delete-wardrobe]');
   assert.ok(deleteButton, 'Missing delete wardrobe button');
   deleteButton.click();
 
   const remainingTitles = Array.from(dom.window.document.querySelectorAll('.ct-wardrobe-card__title')).map((node) => node.textContent.trim());
-  assert.ok(!remainingTitles.includes('Travel Bomber'), 'Deleted wardrobe item should disappear');
+  assert.ok(!remainingTitles.includes(firstTitle.textContent.trim()), 'Deleted wardrobe item should disappear');
 });
 
 runTest('New Wardrobe 页面应提供独立 Add 与 Edit 入口', async () => {
@@ -240,12 +262,8 @@ runTest('Me 页面应提供进入 Wardrobe 页的入口', async () => {
   const { renderMePage } = await import(meModulePath);
   renderMePage();
 
-  const wardrobeTab = meDom.window.document.querySelector('[data-tab-key="wardrobe"]');
-  assert.ok(wardrobeTab, 'Missing wardrobe tab');
-  wardrobeTab.click();
-
-  const summaryLink = meDom.window.document.querySelector('[data-ct-wardrobe-entry]');
-  assert.ok(summaryLink, 'Missing wardrobe entry link');
+  const summaryLink = meDom.window.document.querySelector('[data-ct-me-entry="wardrobe"]');
+  assert.ok(summaryLink, 'Missing wardrobe dashboard link');
   assert.strictEqual(summaryLink.getAttribute('href'), 'wardrobe.html');
 });
 
@@ -293,8 +311,8 @@ runTest('New Wardrobe 页面应跟随 app_locale 切换主要文案', async () =
       version: 1,
       users: {
         guest: [
-          { id: 'wool-trench', category: 'Outerwear', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
-          { id: 'silk-slip', category: 'Evening', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
+          { id: 'wool-trench', category: '外套', filter: 'outerwear', title: 'Wool Trench', size: 'M', color: 'Oatmeal', material: 'Wool Blend', image: '/uploads/wardrobe/wool-trench.jpg', favorite: true },
+          { id: 'silk-slip', category: '晚间', filter: 'evening', title: 'Silk Slip', size: 'S', color: 'Onyx', material: '100% Silk', image: '/uploads/shared/editorial-look-01.jpg' }
         ]
       }
     }));
@@ -316,7 +334,7 @@ runTest('New Wardrobe 页面应跟随 app_locale 切换主要文案', async () =
   assert.ok(/晚间/.test(dom.window.document.querySelector('[data-tab-key="evening"]').textContent));
 });
 
-runTest('New Wardrobe 新增表单控件应补齐双语占位与 aria 文案', async () => {
+runTest('New Wardrobe 页面应只保留单一添加入口并移除内联新增表单', async () => {
   const htmlPath = path.join(__dirname, '..', 'wardrobe.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
   const dom = new JSDOM(html, { url: 'http://localhost/wardrobe.html' });
@@ -346,13 +364,12 @@ runTest('New Wardrobe 新增表单控件应补齐双语占位与 aria 文案', a
   const { renderWardrobePage } = await import(modulePath);
   renderWardrobePage();
 
-  dom.window.document.querySelector('[data-ct-add-wardrobe]').click();
-
-  assert.strictEqual(dom.window.document.querySelector('[name="title"]').getAttribute('placeholder'), '旅行飞行员夹克');
-  assert.strictEqual(dom.window.document.querySelector('[name="material"]').getAttribute('placeholder'), '尼龙');
-  assert.strictEqual(dom.window.document.querySelector('[name="filter"]').getAttribute('aria-label'), '筛选');
-  assert.strictEqual(dom.window.document.querySelector('[name="favorite"]').getAttribute('aria-label'), '收藏单品');
-  assert.strictEqual(dom.window.document.querySelector('[name="image"]').getAttribute('aria-label'), '图片');
+  const addLink = dom.window.document.querySelector('[data-ct-add-wardrobe-link]');
+  assert.ok(addLink, 'Missing add wardrobe link');
+  assert.strictEqual(addLink.textContent.trim(), '添加单品');
+  assert.strictEqual(dom.window.document.querySelector('[data-ct-add-wardrobe]'), null, 'Quick add button should not render');
+  assert.strictEqual(dom.window.document.querySelector('[data-ct-wardrobe-form]'), null, 'Inline add form should not render');
+  assert.ok(!/快速新增|即时 AI 扫描/i.test(dom.window.document.body.textContent), 'Removed add modes should not render');
 });
 
 runTest('New Wardrobe 页面应读取 wardrobe_display_mode 并输出真实布局状态', async () => {

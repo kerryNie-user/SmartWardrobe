@@ -18,8 +18,8 @@ export function renderBottomNav(activePage = 'home') {
                             href="${item.href}"
                             ${item.key === activePage ? 'aria-current="page"' : ''}
                         >
-                            <span>${item.icon}</span>
-                            <span>${item.label}</span>
+                            <span class="ct-bottom-nav__item-icon" aria-hidden="true">${item.icon}</span>
+                            <span class="ct-bottom-nav__item-label">${item.label}</span>
                         </a>
                     </li>
                 `).join('')}

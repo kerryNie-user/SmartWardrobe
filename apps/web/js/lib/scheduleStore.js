@@ -2,14 +2,42 @@ import { createScheduleRemoteRepository } from './scheduleRemoteRepository.js'
 import { createScheduleLocalRepository } from './scheduleLocalRepository.js'
 import { createScheduleService } from './scheduleService.js'
 import { createSyncController } from './syncState.js'
+import { getUiCopy } from './locale.js'
+import { deriveScheduleCollections, normalizeScheduleDateInput } from './scheduleDate.js'
 
 const SCHEDULE_TABS = ['upcoming', 'travel', 'archive']
 const scheduleListeners = new Set()
 const scheduleSyncController = createSyncController()
 
+function buildFallbackTabs(locale = 'en-US') {
+    const copy = getUiCopy(locale).schedule.tabs || {}
+    return SCHEDULE_TABS.map((key, index) => ({
+        key,
+        label: copy[key] || key,
+        active: index === 0
+    }))
+}
+
 function notifyScheduleStore(locale) {
     const nextState = getScheduleState(locale)
     scheduleListeners.forEach((listener) => listener(nextState))
+}
+
+function parseScheduleDateValue(event) {
+    const match = String(event?.dateISO || '').match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    if (!match) return Number.POSITIVE_INFINITY
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime()
+}
+
+function parseScheduleTimeValue(time = '') {
+    const match = String(time || '').match(/(\d+):(\d+)\s*(AM|PM)?/i)
+    if (!match) return Number.POSITIVE_INFINITY
+    let hours = parseInt(match[1], 10)
+    const minutes = parseInt(match[2], 10)
+    const ampm = String(match[3] || '').toUpperCase()
+    if (ampm === 'PM' && hours < 12) hours += 12
+    if (ampm === 'AM' && hours === 12) hours = 0
+    return hours * 60 + minutes
 }
 
 const scheduleLocalRepository = createScheduleLocalRepository()
@@ -24,11 +52,7 @@ const scheduleService = createScheduleService({
 export function getScheduleState(locale = 'en-US') {
     const s = scheduleService.getState()
     const fallback = {
-        tabs: [
-            { key: 'upcoming', label: 'Upcoming', active: true },
-            { key: 'travel', label: 'Travel', active: false },
-            { key: 'archive', label: 'Archive', active: false }
-        ],
+        tabs: buildFallbackTabs(locale),
         views: {
             upcoming: { groups: [] },
             travel: { groups: [] },
@@ -47,9 +71,11 @@ export function getScheduleState(locale = 'en-US') {
 }
 
 export async function createScheduleEvent(input, locale = 'en-US') {
-    const tab = SCHEDULE_TABS.includes(input.tab) ? input.tab : 'upcoming'
+    const tab = 'upcoming'
+    const dateParts = normalizeScheduleDateInput(input, locale)
+    const slug = String(input.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'event'
     const nextEvent = {
-        id: `${tab}-${input.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
+        id: `${tab}-${slug}-${Date.now()}`,
         time: input.time,
         title: input.title,
         location: input.location,
@@ -58,8 +84,9 @@ export async function createScheduleEvent(input, locale = 'en-US') {
         reminderEnabled: Boolean(input.reminderEnabled),
         version: 1,
         updatedAt: Date.now(),
-        day: input.day,
-        label: input.label,
+        day: dateParts?.day || input.day,
+        label: dateParts?.label || input.label,
+        dateISO: dateParts?.dateISO || input.dateISO || '',
         tab
     }
 
@@ -77,7 +104,7 @@ export function getScheduleEventById(eventId, locale = 'en-US') {
     for (const tab of SCHEDULE_TABS) {
         for (const group of state.views[tab]?.groups || []) {
             const event = group.events.find((e) => e.id === eventId)
-            if (event) return { ...event, tab, day: group.day, label: group.label }
+            if (event) return { ...event, tab, day: group.day, label: group.label, dateISO: event.dateISO || group.dateISO || '' }
         }
     }
     return null
@@ -87,12 +114,15 @@ export async function updateScheduleEvent(eventId, input, locale = 'en-US') {
     const existing = getScheduleEventById(eventId, locale)
     if (!existing) return getScheduleState(locale)
 
-    const targetTab = SCHEDULE_TABS.includes(input.tab) ? input.tab : existing.tab
+    const dateParts = normalizeScheduleDateInput(input, locale)
     const nextEvent = {
         ...existing,
         ...input,
         id: eventId,
-        tab: targetTab
+        tab: 'upcoming',
+        day: dateParts?.day || input.day || existing.day,
+        label: dateParts?.label || input.label || existing.label,
+        dateISO: dateParts?.dateISO || input.dateISO || existing.dateISO || ''
     }
 
     await scheduleService.update(eventId, nextEvent, locale)
@@ -122,31 +152,13 @@ export function subscribeScheduleStore(listener) {
 
 export function getScheduleSummary(locale = 'en-US') {
     const state = getScheduleState(locale)
-    let nextEvent = null
-    let nextTime = Infinity
-
-    for (const tab of SCHEDULE_TABS) {
-        for (const group of state.views[tab]?.groups || []) {
-            for (const event of group.events) {
-                const match = event.time.match(/(\d+):(\d+)\s*(AM|PM)/i)
-                if (match) {
-                    let hours = parseInt(match[1], 10)
-                    const minutes = parseInt(match[2], 10)
-                    const ampm = match[3].toUpperCase()
-                    if (ampm === 'PM' && hours < 12) hours += 12
-                    if (ampm === 'AM' && hours === 12) hours = 0
-                    
-                    const eventTime = hours * 60 + minutes
-                    if (eventTime < nextTime) {
-                        nextTime = eventTime
-                        nextEvent = event
-                    }
-                } else if (!nextEvent) {
-                    nextEvent = event
-                }
-            }
-        }
-    }
+    const nextEvent = deriveScheduleCollections(state, { locale }).upcomingEvents
+        .slice()
+        .sort((a, b) => {
+            const dateDiff = parseScheduleDateValue(a) - parseScheduleDateValue(b)
+            if (dateDiff !== 0) return dateDiff
+            return parseScheduleTimeValue(a.time) - parseScheduleTimeValue(b.time)
+        })[0] || null
 
     if (!nextEvent) return null
 
@@ -162,29 +174,20 @@ export function getScheduleSummary(locale = 'en-US') {
 
 export function getScheduleStats(locale = 'en-US') {
     const state = getScheduleState(locale)
-    const countEvents = (groups) => (groups || []).reduce((total, group) => total + group.events.length, 0)
+    const collections = deriveScheduleCollections(state, { locale })
 
     return {
-        upcoming: countEvents(state.views.upcoming?.groups),
-        travel: countEvents(state.views.travel?.groups),
-        archive: countEvents(state.views.archive?.groups),
-        total: SCHEDULE_TABS.reduce((total, key) => total + countEvents(state.views[key]?.groups), 0)
+        upcoming: collections.upcomingEvents.length,
+        travel: 0,
+        archive: collections.historyEvents.length,
+        history: collections.historyEvents.length,
+        total: collections.allEvents.length
     }
 }
 
 export function getScheduleFeed(limit = 3, locale = 'en-US') {
     const state = getScheduleState(locale)
-    const feed = []
-    
-    for (const tab of SCHEDULE_TABS) {
-        for (const group of state.views[tab]?.groups || []) {
-            for (const event of group.events) {
-                feed.push(event)
-                if (feed.length >= limit) return feed
-            }
-        }
-    }
-    return feed
+    return deriveScheduleCollections(state, { locale }).upcomingEvents.slice(0, limit)
 }
 
 export async function hydrateSchedule(locale = 'en-US') {

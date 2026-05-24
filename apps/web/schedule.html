@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CLOSETTWIN — Schedule</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLOSETTWIN</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
@@ -11,15 +11,16 @@
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages/me-entry.css">
     <link rel="stylesheet" href="css/pages/schedule.css">
 </head>
-<body class="ct-body">
+<body class="ct-body ct-me-entry-body">
     <div id="app" class="ct-app">
         <header class="ct-shell-section ct-topbar-shell" data-ct-topbar></header>
         <main class="ct-shell">
             <section class="ct-shell-section" data-ct-schedule-overview></section>
-            <section class="ct-shell-section" data-ct-schedule-tabs></section>
             <section class="ct-schedule-shell" data-ct-schedule-timeline></section>
+            <section class="ct-shell-section" data-ct-schedule-history></section>
         </main>
         <nav class="ct-bottom-shell" data-ct-bottom-nav></nav>
     </div>
