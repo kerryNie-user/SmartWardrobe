@@ -1,5 +1,9 @@
 import base64
+import shutil
+import tempfile
 from urllib.parse import parse_qs, urlparse
+
+from services.closettwin import ModelCallResult, create_closettwin_runtime
 
 from .contracts import ApiError, BytesResponse, JsonResponse
 
@@ -28,13 +32,104 @@ def _resolve_user_id(path: str, headers: dict | None = None, payload: dict | Non
     )
 
 
-def handle_api_request(database, method: str, request_path: str, payload: dict | None = None, headers: dict | None = None):
+def _model_result_payload(result: ModelCallResult) -> dict:
+    return {
+        'ok': result.ok,
+        'status': result.status,
+        'data': result.data,
+        'error': result.error,
+    }
+
+
+def _decode_data_url(data_url: str) -> tuple[str, bytes]:
+    header, separator, encoded = str(data_url or '').partition(',')
+    if not separator or ';base64' not in header:
+        raise ApiError(400, 'MODEL_IMAGE_INVALID', 'Model image payload must be a base64 data URL', {'path': 'payload.imageData'})
+
+    extension = 'jpg'
+    mime_type = header.replace('data:', '').split(';', 1)[0].strip().lower()
+    if mime_type == 'image/png':
+        extension = 'png'
+    elif mime_type in {'image/jpeg', 'image/jpg'}:
+        extension = 'jpg'
+    elif mime_type == 'image/webp':
+        extension = 'webp'
+
+    try:
+        return extension, base64.b64decode(encoded, validate=True)
+    except Exception as exc:
+        raise ApiError(400, 'MODEL_IMAGE_INVALID', 'Model image payload is not valid base64', {'detail': str(exc)})
+
+
+def _prepare_model_payload(call_payload: dict) -> tuple[dict, str | None]:
+    if not isinstance(call_payload, dict):
+        raise ApiError(400, 'MODEL_PAYLOAD_INVALID', 'Model payload must be an object', {'path': 'payload'})
+
+    image_data = call_payload.get('imageData')
+    if not image_data:
+        return dict(call_payload), None
+
+    extension, content = _decode_data_url(image_data)
+    temp_dir = tempfile.mkdtemp(prefix='smartwardrobe-closettwin-')
+    safe_name = str(call_payload.get('fileName') or f'wardrobe-photo.{extension}').split('/')[-1].split('\\')[-1]
+    if '.' not in safe_name:
+        safe_name = f'{safe_name}.{extension}'
+    image_path = f'{temp_dir}/{safe_name}'
+    with open(image_path, 'wb') as image_file:
+        image_file.write(content)
+
+    prepared = {key: value for key, value in call_payload.items() if key != 'imageData'}
+    prepared.setdefault('image_path', image_path)
+    prepared.setdefault('target_folder', temp_dir)
+    prepared.setdefault('input_dir', temp_dir)
+    return prepared, temp_dir
+
+
+def _resolve_runtime(runtime):
+    return runtime or create_closettwin_runtime()
+
+
+def handle_api_request(database, method: str, request_path: str, payload: dict | None = None, headers: dict | None = None, runtime=None):
     parsed = urlparse(request_path)
     path = parsed.path
     payload = payload or {}
 
     if method == 'GET' and path == '/api/health':
         return JsonResponse(200, {'status': 'ok'})
+
+    if method == 'GET' and path == '/api/closettwin/status':
+        return JsonResponse(200, {'status': _resolve_runtime(runtime).status()})
+
+    if method == 'POST' and path == '/api/closettwin/start':
+        return JsonResponse(200, {'status': _resolve_runtime(runtime).start()})
+
+    if method == 'POST' and path == '/api/closettwin/stop':
+        return JsonResponse(200, {'status': _resolve_runtime(runtime).stop()})
+
+    if method == 'POST' and path == '/api/closettwin/recommendations/daily':
+        result = _resolve_runtime(runtime).recommend_daily(payload)
+        return JsonResponse(200, _model_result_payload(result))
+
+    if method == 'POST' and path.startswith('/api/closettwin/') and path.endswith('/call'):
+        model_name = path.split('/')[3]
+        if model_name not in {'model1', 'model2'}:
+            raise ApiError(404, 'MODEL_NOT_FOUND', 'Unknown ClosetTwin model', {'model': model_name})
+
+        function_name = payload.get('function') or payload.get('functionName')
+        if not function_name:
+            raise ApiError(400, 'MODEL_FUNCTION_MISSING', 'Model function is required', {'required': ['function']})
+
+        call_payload, temp_dir = _prepare_model_payload(payload.get('payload') or {})
+        try:
+            resolved_runtime = _resolve_runtime(runtime)
+            if model_name == 'model1':
+                result = resolved_runtime.call_model1(function_name, call_payload)
+            else:
+                result = resolved_runtime.call_model2(function_name, call_payload)
+            return JsonResponse(200, _model_result_payload(result))
+        finally:
+            if temp_dir:
+                shutil.rmtree(temp_dir, ignore_errors=True)
 
     if method == 'POST' and path == '/api/auth/register':
         user = _ensure_dict(database.create_user(payload), 'AUTH_CONTRACT_MISSING', 'Auth contract missing', {'path': 'user'})

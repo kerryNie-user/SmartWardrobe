@@ -7,6 +7,7 @@ from logging.handlers import RotatingFileHandler
 from . import config
 from .handler import create_handler
 from .storage import JsonDatabase
+from services.closettwin import create_closettwin_runtime
 
 
 class SmartWardrobeHTTPServer(ThreadingHTTPServer):
@@ -23,7 +24,8 @@ def create_server(host=None, port=None, web_root=None, data_file=None):
     db_file = resolved_data_file.with_name('smartwardrobe.db')
     db_file.parent.mkdir(parents=True, exist_ok=True)
     database = JsonDatabase(db_file)
-    handler_class = create_handler(database, resolved_web_root)
+    runtime = create_closettwin_runtime()
+    handler_class = create_handler(database, resolved_web_root, runtime=runtime)
     return SmartWardrobeHTTPServer((
         config.HOST if host is None else host,
         config.PORT if port is None else port

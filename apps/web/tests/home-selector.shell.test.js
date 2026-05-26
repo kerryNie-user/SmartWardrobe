@@ -81,23 +81,39 @@ runTest('Home recommendation input 应统一归一 favorites、wardrobe、schedu
     },
     wardrobe: {
       totalCount: 3,
-      recentItems: [
+      items: [
         {
           id: 'coat-1',
+          title: 'Rain Trench',
           category: 'Outerwear',
           material: 'Wool Blend',
           color: 'Onyx',
           filter: 'essentials',
-          favorite: true
+          favorite: true,
+          aiJson: {
+            tags: ['waterproof', 'commute'],
+            raw: {
+              scenario_scores: { commute: 0.92 }
+            }
+          }
         }
       ]
     },
     schedule: {
       nextEvent: {
+        id: 'flight-brief',
+        dateISO: '2026-05-27',
         title: '机场出发',
         time: '07:30',
-        location: 'Terminal 1'
+        location: 'Terminal 1',
+        tags: ['Travel']
       }
+    },
+    weather: {
+      condition: 'Rain',
+      temperature: { current: '18°C', low: '14°C', high: '20°C' },
+      location: { label: '上海徐汇', precision: 'district' },
+      summary: '上海徐汇，Rain'
     },
     settings: {
       themeMode: 'dark',
@@ -110,8 +126,16 @@ runTest('Home recommendation input 应统一归一 favorites、wardrobe、schedu
 
   assert.deepStrictEqual(input.favorites.lookIds, ['runway-analysis']);
   assert.strictEqual(input.wardrobe.totalCount, 3);
+  assert.strictEqual(input.wardrobe.items[0].title, 'Rain Trench');
+  assert.deepStrictEqual(input.wardrobe.items[0].ai.tags, ['waterproof', 'commute']);
+  assert.deepStrictEqual(input.wardrobe.recentItems.map((item) => item.id), ['coat-1']);
   assert.strictEqual(input.wardrobe.signals.hasOuterwear, true);
+  assert.strictEqual(input.schedule.nextEvent.dateISO, '2026-05-27');
+  assert.deepStrictEqual(input.schedule.nextEvent.tags, ['Travel']);
+  assert.strictEqual(input.schedule.scenario.intent, 'travel');
   assert.strictEqual(input.schedule.signals.travel, true);
+  assert.strictEqual(input.weather.condition, 'Rain');
+  assert.strictEqual(input.weather.location.label, '上海徐汇');
   assert.strictEqual(input.settings.themeMode, 'dark');
 });
 

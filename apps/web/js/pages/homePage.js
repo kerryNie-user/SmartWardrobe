@@ -12,10 +12,11 @@ import { createHomePageContract } from '../lib/pageContracts.js';
 import { bindPageStores } from '../lib/pageStoreBinding.js';
 import { getFavoriteIds, getFavoritesSyncState, hydrateFavorites, retryFavoritesSync, subscribeFavoritesStore, subscribeFavoritesSyncState, toggleFavorite } from '../lib/favoritesStore.js';
 import { getBackendUserId } from '../lib/backendClient.js';
+import { getClosetTwinRecommendationLookById, getClosetTwinRecommendationLooks, hydrateClosetTwinRecommendations, subscribeClosetTwinRecommendations } from '../lib/closetTwinRecommendations.js';
 import { getScheduleSummary, getScheduleSyncState, hydrateSchedule, retryScheduleSync, subscribeScheduleStore, subscribeScheduleSyncState } from '../lib/scheduleStore.js';
 import { getSettingsState, getTemperatureUnitPreference, subscribeSettingsStore } from '../lib/settingsStore.js';
-import { getRecentWardrobeItems, getWardrobeCount, getWardrobeSyncState, hydrateWardrobe, retryWardrobeSync, subscribeWardrobeStore, subscribeWardrobeSyncState } from '../lib/wardrobeStore.js';
-import { getHomeContentSyncState, hydrateHomeContent, retryHomeContentHydration, subscribeHomeContent, subscribeHomeContentSyncState } from '../data/home.js';
+import { getRecentWardrobeItems, getWardrobeCount, getWardrobeItems, getWardrobeSyncState, hydrateWardrobe, retryWardrobeSync, subscribeWardrobeStore, subscribeWardrobeSyncState } from '../lib/wardrobeStore.js';
+import { getHomeContent, getHomeContentSyncState, hydrateHomeContent, retryHomeContentHydration, subscribeHomeContent, subscribeHomeContentSyncState } from '../data/home.js';
 
 export function renderHomePage() {
     if (globalThis.localStorage && window.localStorage && globalThis.localStorage !== window.localStorage) {
@@ -32,6 +33,7 @@ export function renderHomePage() {
     let activeTab = 'recommend';
     let locationResult = null;
     let locationRequested = false;
+    let recommendationRefreshTimer = null;
     const canHydrateRemote = Boolean(getBackendUserId());
 
     const applyTemperatureUnit = (weather, unit = 'celsius') => {
@@ -62,9 +64,14 @@ export function renderHomePage() {
         }
     }
 
-    const paint = () => {
-        const locale = getLocale();
-        const recommendationInput = buildHomeRecommendationInput({
+    const buildWeatherContext = (locale) => applyTemperatureUnit(
+        applyLocationToWeather(getHomeContent(locale).weather, locationResult, locale),
+        getTemperatureUnitPreference()
+    )
+
+    const buildRecommendationInput = () => {
+        const locale = getLocale()
+        return buildHomeRecommendationInput({
             locale,
             activeTab,
             favorites: {
@@ -72,20 +79,43 @@ export function renderHomePage() {
             },
             wardrobe: {
                 totalCount: getWardrobeCount(locale),
+                items: getWardrobeItems(locale),
                 recentItems: getRecentWardrobeItems(3, locale)
             },
             schedule: {
                 nextEvent: getScheduleSummary(locale)
             },
+            weather: buildWeatherContext(locale),
             settings: getSettingsState()
-        });
+        })
+    }
+
+    const requestClosetTwinRefresh = () => {
+        if (!canHydrateRemote) return
+        if (recommendationRefreshTimer) {
+            window.clearTimeout(recommendationRefreshTimer)
+        }
+        recommendationRefreshTimer = window.setTimeout(() => {
+            recommendationRefreshTimer = null
+            void hydrateClosetTwinRecommendations(buildRecommendationInput())
+        }, 0)
+    }
+
+    const paint = () => {
+        const locale = getLocale();
+        const recommendationInput = buildRecommendationInput();
         const homeView = selectHomeView(recommendationInput);
+        const closetTwinLooks = activeTab === 'recommend' ? getClosetTwinRecommendationLooks() : [];
+        const renderedLooks = closetTwinLooks.length ? closetTwinLooks : homeView.looks;
         const contract = createHomePageContract({
             locale,
             activeTab,
             content: homeView.content,
             recommendationInput,
-            homeView,
+            homeView: {
+                ...homeView,
+                looks: renderedLooks
+            },
             syncStates: {
                 favorites: getFavoritesSyncState(),
                 wardrobe: getWardrobeSyncState(),
@@ -115,17 +145,34 @@ export function renderHomePage() {
     const binding = bindPageStores({
         paint,
         subscriptions: [
-            (listener) => subscribeFavoritesStore(listener),
-            (listener) => subscribeWardrobeStore(listener),
-            (listener) => subscribeScheduleStore(listener),
-            (listener) => subscribeSettingsStore(listener),
-            (listener) => subscribeHomeContent(listener)
+            (listener) => subscribeFavoritesStore(() => {
+                requestClosetTwinRefresh()
+                listener()
+            }),
+            (listener) => subscribeWardrobeStore(() => {
+                requestClosetTwinRefresh()
+                listener()
+            }),
+            (listener) => subscribeScheduleStore(() => {
+                requestClosetTwinRefresh()
+                listener()
+            }),
+            (listener) => subscribeSettingsStore(() => {
+                requestClosetTwinRefresh()
+                listener()
+            }),
+            (listener) => subscribeHomeContent(() => {
+                requestClosetTwinRefresh()
+                listener()
+            }),
+            (listener) => subscribeClosetTwinRecommendations(listener)
         ],
         hydrators: [
             () => canHydrateRemote ? hydrateFavorites() : undefined,
             () => canHydrateRemote ? hydrateWardrobe(getLocale()) : undefined,
             () => canHydrateRemote ? hydrateSchedule() : undefined,
-            () => canHydrateRemote ? hydrateHomeContent(getLocale()) : undefined
+            () => canHydrateRemote ? hydrateHomeContent(getLocale()) : undefined,
+            () => requestClosetTwinRefresh()
         ],
         syncFeedback: {
             root: syncFeedbackRoot,
@@ -167,6 +214,7 @@ export function renderHomePage() {
         if (locationRequested) return;
         locationRequested = true;
         locationResult = await getCurrentLocation(getLocale());
+        requestClosetTwinRefresh();
         binding.paintNow();
     }
 
@@ -185,7 +233,7 @@ export function renderHomePage() {
             if (favoriteButton) {
                 const lookId = favoriteButton.getAttribute('data-ct-toggle-look-favorite');
                 const locale = getLocale();
-                const item = selectHomeLookById(locale, lookId);
+                const item = getClosetTwinRecommendationLookById(lookId) || selectHomeLookById(locale, lookId);
                 if (!item) return;
 
                 toggleFavorite('looks', {
@@ -203,5 +251,14 @@ export function renderHomePage() {
 
     void requestLocation();
 
-    return binding;
+    return {
+        ...binding,
+        teardown() {
+            if (recommendationRefreshTimer) {
+                window.clearTimeout(recommendationRefreshTimer)
+                recommendationRefreshTimer = null
+            }
+            binding.teardown()
+        }
+    };
 }

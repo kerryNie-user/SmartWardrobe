@@ -15,6 +15,21 @@ async function runTest(name, testFn) {
   }
 }
 
+function createJsonResponse(payload, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === 'content-type' ? 'application/json' : null;
+      }
+    },
+    async json() {
+      return payload;
+    }
+  };
+}
+
 async function main() {
   await runTest('New Outfit Detail 页面应包含关键挂载区域', async () => {
     const htmlPath = path.join(__dirname, '..', 'outfit-detail.html');
@@ -59,6 +74,48 @@ async function main() {
     renderOutfitDetailPage();
 
     assert.ok(/Urban Commute/.test(fallbackDom.window.document.body.textContent));
+  });
+
+  await runTest('Outfit Detail 内容应复用 ClosetTwin model2 推荐 look', async () => {
+    const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+      url: 'http://localhost:8140/outfit-detail.html?id=model2-look'
+    });
+    dom.window.fetch = async () => createJsonResponse({
+      ok: true,
+      status: 'ready',
+      data: {
+        recommendations: [
+          {
+            outfitId: 'model2-look',
+            outfitName: 'Model2 Look',
+            reason: 'Picked for tomorrow flight',
+            imageUrl: '/uploads/shared/travel-look.jpg',
+            tags: ['Travel'],
+            items: [
+              { name: 'Rain Trench', category: 'Outerwear', color: 'Onyx', material: 'Wool Blend' }
+            ]
+          }
+        ]
+      },
+      error: null
+    });
+
+    global.window = dom.window;
+    global.document = dom.window.document;
+    global.localStorage = dom.window.localStorage;
+
+    const recommendationsPath = pathToFileURL(path.join(__dirname, '..', 'js', 'lib', 'closetTwinRecommendations.js')).href;
+    const { hydrateClosetTwinRecommendations } = await import(recommendationsPath);
+    await hydrateClosetTwinRecommendations({ wardrobe: { totalCount: 1 } });
+
+    const detailPath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'data', 'outfitDetail.js')).href}?model2=1`;
+    const { getOutfitDetailContent } = await import(detailPath);
+    const detail = getOutfitDetailContent('en-US', 'model2-look', {});
+
+    assert.strictEqual(detail.activeLook.id, 'model2-look');
+    assert.strictEqual(detail.activeLook.title, 'Model2 Look');
+    assert.strictEqual(detail.activeLook.source, 'closettwin-model2');
+    assert.strictEqual(detail.activeLook.breakdown[0].title, 'Rain Trench');
   });
 
   await runTest('New Outfit Detail 页面应支持继续收藏并更新保存状态', async () => {

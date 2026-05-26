@@ -9,6 +9,7 @@ import {
 } from '../lib/actions/outfitDetailActions.js'
 import { applyLocaleDocument, getLocale, getUiCopy } from '../lib/locale.js'
 import { buildHomeRecommendationInput } from '../lib/homeSelectors.js'
+import { hydrateClosetTwinRecommendations, subscribeClosetTwinRecommendations } from '../lib/closetTwinRecommendations.js'
 import { getQueryParam } from '../lib/navigationAdapter.js'
 import { bindPageStores } from '../lib/pageStoreBinding.js'
 import { getFavoriteIds, hydrateFavorites, isFavorite, subscribeFavoritesStore, toggleFavorite } from '../lib/favoritesStore.js'
@@ -16,8 +17,8 @@ import { navigateTo } from '../lib/navigation.js'
 import { getScheduleSummary, hydrateSchedule, subscribeScheduleStore } from '../lib/scheduleStore.js'
 import { saveScheduleDraft } from '../lib/scheduleDraft.js'
 import { getSettingsState, hydrateSettings, subscribeSettingsStore } from '../lib/settingsStore.js'
-import { getRecentWardrobeItems, getWardrobeCount, hydrateWardrobe, subscribeWardrobeStore } from '../lib/wardrobeStore.js'
-import { hydrateHomeContent, subscribeHomeContent } from '../data/home.js'
+import { getRecentWardrobeItems, getWardrobeCount, getWardrobeItems, hydrateWardrobe, subscribeWardrobeStore } from '../lib/wardrobeStore.js'
+import { getHomeContent, hydrateHomeContent, subscribeHomeContent } from '../data/home.js'
 
 function getLookId() {
     return getQueryParam('id')
@@ -31,11 +32,13 @@ function buildRecommendationInput(locale) {
         },
         wardrobe: {
             totalCount: getWardrobeCount(locale),
+            items: getWardrobeItems(locale),
             recentItems: getRecentWardrobeItems(3, locale)
         },
         schedule: {
             nextEvent: getScheduleSummary(locale)
         },
+        weather: getHomeContent(locale).weather,
         settings: getSettingsState()
     })
 }
@@ -78,14 +81,16 @@ export function renderOutfitDetailPage() {
             (listener) => subscribeWardrobeStore(listener),
             (listener) => subscribeScheduleStore(listener),
             (listener) => subscribeSettingsStore(listener),
-            (listener) => subscribeHomeContent(listener)
+            (listener) => subscribeHomeContent(listener),
+            (listener) => subscribeClosetTwinRecommendations(listener)
         ],
         hydrators: [
             () => hydrateFavorites(),
             () => hydrateWardrobe(getLocale()),
             () => hydrateSchedule(getLocale()),
             () => hydrateSettings(),
-            () => hydrateHomeContent(getLocale())
+            () => hydrateHomeContent(getLocale()),
+            () => hydrateClosetTwinRecommendations(buildRecommendationInput(getLocale()))
         ]
     })
 

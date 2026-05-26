@@ -101,7 +101,7 @@
             "tag": "International Styling Analysis",
             "title": "The Copenhagen Minimalist Phenomenon",
             "description": "A cleaner study of quiet tailoring, softened monochrome, and directional silhouettes across Scandinavia.",
-            "image": "/uploads/shared/copenhagen-minimalist.jpg"
+            "image": "/uploads/shared/copenhagen-minimalist-v2.jpg"
           },
           {
             "id": "parisian-tweed",
@@ -122,14 +122,14 @@
             "tag": "SS24 / Paris",
             "title": "The Deconstructed Blazer",
             "description": "Fluid tailoring and broken lines continue to overtake rigid executive dressing.",
-            "image": "/uploads/shared/copenhagen-minimalist.jpg"
+            "image": "/uploads/shared/copenhagen-minimalist-v2.jpg"
           },
           {
             "id": "sustainable-silk",
             "tag": "Materiality",
             "title": "Sustainable Silk Synthetics",
             "description": "Biotech textiles are redefining luxury hand-feel without losing performance.",
-            "image": "/uploads/shared/editorial-look-02.jpg"
+            "image": "/uploads/shared/editorial-look-02-v2.jpg"
           }
         ]
       },
@@ -140,7 +140,7 @@
           "meta": "Architectural Tailoring",
           "title": "Structural Silhouettes in Urban Landscapes",
           "description": "Seoul designers sharpen executive dressing through sculpted shoulders, technical textiles, and metropolitan precision.",
-          "image": "/uploads/shared/editorial-look-02.jpg"
+          "image": "/uploads/shared/editorial-look-02-v2.jpg"
         },
         {
           "id": "monochrome-saturation",
@@ -262,7 +262,7 @@
             "tag": "国际风格观察",
             "title": "哥本哈根极简现象",
             "description": "从北欧城市中提炼更安静的剪裁、柔化的同色层次与方向感轮廓。",
-            "image": "/uploads/shared/copenhagen-minimalist.jpg"
+            "image": "/uploads/shared/copenhagen-minimalist-v2.jpg"
           },
           {
             "id": "parisian-tweed",
@@ -283,14 +283,14 @@
             "tag": "SS24 / 巴黎",
             "title": "解构西装外套",
             "description": "流动剪裁和断裂线条正在取代僵硬的传统通勤正装。",
-            "image": "/uploads/shared/copenhagen-minimalist.jpg"
+            "image": "/uploads/shared/copenhagen-minimalist-v2.jpg"
           },
           {
             "id": "sustainable-silk",
             "tag": "材质研究",
             "title": "可持续丝感合成材",
             "description": "生物科技面料正在重新定义兼顾性能与高级手感的奢华体验。",
-            "image": "/uploads/shared/editorial-look-02.jpg"
+            "image": "/uploads/shared/editorial-look-02-v2.jpg"
           }
         ]
       },
@@ -301,7 +301,7 @@
           "meta": "建筑感剪裁",
           "title": "都市中的结构化轮廓",
           "description": "首尔设计师用雕塑肩线、技术面料与都市精度重塑新一代通勤着装。",
-          "image": "/uploads/shared/editorial-look-02.jpg"
+          "image": "/uploads/shared/editorial-look-02-v2.jpg"
         },
         {
           "id": "monochrome-saturation",
@@ -442,7 +442,7 @@
           "tag": "Daily Ritual",
           "title": "Urban Commute",
           "description": "Structured layering for transitional weather and a long city route.",
-          "image": "/uploads/shared/copenhagen-minimalist.jpg",
+          "image": "/uploads/shared/copenhagen-minimalist-v2.jpg",
           "openLabel": "Open Urban Commute",
           "detailSerial": "Recommendation ID: CT-9001",
           "detailTags": [
@@ -502,7 +502,7 @@
           "tag": "Off Duty",
           "title": "Weekend Minimal",
           "description": "Gallery-day essentials built from tactile neutrals and relaxed structure.",
-          "image": "/uploads/shared/editorial-look-02.jpg",
+          "image": "/uploads/shared/editorial-look-02-v2.jpg",
           "openLabel": "Open Weekend Minimal",
           "detailSerial": "Recommendation ID: CT-9044",
           "detailTags": [
@@ -631,7 +631,7 @@
           "tag": "日常仪式",
           "title": "都市通勤",
           "description": "为换季天气与长距离城市移动准备的结构化叠穿方案。",
-          "image": "/uploads/shared/copenhagen-minimalist.jpg",
+          "image": "/uploads/shared/copenhagen-minimalist-v2.jpg",
           "openLabel": "打开 都市通勤",
           "detailSerial": "推荐编号：CT-9001",
           "detailTags": [
@@ -691,7 +691,7 @@
           "tag": "休闲时刻",
           "title": "周末极简",
           "description": "以触感中性色和松弛结构组织出的画廊日常造型。",
-          "image": "/uploads/shared/editorial-look-02.jpg",
+          "image": "/uploads/shared/editorial-look-02-v2.jpg",
           "openLabel": "打开 周末极简",
           "detailSerial": "推荐编号：CT-9044",
           "detailTags": [

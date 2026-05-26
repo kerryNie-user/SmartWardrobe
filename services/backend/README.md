@@ -47,12 +47,18 @@ zsh ./scripts/dev/start_backend.sh
 - `GET/POST/PUT/DELETE /api/schedules`
 - `GET/POST/DELETE /api/favorites`
 - `GET/POST/PUT/DELETE /api/wardrobe`
+- `GET /api/closettwin/status`
+- `POST /api/closettwin/start`
+- `POST /api/closettwin/stop`
+- `POST /api/closettwin/model1/call`
+- `POST /api/closettwin/model2/call`
 
 ## 目录职责
 
 - `server.py`：进程入口、HTTPServer 组装、日志配置。
 - `handler.py`：HTTP 适配器，只做请求分发、响应输出、错误映射。
 - `http/`：API 路由、文件资产服务、响应契约。
+- `http/routes.py`：暴露 `/api/closettwin/*` HTTP facade，转发请求到 `services/closettwin`，不持有模型实现。
 - `storage.py`：`JsonDatabase` 兼容 facade，只组装数据库和 domain mixin。
 - `storage_domains/`：按业务域拆分存储逻辑。
 - `database.py`：Peewee 数据库绑定。
@@ -83,3 +89,29 @@ zsh ./scripts/dev/start_backend.sh
 ## 相关目录
 
 - 当前主线前端：`apps/web`
+
+## ClosetTwin 模型边界
+
+模型实现位于 `services/closettwin/`，不直接绑定页面或存储层。后端 HTTP facade 只使用：
+
+- `start()`
+- `stop()`
+- `status()`
+- `call_model1(function_name, payload)`
+- `call_model2(function_name, payload)`
+- `recommend_daily(payload)`
+
+`POST /api/closettwin/recommendations/daily` 是推荐主入口。它把衣橱记录里来自 model1 的 `aiJson` 上下文作为 `model1` 字段传给 runtime，再由 runtime 并入 model2 `daily_recommendation` 输入；如后续需要同请求即时跑 model1，可通过 `model1Request` 接入同一 pipeline。
+
+外部模型仓库通过环境变量配置：
+
+- `CLOSETTWIN_MODEL1_PATH`
+- `CLOSETTWIN_MODEL2_PATH`
+
+未配置或模型资产缺失时，adapter 返回 `unavailable`，后端进程不应因此启动失败。
+
+Web App 当前接入方式：
+
+- 衣橱新增页上传照片后，`apps/web/js/lib/wardrobeItemScanner.js` 默认调用 `model1` 的 `daily_context`，并把返回结果写入衣橱记录的 `aiJson`。
+- 首页推荐流通过 `apps/web/js/lib/closetTwinRecommendations.js` 调用双模型 daily recommendation pipeline；如果 pipeline/model2 不可用或无结果，继续使用现有本地推荐。
+- 兼容旧扫描服务：如设置 `window.__CT_WARDROBE_SCAN_ENDPOINT__` 或 `localStorage.ct_wardrobe_scan_endpoint`，衣橱扫描仍会走旧 endpoint。

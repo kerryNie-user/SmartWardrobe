@@ -14,7 +14,7 @@ from .http import (
 )
 
 
-def create_handler(database, directory):
+def create_handler(database, directory, runtime=None):
     class LiteBackendHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=str(directory), **kwargs)
@@ -116,7 +116,7 @@ def create_handler(database, directory):
         def handle_api(self, method):
             try:
                 payload = self.parse_json_body() if method in {'POST', 'PUT'} else {}
-                response = handle_api_request(database, method, self.path, payload, self.headers)
+                response = handle_api_request(database, method, self.path, payload, self.headers, runtime=runtime)
                 self.send_response_contract(response)
             except ApiError as exc:
                 self.respond_error(exc.status, exc.code, exc.message, exc.details)

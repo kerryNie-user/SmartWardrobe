@@ -127,6 +127,29 @@ async function main() {
     global.FormData = dom.window.FormData;
     global.FileReader = FakeFileReader;
     dom.window.FileReader = FakeFileReader;
+    dom.window.fetch = async (url, options = {}) => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get(name) {
+          return name.toLowerCase() === 'content-type' ? 'application/json' : null;
+        }
+      },
+      async json() {
+        return {
+          ok: true,
+          status: 'ready',
+          data: {
+            item: {
+              title: '识别风衣',
+              category: '外套',
+              tags: ['outerwear']
+            }
+          },
+          error: null
+        };
+      }
+    });
 
     let modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'wardrobeItemPage.js')).href;
     let { renderWardrobeItemPage } = await import(modulePath);
@@ -146,9 +169,10 @@ async function main() {
 
     const stored = JSON.parse(dom.window.localStorage.getItem('ct_wardrobe'));
     const storedItems = stored.users?.guest || stored;
-    assert.strictEqual(storedItems[0].title, '待识别单品');
-    assert.strictEqual(storedItems[0].category, '未分类');
-    assert.strictEqual(storedItems[0].aiJson.status, 'unavailable');
+    assert.strictEqual(storedItems[0].title, '识别风衣');
+    assert.strictEqual(storedItems[0].category, '外套');
+    assert.strictEqual(storedItems[0].aiJson.status, 'ready');
+    assert.strictEqual(storedItems[0].aiJson.source, 'closettwin-model1');
   });
 
   await runTest('New Wardrobe Item 页面应支持编辑模式替换照片并保留识别字段', async () => {
@@ -188,6 +212,23 @@ async function main() {
     global.FormData = dom.window.FormData;
     global.FileReader = FakeFileReader;
     dom.window.FileReader = FakeFileReader;
+    dom.window.fetch = async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get(name) {
+          return name.toLowerCase() === 'content-type' ? 'application/json' : null;
+        }
+      },
+      async json() {
+        return {
+          ok: false,
+          status: 'unavailable',
+          data: {},
+          error: { code: 'MODEL_UNAVAILABLE' }
+        };
+      }
+    });
 
     let modulePath = pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'wardrobeItemPage.js')).href;
     let { renderWardrobeItemPage } = await import(modulePath);
@@ -234,6 +275,23 @@ async function main() {
     global.FormData = dom.window.FormData;
     global.FileReader = FakeFileReader;
     dom.window.FileReader = FakeFileReader;
+    dom.window.fetch = async () => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get(name) {
+          return name.toLowerCase() === 'content-type' ? 'application/json' : null;
+        }
+      },
+      async json() {
+        return {
+          ok: false,
+          status: 'unavailable',
+          data: {},
+          error: { code: 'MODEL_UNAVAILABLE' }
+        };
+      }
+    });
 
     const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'wardrobeItemPage.js')).href}?upload=1`;
     const { renderWardrobeItemPage } = await import(modulePath);

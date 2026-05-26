@@ -764,6 +764,98 @@ runTest('New 首页推荐应统一接入 favorites、wardrobe、schedule、setti
   assert.strictEqual(titles[titles.length - 1], 'Urban Commute');
 });
 
+runTest('New 首页收藏 model2 推荐时应保存模型 look 本身', async () => {
+  const htmlPath = path.join(__dirname, '..', 'index.html');
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  const dom = new JSDOM(html, { url: 'http://localhost:8140/index.html' });
+
+  dom.window.localStorage.setItem('ct_auth_session', JSON.stringify({
+    user: {
+      id: 'user-model2',
+      name: 'Model User',
+      emailOrMobile: 'model@example.com'
+    }
+  }));
+
+  dom.window.fetch = async (url, options = {}) => {
+    const method = options.method || 'GET';
+    const body = options.body ? JSON.parse(options.body) : null;
+    if (url === '/api/closettwin/recommendations/daily') {
+      assert.strictEqual(body.model1.source, 'wardrobe-ai-json');
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        async json() {
+          return {
+            ok: true,
+            status: 'ready',
+            data: {
+              recommendations: [
+                {
+                  outfitId: 'model2-look',
+                  outfitName: 'Model2 Look',
+                  reason: 'Matched to real schedule and wardrobe',
+                  imageUrl: '/uploads/shared/travel-look.jpg',
+                  items: [
+                    { name: 'Rain Trench', category: 'Outerwear', color: 'Onyx', material: 'Wool Blend' }
+                  ]
+                }
+              ]
+            },
+            error: null
+          };
+        }
+      };
+    }
+
+    return {
+      ok: true,
+      status: method === 'POST' ? 201 : 200,
+      headers: { get: () => 'application/json' },
+      async json() {
+        if (url === '/api/favorites' && method === 'GET') return { favorites: { looks: [], posts: [] } };
+        if (url === '/api/favorites' && method === 'POST') return { favorites: { looks: [body.item], posts: [] } };
+        if (url === '/api/wardrobe') return { items: [] };
+        if (url === '/api/schedules') return { items: [] };
+        if (String(url).startsWith('/api/home/content')) return {};
+        if (String(url).startsWith('/api/schedules/content')) return {};
+        return {};
+      }
+    };
+  };
+
+  global.window = dom.window;
+  global.fetch = dom.window.fetch;
+  global.window.fetch = global.fetch;
+  global.document = dom.window.document;
+  global.localStorage = dom.window.localStorage;
+  global.CustomEvent = dom.window.CustomEvent;
+  global.HTMLElement = dom.window.HTMLElement;
+  global.Node = dom.window.Node;
+
+  const modulePath = `${pathToFileURL(path.join(__dirname, '..', 'js', 'pages', 'homePage.js')).href}?model2-favorite=1`;
+  const { renderHomePage } = await import(modulePath);
+  renderHomePage();
+
+  for (let index = 0; index < 20; index += 1) {
+    const titleText = Array.from(dom.window.document.querySelectorAll('.ct-feed-card__title')).map((node) => node.textContent.trim()).join(' ');
+    if (/Model2 Look/.test(titleText)) break;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+
+  assert.ok(/Model2 Look/.test(dom.window.document.body.textContent), 'Home should render model2 recommendation before favorite action');
+  const favoriteButton = dom.window.document.querySelector('.ct-feed-card__favorite');
+  assert.ok(favoriteButton, 'Missing model2 favorite button');
+  favoriteButton.click();
+
+  const stored = JSON.parse(dom.window.localStorage.getItem('ct_favorites'));
+  const savedLooks = stored.users['user-model2'].looks;
+  assert.strictEqual(savedLooks[0].id, 'model2-look');
+  assert.strictEqual(savedLooks[0].title, 'Model2 Look');
+  assert.strictEqual(savedLooks[0].href, 'outfit-detail.html?id=model2-look');
+});
+
 async function main() {
   for (const test of testQueue) {
     try {

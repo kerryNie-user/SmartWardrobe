@@ -1,3 +1,5 @@
+import { callClosetTwinModel1 } from './closetTwinClient.js'
+
 const SCAN_ENDPOINT_STORAGE_KEY = 'ct_wardrobe_scan_endpoint'
 
 export const WARDROBE_SCAN_STATUS = Object.freeze({
@@ -71,6 +73,87 @@ function buildMetadata(file, extra = {}) {
     }
 }
 
+function readFileAsDataUrl(file) {
+    const FileReaderClass = typeof window !== 'undefined' ? window.FileReader : globalThis.FileReader
+    if (typeof FileReaderClass !== 'function') {
+        return Promise.resolve({
+            ok: false,
+            reason: 'file-reader-unavailable'
+        })
+    }
+
+    return new Promise((resolve) => {
+        const reader = new FileReaderClass()
+        reader.onload = () => resolve({
+            ok: true,
+            src: String(reader.result || '')
+        })
+        reader.onerror = () => resolve({
+            ok: false,
+            reason: 'file-read-failed'
+        })
+        reader.readAsDataURL(file)
+    })
+}
+
+function normalizeModelCallResponse(response) {
+    if (!response?.ok) {
+        return {
+            ok: false,
+            status: WARDROBE_SCAN_STATUS.ERROR,
+            item: {},
+            raw: response?.data || null,
+            metadata: {
+                reason: response?.error || response?.message || 'closettwin-request-failed',
+                details: response?.details || null
+            }
+        }
+    }
+
+    const modelPayload = response.data || {}
+    return {
+        ok: Boolean(modelPayload.ok),
+        status: modelPayload.status || (modelPayload.ok ? WARDROBE_SCAN_STATUS.READY : WARDROBE_SCAN_STATUS.UNAVAILABLE),
+        item: normalizeScannedItem(modelPayload.data || {}),
+        raw: modelPayload,
+        metadata: {
+            reason: modelPayload.error?.code || null,
+            model: 'closettwin-model1'
+        }
+    }
+}
+
+async function scanWithClosetTwinModel1(file, options = {}) {
+    const preview = await readFileAsDataUrl(file)
+    if (!preview.ok) {
+        return {
+            ok: false,
+            status: WARDROBE_SCAN_STATUS.ERROR,
+            source: 'closettwin-model1',
+            item: {},
+            raw: null,
+            metadata: buildMetadata(file, { reason: preview.reason })
+        }
+    }
+
+    const response = await (options.callModel1 || callClosetTwinModel1)('daily_context', {
+        imageData: preview.src,
+        fileName: file?.name || 'wardrobe-photo',
+        fileType: file?.type || '',
+        fileSize: Number(file?.size || 0)
+    })
+    const normalized = normalizeModelCallResponse(response)
+
+    return {
+        ok: normalized.ok,
+        status: normalized.status,
+        source: 'closettwin-model1',
+        item: normalized.item,
+        raw: normalized.raw,
+        metadata: buildMetadata(file, normalized.metadata)
+    }
+}
+
 export async function scanWardrobePhoto(file, options = {}) {
     const endpoint = resolveEndpoint(options)
     const request = resolveFetch(options)
@@ -85,6 +168,10 @@ export async function scanWardrobePhoto(file, options = {}) {
             raw: null,
             metadata: buildMetadata(file, { reason: 'invalid-image-file' })
         }
+    }
+
+    if (!endpoint) {
+        return scanWithClosetTwinModel1(file, options)
     }
 
     if (!endpoint || !request || typeof FormDataClass !== 'function') {

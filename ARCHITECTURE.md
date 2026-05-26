@@ -82,6 +82,7 @@ SmartWardrobe 的代码边界以“页面薄、领域清、接口少”为准：
 - HTTP 内部模块：`services/backend/http/`
 - 存储公开入口：`services/backend/storage.py`
 - 存储领域模块：`services/backend/storage_domains/`
+- ClosetTwin 模型服务：`services/closettwin/`
 - 模型注册表：`services/backend/models.py`
 
 规则：
@@ -90,11 +91,14 @@ SmartWardrobe 的代码边界以“页面薄、领域清、接口少”为准：
 - `http/routes.py` 只负责 URL 到领域调用的路由与契约校验。
 - `http/assets.py` 只负责上传文件和 AI 图片的安全读取。
 - `http/contracts.py` 只定义 HTTP 层响应和错误契约。
+- `services/closettwin/*` 只定义 ClosetTwin 双模型生命周期与调用边界，外部模型仓库必须通过 adapter 延迟加载。
 - `storage.py` 只保留 `JsonDatabase` facade，不直接堆业务方法。
 - `storage_domains/*` 按账号、日程、收藏、发现、媒体、衣橱、编辑运营和 schema 维护拆分。
 - `models.py` 统一维护 Peewee 模型和 `ALL_MODELS` 表注册。
 - 后端路由和文件服务不再堆回 `handler.py`。
 - 后端业务存储逻辑不再堆回 `storage.py`。
+- 后端页面、路由和存储层不直接导入 `26-101ClosetTwin`、`ClosetTwin_model2_table`、`AlgorithmEngine` 或 `SupplementaryAnnotator`。
+- `services/backend` 只通过 `services.closettwin` facade 调用模型服务，不持有模型实现代码。
 
 ### AI Blogger
 

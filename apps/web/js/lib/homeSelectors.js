@@ -54,22 +54,42 @@ function getLookPool(locale) {
     ]
 }
 
-function normalizeRecentWardrobeItems(items = []) {
-    return (Array.isArray(items) ? items : []).map((item) => ({
+function normalizeArray(value) {
+    return Array.isArray(value) ? value.filter((entry) => entry !== null && entry !== undefined) : []
+}
+
+function normalizeAiPayload(item = {}) {
+    const payload = item.ai || item.aiJson || item.ai_json || {}
+    return {
+        status: payload.status || '',
+        source: payload.source || '',
+        tags: normalizeArray(payload.tags).map((tag) => String(tag || '').trim()).filter(Boolean),
+        metadata: payload.metadata || {},
+        raw: payload.raw || null
+    }
+}
+
+function normalizeWardrobeItems(items = []) {
+    return normalizeArray(items).map((item) => ({
         id: item.id,
+        title: item.title || item.name || '',
         category: item.category || '',
         material: item.material || '',
         color: item.color || '',
         filter: item.filter || '',
-        favorite: Boolean(item.favorite)
+        image: item.image || item.imageUrl || item.image_url || '',
+        favorite: Boolean(item.favorite),
+        ai: normalizeAiPayload(item)
     }))
 }
 
 function normalizeScheduleSignals(scheduleSummary) {
     const text = [
+        scheduleSummary?.id,
         scheduleSummary?.title,
         scheduleSummary?.location,
-        scheduleSummary?.time
+        scheduleSummary?.time,
+        ...(Array.isArray(scheduleSummary?.tags) ? scheduleSummary.tags : [])
     ].filter(Boolean).join(' ').toLowerCase()
 
     return {
@@ -80,8 +100,11 @@ function normalizeScheduleSignals(scheduleSummary) {
 }
 
 function normalizeWardrobeSignals(wardrobe = {}) {
-    const items = normalizeRecentWardrobeItems(wardrobe.recentItems)
-    const text = items.map((item) => [item.category, item.material, item.color, item.filter].join(' ')).join(' ').toLowerCase()
+    const items = normalizeWardrobeItems(wardrobe.items || wardrobe.recentItems)
+    const text = items
+        .map((item) => [item.title, item.category, item.material, item.color, item.filter, ...item.ai.tags].join(' '))
+        .join(' ')
+        .toLowerCase()
 
     return {
         hasOuterwear: /(outerwear|coat|jacket|风衣|外套|大衣)/.test(text),
@@ -101,17 +124,74 @@ function normalizeFavoriteIds(favoriteIds) {
     return []
 }
 
+function normalizeWeatherContext(weather = {}) {
+    const temperature = weather.temperature || {}
+    const location = weather.location || {}
+    return {
+        condition: weather.condition || '',
+        summary: weather.summary || '',
+        temperature: {
+            current: temperature.current || '',
+            low: temperature.low || '',
+            high: temperature.high || ''
+        },
+        location: {
+            label: location.label || '',
+            precision: location.precision || ''
+        }
+    }
+}
+
+function normalizeScheduleEvent(event = null) {
+    if (!event) return null
+    return {
+        id: event.id || '',
+        dateISO: event.dateISO || event.eventDate || event.date || event.scheduledDate || '',
+        day: event.day || '',
+        label: event.label || '',
+        time: event.time || '',
+        title: event.title || '',
+        location: event.location || '',
+        tags: normalizeArray(event.tags).map((tag) => String(tag || '').trim()).filter(Boolean),
+        tab: event.tab || ''
+    }
+}
+
+function normalizeUsageScenario(event) {
+    const signals = normalizeScheduleSignals(event)
+    let intent = 'daily'
+    if (signals.travel) {
+        intent = 'travel'
+    } else if (signals.studio) {
+        intent = 'studio'
+    } else if (signals.gallery) {
+        intent = 'gallery'
+    } else if (event) {
+        intent = 'event'
+    }
+
+    return {
+        intent,
+        label: event?.title || event?.location || '',
+        event: event || null,
+        signals
+    }
+}
+
 export function buildHomeRecommendationInput({
     locale = 'en-US',
     activeTab = 'recommend',
     favorites = {},
     wardrobe = {},
     schedule = {},
+    weather = {},
     settings = {}
 } = {}) {
     const lookIds = normalizeFavoriteIds(favorites.lookIds || favorites.favoriteIds)
-    const recentItems = normalizeRecentWardrobeItems(wardrobe.recentItems)
-    const nextEvent = schedule.nextEvent || schedule.summary || null
+    const wardrobeItems = normalizeWardrobeItems(wardrobe.items || wardrobe.allItems || wardrobe.recentItems)
+    const recentItems = normalizeWardrobeItems(wardrobe.recentItems || wardrobeItems).slice(0, 3)
+    const nextEvent = normalizeScheduleEvent(schedule.nextEvent || schedule.summary || null)
+    const totalCount = Number(wardrobe.totalCount ?? wardrobe.count ?? wardrobeItems.length)
 
     return {
         locale,
@@ -119,15 +199,18 @@ export function buildHomeRecommendationInput({
         favorites: {
             lookIds
         },
+        weather: normalizeWeatherContext(weather),
         wardrobe: {
-            totalCount: Number(wardrobe.totalCount || 0),
+            totalCount,
+            items: wardrobeItems,
             recentItems,
             signals: normalizeWardrobeSignals({
-                recentItems
+                items: wardrobeItems.length ? wardrobeItems : recentItems
             })
         },
         schedule: {
             nextEvent,
+            scenario: normalizeUsageScenario(nextEvent),
             signals: normalizeScheduleSignals(nextEvent)
         },
         settings: {

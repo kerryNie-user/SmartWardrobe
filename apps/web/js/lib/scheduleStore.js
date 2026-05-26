@@ -163,9 +163,13 @@ export function getScheduleSummary(locale = 'en-US') {
     if (!nextEvent) return null
 
     return {
+        id: nextEvent.id,
+        dateISO: nextEvent.dateISO,
         title: nextEvent.title,
         time: nextEvent.time,
         location: nextEvent.location,
+        image: nextEvent.image,
+        tags: nextEvent.tags || [],
         day: nextEvent.day,
         label: nextEvent.label,
         tab: nextEvent.tab
